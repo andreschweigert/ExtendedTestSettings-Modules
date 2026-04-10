@@ -1,0 +1,16 @@
+{
+    "id": "examcalc",
+    "label": "Wissenschaftlicher Taschenrechner",
+    "description": "Stellt einen Taschenrechner während der Prüfung zur Verfügung (einfach oder wissenschaftlich).",
+    "version": "1.1.0",
+    "ilias_min": "9",
+    "ilias_max": "12",
+    "handler_class": "ilExamCalcHandler",
+    "handler_file": "class.ilExamCalcHandler.php",
+    "require_files": [
+        "class.ilExamCalcConfig.php"
+    ],
+    "tables": [
+        "examcalc_settings"
+    ]
+}
