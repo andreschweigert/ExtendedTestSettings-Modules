@@ -22,6 +22,7 @@ Jeder Branch entspricht einer ILIAS-Hauptversion:
 
 | Modul | Beschreibung |
 |---|---|
+| [examcalc](modules/examcalc/) | Taschenrechner während der Prüfung (einfach oder wissenschaftlich), Shortcut Alt + R |
 | [examgrouping](modules/examgrouping/) | Fragen zu Gruppen zusammenfassen, Ergebnisse je Gruppe auswerten, CSV-Export |
 
 ---
