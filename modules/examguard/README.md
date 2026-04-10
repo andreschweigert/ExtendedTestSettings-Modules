@@ -2,7 +2,40 @@
 
 Externes Modul für das ILIAS-Plugin **ExtendedTestSettings**.
 
-Blockiert clientseitig kritische Eingaben während einer Prüfung (Copy/Paste, Rechtsklick, Tastenkombinationen wie Ctrl+C/V/X/A/S, F12). Läuft unsichtbar im Hintergrund ohne Benutzeroberfläche.
+Injiziert ein JavaScript in den Testplayer, das unfaires Verhalten während der Prüfung erschwert. Läuft **vollständig unsichtbar im Hintergrund** — keine Benutzeroberfläche.
+
+Blockiert clientseitig:
+- Copy & Paste (`Ctrl+C`, `Ctrl+V`, `Ctrl+X`)
+- Rechtsklick-Kontextmenü
+- Keyboard-Shortcuts: `Ctrl+A`, `Ctrl+S`, `F12` (DevTools)
+- Text-Selektion
+
+> **Hinweis:** Die Schutzmaßnahmen sind rein clientseitig und können von technisch
+> versierten Nutzern umgangen werden. ExamGuard ist eine Erschwernis, keine Garantie.
+
+## Konfiguration
+
+In den Erweiterten Test-Einstellungen des Tests:
+
+| Einstellung | Formular-Name | Werte |
+|---|---|---|
+| Prüfungsschutz aktivieren | `examguard_enabled` | Checkbox |
+
+## Datenbank
+
+Eigene Tabelle: `examguard_settings`
+
+| Spalte | Bedeutung |
+|---|---|
+| `test_id` (PK) | ILIAS obj_id des Tests |
+| `enabled` | 1 = aktiv |
+| `exit_prevention` | Reserviert (Default 1, aktuell ungenutzt) |
+
+## Geladene Assets im Testplayer
+
+| Datei | Beschreibung |
+|---|---|
+| `js/examguard.js` | Schutz-Logik (Event-Listener für Copy/Paste, Rechtsklick, Shortcuts) |
 
 ## Versionen
 
@@ -12,4 +45,9 @@ Blockiert clientseitig kritische Eingaben während einer Prüfung (Copy/Paste, R
 
 ## Installation
 
-Siehe `/docs/how-to.md` im Root dieses Repos.
+Siehe [`/docs/how-to.md`](../../docs/how-to.md).
+
+## Entwickler-Dokumentation
+
+Vollständige Doku (Dateistruktur, DB-Schema, Handler-Methoden, Hinweis zu `exit_prevention`):
+→ [`/docs/modules/ExamGuard.md`](../../docs/modules/ExamGuard.md)

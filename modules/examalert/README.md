@@ -2,7 +2,43 @@
 
 Externes Modul für das ILIAS-Plugin **ExtendedTestSettings**.
 
-Zeigt den Prüfungsteilnehmern eine konfigurierbare Warnung an, wenn die Testzeit fast abgelaufen ist. Warnzeit und Nachricht (HTML-Formatierung erlaubt) sind pro Test einstellbar. Die mitgelieferte Standardnachricht ist zweisprachig (Deutsch/Englisch).
+Zeigt den Prüfungsteilnehmern ein **Popup-Modal mit Countdown**, wenn die verbleibende Testzeit unter einen konfigurierbaren Schwellenwert fällt. Warnzeit und Nachricht sind pro Test einstellbar. Die mitgelieferte Standardnachricht ist zweisprachig (Deutsch/Englisch).
+
+Besonderheit: Neue Tests werden **automatisch aktiviert**, sofern die globale Plugin-Einstellung `examalert_auto_activate` gesetzt ist (Default: aktiv).
+
+## Konfiguration
+
+In den Erweiterten Test-Einstellungen des Tests:
+
+| Einstellung | Formular-Name | Werte |
+|---|---|---|
+| Zeit-Warnung aktivieren | `examalert_enabled` | Checkbox |
+| Warnung anzeigen X Sekunden vor Testende | `examalert_time` | 5–3600 (Default: 30) |
+| Nachricht (HTML erlaubt) | `examalert_message` | Freitext (`<strong>`, `<u>`, `<br>` empfohlen) |
+
+Globale Einstellung (Plugin-Administration):
+
+| ilSetting-Key | Namespace | Bedeutung |
+|---|---|---|
+| `examalert_auto_activate` | `extendedtestsettings` | `1` = neue Tests automatisch aktivieren |
+
+## Datenbank
+
+Eigene Tabelle: `examalert_settings`
+
+| Spalte | Bedeutung |
+|---|---|
+| `test_id` (PK) | ILIAS obj_id des Tests |
+| `enabled` | 1 = aktiv |
+| `alert_time` | Sekunden vor Testende (Default: 30) |
+| `alert_message` | HTML-Nachricht (max. 1000 Zeichen) |
+
+## Geladene Assets im Testplayer
+
+| Datei | Beschreibung |
+|---|---|
+| `css/examalert.css` | Styles für Alert-Popup |
+| `js/examalert.js` | Countdown-Logik + Popup-Anzeige (einmalig pro Sitzung) |
 
 ## Versionen
 
@@ -12,4 +48,9 @@ Zeigt den Prüfungsteilnehmern eine konfigurierbare Warnung an, wenn die Testzei
 
 ## Installation
 
-Siehe `/docs/how-to.md` im Root dieses Repos.
+Siehe [`/docs/how-to.md`](../../docs/how-to.md).
+
+## Entwickler-Dokumentation
+
+Vollständige Doku (Dateistruktur, DB-Schema, Auto-Aktivierungs-Logik, Handler-Methoden):
+→ [`/docs/modules/ExamAlert.md`](../../docs/modules/ExamAlert.md)

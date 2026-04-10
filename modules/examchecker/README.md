@@ -2,14 +2,40 @@
 
 Externes Modul für das ILIAS-Plugin **ExtendedTestSettings**.
 
-Überprüft die Einstellungen eines Tests gegen konfigurierbare Standards für Präsenz- und Fernprüfungen. Zeigt in den Test-Einstellungen einen interaktiven Check-Button an — das Ergebnis listet korrekte und zu prüfende Einstellungen inkl. Vorbedingungen-Warnung auf. Die geprüften Standards werden in der Plugin-Administration konfiguriert.
+Prüft die Einstellungen eines ILIAS-Tests gegen definierte **Prüfungsstandards** — separat für Präsenz- und Fernprüfungen. In den Test-Einstellungen erscheint ein Check-Button; das Ergebnis listet korrekte und abweichende Einstellungen farbkodiert auf, inkl. Warnung bei vorhandenen Vorbedingungen.
+
+**Kein Testplayer-Widget** — läuft ausschließlich in der Test-Einstellungsseite.  
+**Keine eigene Datenbanktabelle** — liest nur ILIAS-Kerntabellen.
+
+## Geprüfte Einstellungen (Auswahl)
+
+| Kategorie | Beispiele |
+|---|---|
+| Allgemein | Fragenpools, Datenschutz (mit Namen), Online-Status, Passwort |
+| Durchführung | Testdurchläufe auf 1 begrenzt, Prüfungsansicht (Kiosk), Autosave 30s |
+| Bewertung | Teilpunkte aktiviert, keine negativen Punkte, besten Durchlauf bewerten |
+| Nur Fernprüfung | Eigenständigkeitserklärung, Bearbeitungsdauer begrenzt |
+| Nur Präsenzprüfung | Weiterleitung zu `logout.php` (Kiosk-Mode 2) |
+| Manuell | Start- und Endzeiten, Bearbeitungsdauer (Plausibilitätsprüfung) |
+| Automatisch | Vorbedingungen, zeitlich begrenzte Verfügbarkeit |
+
+Die aktiven Standards sind über `ilSetting` konfigurierbar (`examchecker_standards_praesenz` / `examchecker_standards_fern`). Ohne Konfiguration gelten hardcodierte Defaults (17+ Checks).
+
+## Technische Besonderheit: AJAX via saveSettings
+
+Der Check läuft als AJAX-Request — das JavaScript sendet einen POST mit `action=exam_check` an `cmd=saveSettings`. Der Handler erkennt diesen Parameter, führt den Check durch und antwortet mit `Content-Type: application/json` + `exit`. Kein separater API-Endpunkt nötig.
 
 ## Versionen
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
-| 1.1.0 | `ExamChecker_v1.1.0.zip` | 9–12 | Migration aus Sonderfall zu externem Modul, implements ilExamModuleInterface |
+| 1.1.0 | `ExamChecker_v1.1.0.zip` | 9–12 | Migration aus Sonderfall zu externem Modul, `implements ilExamModuleInterface` |
 
 ## Installation
 
-Siehe `/docs/how-to.md` im Root dieses Repos.
+Siehe [`/docs/how-to.md`](../../docs/how-to.md).
+
+## Entwickler-Dokumentation
+
+Vollständige Doku (Check-Pipeline, alle geprüften DB-Felder, AJAX-Mechanismus, Standards-Konfiguration):
+→ [`/docs/modules/ExamChecker.md`](../../docs/modules/ExamChecker.md)
