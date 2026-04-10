@@ -24,6 +24,8 @@ Jeder Branch entspricht einer ILIAS-Hauptversion:
 |---|---|
 | [examalert](modules/examalert/) | Zeit-Warnung kurz vor Testende, konfigurierbare Nachricht mit HTML-Formatierung |
 | [examcalc](modules/examcalc/) | Taschenrechner während der Prüfung (einfach oder wissenschaftlich), Shortcut Alt + R |
+| [examchecker](modules/examchecker/) | Prüft Test-Einstellungen gegen konfigurierbare Standards (Präsenz-/Fernprüfung) |
+| [examguard](modules/examguard/) | Prüfungsschutz: blockiert Copy/Paste, Rechtsklick und kritische Tastenkombinationen |
 | [examsymbols](modules/examsymbols/) | Sonderzeichen-Palette für Prüfungen (Mathe, Chemie, Physik, Sprachen), Shortcut Alt + S |
 | [examgrouping](modules/examgrouping/) | Fragen zu Gruppen zusammenfassen, Ergebnisse je Gruppe auswerten, CSV-Export |
 
