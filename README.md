@@ -30,6 +30,7 @@ Jeder Branch entspricht einer ILIAS-Hauptversion:
 | [examguard](modules/examguard/) | Prüfungsschutz: blockiert Copy/Paste, Rechtsklick und kritische Tastenkombinationen |
 | [examsymbols](modules/examsymbols/) | Sonderzeichen-Palette für Prüfungen (Mathe, Chemie, Physik, Sprachen), Shortcut Alt + S |
 | [examgrouping](modules/examgrouping/) | Fragen zu Gruppen zusammenfassen, Ergebnisse je Gruppe auswerten, CSV-Export |
+| [examresourcesheet](modules/examresourcesheet/) | Hilfsmittelblatt (PDF/HTML) als seitliches Panel im Test-Player, Text markierbar, Push-Modus |
 
 ---
 
