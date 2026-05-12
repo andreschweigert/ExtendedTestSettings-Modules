@@ -29,6 +29,7 @@ Der Check läuft als AJAX-Request — das JavaScript sendet einen POST mit `acti
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
+| 1.1.1 | `ExamChecker_v1.1.1.zip` | 9 | ILIAS-Kompatibilität auf 9 beschränkt |
 | 1.1.0 | `ExamChecker_v1.1.0.zip` | 9–12 | Migration aus Sonderfall zu externem Modul, `implements ilExamModuleInterface` |
 
 ## Installation

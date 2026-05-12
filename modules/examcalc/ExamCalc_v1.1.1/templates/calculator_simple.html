@@ -1,0 +1,67 @@
+<!-- Floating Calculator Button -->
+<button id="calculator-btn" title="Einfacher Taschenrechner (Alt + R)" aria-label="Taschenrechner">
+    🔢
+</button>
+
+<!-- Calculator Window - EINFACH -->
+<div id="calculator" style="display: none;" role="application" aria-label="Einfacher Taschenrechner">
+
+    <!-- Panel Header -->
+    <div class="header">
+        <h3>Einfacher Taschenrechner</h3>
+        <div class="header-buttons">
+            <button class="close-btn" type="button" aria-label="Taschenrechner schließen">×</button>
+        </div>
+    </div>
+
+    <!-- Calculator Content Container -->
+    <div class="calculator-content">
+        <!-- Main Calculator -->
+        <div class="calculator-main">
+            <!-- Display -->
+            <input
+                type="text"
+                id="calc-display"
+                readonly
+                placeholder="0"
+                aria-label="Rechenergebnis"
+            />
+
+            <!-- Button Grid - NUR GRUNDRECHENARTEN -->
+            <div class="buttons" role="grid">
+                <!-- ROW 1 -->
+                <button type="button" aria-label="Sieben">7</button>
+                <button type="button" aria-label="Acht">8</button>
+                <button type="button" aria-label="Neun">9</button>
+                <button type="button" aria-label="Division">/</button>
+                <button type="button" aria-label="Letztes Zeichen löschen" class="del-btn">DEL</button>
+
+                <!-- ROW 2 -->
+                <button type="button" aria-label="Vier">4</button>
+                <button type="button" aria-label="Fünf">5</button>
+                <button type="button" aria-label="Sechs">6</button>
+                <button type="button" aria-label="Multiplikation">*</button>
+                <button type="button" aria-label="Alles löschen">AC</button>
+
+                <!-- ROW 3 -->
+                <button type="button" aria-label="Eins">1</button>
+                <button type="button" aria-label="Zwei">2</button>
+                <button type="button" aria-label="Drei">3</button>
+                <button type="button" aria-label="Subtraktion">-</button>
+                <button type="button" aria-label="Öffnende Klammer">(</button>
+
+                <!-- ROW 4 -->
+                <button type="button" aria-label="Null">0</button>
+                <button type="button" aria-label="Dezimalkomma">.</button>
+                <button type="button" aria-label="Gleich" class="equals">=</button>
+                <button type="button" aria-label="Addition">+</button>
+                <button type="button" aria-label="Schließende Klammer">)</button>
+            </div>
+
+            <!-- Panel Info -->
+            <div class="calc-info" role="complementary">
+                Grundrechenarten: + − × ÷
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,373 @@
+/**
+ * examsymbols.css - ExamSymbols Styles für ExtendedTestSettings
+ * Saubere CSS-Trennung für Symbol-Palette
+ */
+
+/* ============================================
+   SYMBOLS BUTTON (Floating)
+   ============================================ */
+#symbols-btn {
+    position: fixed;
+    bottom: 90px;  /* Über dem ExamCalc Button */
+    right: 20px;
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    font-size: 28px;
+    cursor: pointer;
+    z-index: 10000;
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+    font-family: system-ui, -apple-system, sans-serif;
+}
+
+#symbols-btn:hover {
+    transform: scale(1.05);
+    background: #218838;
+    box-shadow: 0 10px 16px rgba(0, 0, 0, 0.3);
+}
+
+#symbols-btn:active {
+    transform: scale(0.95);
+}
+
+/* ============================================
+   SYMBOLS PANEL
+   ============================================ */
+#symbols-panel {
+    position: fixed;
+    bottom: 170px;  /* Über dem Button */
+    right: 20px;
+    backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid #28a745;
+    border-radius: 16px;
+    padding: 16px;
+    z-index: 10000;
+    display: none;
+    width: 320px;
+    max-height: 400px;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    user-select: none;
+    animation: slideIn 0.2s ease-out;
+}
+
+/* Panel Header */
+#symbols-panel .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+#symbols-panel .header h3 {
+    margin: 0;
+    font-size: 16px;
+    color: #495057;
+    font-weight: 600;
+}
+
+#symbols-panel .close-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+#symbols-panel .close-btn:hover {
+    color: #dc3545;
+    background: #f8f9fa;
+    transform: scale(1.1);
+}
+
+/* ============================================
+   TEMPLATE SELECTOR - DEAKTIVIERT
+   Nutzer sollen Template nicht ändern können
+   ============================================ */
+#template-select {
+    display: none !important;
+}
+
+/* ============================================
+   SYMBOLS GRID
+   ============================================ */
+#symbols-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 4px;
+    border-radius: 6px;
+}
+
+/* Symbol Buttons */
+.symbol-btn {
+    background: #ffffff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 8px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Times New Roman", "Liberation Serif", serif; /* Bessere Symbol-Darstellung */
+    user-select: none;
+    position: relative;
+}
+
+.symbol-btn:hover {
+    background: #e8f5e8;
+    border-color: #28a745;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(40, 167, 69, 0.2);
+}
+
+.symbol-btn:active {
+    transform: translateY(0);
+    background: #d4edda;
+    box-shadow: inset 0 2px 4px rgba(40, 167, 69, 0.1);
+}
+
+.symbol-btn:focus {
+    outline: 2px solid #28a745;
+    outline-offset: 2px;
+}
+
+/* Symbol einfügen Animation - ENTFERNT
+   Visuelles Feedback war vorher besser ohne */
+
+/* ============================================
+   SCROLLBAR STYLING
+   ============================================ */
+#symbols-grid::-webkit-scrollbar {
+    width: 6px;
+}
+
+#symbols-grid::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+#symbols-grid::-webkit-scrollbar-thumb {
+    background: #28a745;
+    border-radius: 3px;
+    transition: background 0.2s ease;
+}
+
+#symbols-grid::-webkit-scrollbar-thumb:hover {
+    background: #218838;
+}
+
+/* ============================================
+   PANEL INFO
+   ============================================ */
+.symbols-info {
+    font-size: 12px;
+    color: #6c757d;
+    text-align: center;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #dee2e6;
+    font-style: italic;
+}
+
+/* ============================================
+   PANEL ANIMATIONS
+   ============================================ */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Fade-out Animation */
+#symbols-panel.fade-out {
+    animation: fadeOut 0.2s ease-in;
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+
+/* Tablet Screens */
+@media (max-width: 768px) {
+    #symbols-panel {
+        width: 280px;
+        right: 10px;
+        bottom: 80px;
+        max-height: 350px;
+    }
+    
+    #symbols-btn {
+        right: 10px;
+        bottom: 80px;
+        width: 50px;
+        height: 50px;
+        font-size: 24px;
+    }
+    
+    #symbols-grid {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 5px;
+    }
+    
+    .symbol-btn {
+        font-size: 16px;
+        min-height: 36px;
+        padding: 6px;
+    }
+}
+
+/* Mobile Screens */
+@media (max-width: 480px) {
+    #symbols-panel {
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        right: auto !important;
+        bottom: auto !important;
+        transform: translate(-50%, -50%) !important;
+        width: 90vw;
+        max-width: 320px;
+        max-height: 60vh;
+    }
+    
+    #symbols-btn {
+        bottom: 20px;
+        right: 20px;
+    }
+    
+    #symbols-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
+        max-height: 180px;
+    }
+    
+    .symbol-btn {
+        font-size: 14px;
+        min-height: 32px;
+        padding: 4px;
+    }
+    
+    #symbols-panel .header h3 {
+        font-size: 14px;
+    }
+}
+
+/* Very Small Screens */
+@media (max-width: 360px) {
+    #symbols-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .symbol-btn {
+        font-size: 16px;
+        min-height: 36px;
+    }
+}
+
+/* ============================================
+   ACCESSIBILITY IMPROVEMENTS
+   ============================================ */
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    #symbols-panel {
+        background: white;
+        border-color: black;
+        border-width: 3px;
+    }
+    
+    .symbol-btn {
+        border-color: black;
+        border-width: 2px;
+    }
+    
+    #symbols-btn {
+        background: black;
+        border: 2px solid white;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    #symbols-panel {
+        animation: none;
+    }
+
+    .symbol-btn {
+        transition: none;
+    }
+
+    .symbol-btn:hover {
+        transform: none;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    #symbols-panel {
+        background: rgba(33, 37, 41, 0.95);
+        border-color: #28a745;
+    }
+    
+    #symbols-panel .header h3 {
+        color: #f8f9fa;
+    }
+    
+    .symbol-btn {
+        background: #495057;
+        border-color: #6c757d;
+        color: #f8f9fa;
+    }
+    
+    .symbol-btn:hover {
+        background: #5a6268;
+        border-color: #28a745;
+    }
+    
+    #template-select {
+        background: #495057;
+        border-color: #6c757d;
+        color: #f8f9fa;
+    }
+    
+    .symbols-info {
+        color: #adb5bd;
+    }
+}

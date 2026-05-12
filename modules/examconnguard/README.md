@@ -59,6 +59,7 @@ Assets werden nur injiziert, wenn `isEnabled() && isTestPlayerContext()` — kei
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
+| 1.0.6 | `ExamConnGuard_v1.0.6.zip` | 9 | ILIAS-Kompatibilität auf 9 beschränkt |
 | 1.0.0 | `ExamConnGuard_v1.0.0.zip` | 9–12 | Initiale Version mit Background-Heartbeat alle 8 s gegen `/favicon.ico`. Bekannte Bugs: spurious offline durch fetch-Wrapper, kaputt wenn Server kein favicon hat. |
 | 1.0.1 | `ExamConnGuard_v1.0.1.zip` | 9–12 | **On-Demand-Probe** statt Background-Heartbeat. Eigene `probe.txt` im Modul (kein Server-Default mehr). fetch-Wrapper triggert nicht mehr eigenständig Offline-State (Fix 2-min-Bug). Klick-Interceptor nur noch für `<a href>` (Submits gehen über submit-Event, kein Doppel-Queue). |
 | 1.0.2 | `ExamConnGuard_v1.0.2.zip` | 9–12 | Klick-Interceptor erweitert auf **alle Buttons + Anchors**. Notwendig weil ILIAS-Test-Player-Buttons mit JS-onclick `window.location.href = …` setzen (CSRF-Token in URL) — kein submit-Event, kein `assign()`/`replace()`. Bei Probe-OK wird der Original-Click via `element.click()` mit `inReplay`-Flag re-feuert; ILIAS-Handler läuft normal. UI-Buttons (Frage markieren etc.) bekommen dadurch ebenfalls 50–300 ms Pre-Flight-Latenz. |

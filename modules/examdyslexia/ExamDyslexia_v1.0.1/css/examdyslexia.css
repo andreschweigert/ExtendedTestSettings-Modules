@@ -1,0 +1,250 @@
+/**
+ * examdyslexia.css - Legasthenie-Modus für ExtendedTestSettings
+ * Scope-Anker: #tst_output (ILIAS Testplayer)
+ * Aktivierung: JS setzt body.examdyslexia-active
+ */
+
+/* ============================================
+   OPENDSYLEXIC FONT
+   ../fonts/ wird relativ zur CSS-Datei aufgelöst.
+   JS-Fallback injiziert @font-face mit absolutem Pfad,
+   falls ILIAS den CSS-Pfad umschreibt.
+   ============================================ */
+@font-face {
+    font-family: 'OpenDyslexic';
+    src: url('../fonts/OpenDyslexic-Regular.woff2') format('woff2'),
+         url('../fonts/OpenDyslexic-Regular.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'OpenDyslexic';
+    src: url('../fonts/OpenDyslexic-Bold.woff2') format('woff2'),
+         url('../fonts/OpenDyslexic-Bold.woff') format('woff');
+    font-weight: bold;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* ============================================
+   LESEMODUS (aktiviert durch body.examdyslexia-active)
+   ============================================ */
+
+/* Icon-Fonts ausschließen: Glyphicons (Bootstrap 3), Font Awesome, ILIAS-eigene Icons.
+   Diese Elemente nutzen spezielle Unicode-Zeichen die OpenDyslexic nicht enthält. */
+body.examdyslexia-active #tst_output,
+body.examdyslexia-active #tst_output *:not([class*="glyphicon"]):not([class*=" fa"]):not([class^="fa"]):not([class*="il-icon"]):not([class*="ilIcon"]):not([class*="icon-"]) {
+    font-family: 'OpenDyslexic', Arial, sans-serif !important;
+}
+
+body.examdyslexia-active #tst_output {
+    line-height: var(--examdyslexia-line-height, 1.8) !important;
+    letter-spacing: var(--examdyslexia-letter-spacing, 0.05em) !important;
+    background-color: var(--examdyslexia-bg, transparent) !important;
+}
+
+/* Seitenebene: Hintergrund hinter dem ILIAS-Content */
+body.examdyslexia-active {
+    background-color: var(--examdyslexia-bg, transparent) !important;
+}
+
+/* Alle Container-Divs im Testbereich überschreiben.
+   Interaktive Elemente (Buttons, Inputs, Selects, Dropdowns) werden ausgespart.
+   ILIAS Testplayer nutzt Bootstrap 3 + eigene ilTest*-Klassen. */
+body.examdyslexia-active #tst_output div:not(.btn):not(.btn-group):not(.dropdown-menu):not([class*="btn-"]) {
+    background-color: var(--examdyslexia-bg, transparent) !important;
+}
+
+/* ILIAS-spezifische Fragecontainer explizit */
+body.examdyslexia-active [class*="ilTestQuestion"],
+body.examdyslexia-active [class*="ilc_question"],
+body.examdyslexia-active [class*="ilc_page"],
+body.examdyslexia-active .ilc_page_cont_PageContainer {
+    background-color: var(--examdyslexia-bg, transparent) !important;
+}
+
+/* Bootstrap 3 Wells und Panels (ILIAS 9 nutzt teils noch Bootstrap 3) */
+body.examdyslexia-active #tst_output .well,
+body.examdyslexia-active #tst_output .panel,
+body.examdyslexia-active #tst_output .panel-body,
+body.examdyslexia-active #tst_output .panel-default,
+body.examdyslexia-active #tst_output .panel-heading {
+    background-color: var(--examdyslexia-bg, transparent) !important;
+}
+
+/* Inline-Elemente erben Zeilenabstand vom Container */
+body.examdyslexia-active #tst_output p,
+body.examdyslexia-active #tst_output li,
+body.examdyslexia-active #tst_output td,
+body.examdyslexia-active #tst_output th,
+body.examdyslexia-active #tst_output label {
+    line-height: var(--examdyslexia-line-height, 1.8) !important;
+}
+
+/* ============================================
+   TOGGLE-BUTTON
+   top: 80px; right: 16px → kein Konflikt mit examcalc (bottom-right)
+   z-index: 9000 → über ILIAS-Content, unter Modals
+   ============================================ */
+#examdyslexia-toggle {
+    position: fixed !important;
+    top: 80px !important;
+    right: 16px !important;
+    z-index: 9000 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 8px 14px !important;
+    background: #ffffff !important;
+    border: 2px solid #6c757d !important;
+    border-radius: 24px !important;
+    cursor: pointer !important;
+    font-family: system-ui, -apple-system, sans-serif !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: #495057 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+    transition: all 0.2s ease !important;
+    white-space: nowrap !important;
+    user-select: none !important;
+}
+
+#examdyslexia-toggle:hover {
+    background: #f8f9fa !important;
+    border-color: #495057 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+    transform: translateY(-1px) !important;
+}
+
+#examdyslexia-toggle:active {
+    transform: translateY(0) !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
+}
+
+#examdyslexia-toggle:focus-visible {
+    outline: 3px solid #0d6efd !important;
+    outline-offset: 2px !important;
+}
+
+/* Aktiv-Zustand: Button zeigt an dass Modus ein ist */
+#examdyslexia-toggle.examdyslexia-on {
+    background: #0d6efd !important;
+    border-color: #0d6efd !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(13, 110, 253, 0.35) !important;
+}
+
+#examdyslexia-toggle.examdyslexia-on:hover {
+    background: #0b5ed7 !important;
+    border-color: #0b5ed7 !important;
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.45) !important;
+}
+
+/* Icon im Button */
+#examdyslexia-toggle .examdyslexia-icon {
+    font-size: 16px !important;
+    line-height: 1 !important;
+    flex-shrink: 0 !important;
+}
+
+/* Label-Text im Button */
+#examdyslexia-toggle .examdyslexia-label {
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+    #examdyslexia-toggle {
+        transition: none !important;
+    }
+
+    #examdyslexia-toggle:hover {
+        transform: none !important;
+    }
+
+    #examdyslexia-toggle:active {
+        transform: none !important;
+    }
+}
+
+@media (prefers-contrast: high) {
+    #examdyslexia-toggle {
+        border-width: 3px !important;
+        border-color: #000 !important;
+        color: #000 !important;
+        background: #fff !important;
+    }
+
+    #examdyslexia-toggle.examdyslexia-on {
+        background: #000 !important;
+        color: #fff !important;
+        border-color: #000 !important;
+    }
+}
+
+/* ============================================
+   RESPONSIVE: Button auf kleinen Screens kompakter
+   ============================================ */
+@media (max-width: 480px) {
+    #examdyslexia-toggle {
+        top: 60px !important;
+        right: 8px !important;
+        padding: 6px 10px !important;
+        font-size: 12px !important;
+    }
+
+    #examdyslexia-toggle .examdyslexia-label {
+        display: none !important;
+    }
+}
+
+/* ============================================
+   PRINT: Button ausblenden
+   ============================================ */
+@media print {
+    #examdyslexia-toggle {
+        display: none !important;
+    }
+}
+
+/* ============================================
+   LESESCHIENE (Reading Ruler)
+   Folgt dem Cursor vertikal innerhalb #tst_output.
+   pointer-events: none → Text bleibt anklickbar/markierbar.
+   Höhe wird per JS aus config.line_height berechnet.
+   z-index 8999 → unter Toggle-Button (9000), über Content.
+   ============================================ */
+#examdyslexia-ruler {
+    position: fixed !important;
+    left: 0 !important;
+    width: 100% !important;
+    pointer-events: none !important;
+    z-index: 8999 !important;
+    display: none;
+    box-sizing: border-box !important;
+    background: rgba(255, 235, 59, 0.22) !important;
+    border-top: 1px solid rgba(180, 140, 0, 0.18) !important;
+    border-bottom: 1px solid rgba(180, 140, 0, 0.18) !important;
+}
+
+/* Wenn Hintergrundfarbe aktiv ist, Schiene etwas dunkler damit sie sichtbar bleibt */
+body.examdyslexia-active #examdyslexia-ruler {
+    background: rgba(200, 170, 0, 0.18) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #examdyslexia-ruler {
+        display: none !important;
+    }
+}
+
+@media print {
+    #examdyslexia-ruler {
+        display: none !important;
+    }
+}

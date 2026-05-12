@@ -51,6 +51,7 @@ Alle URL/Redirect-Generierungen laufen über `proxyLink()` / `proxyFormAction()`
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
+| 1.0.2 | `ExamGrouping_v1.0.2.zip` | 9 | ILIAS-Kompatibilität auf 9 beschränkt |
 | 1.0.1 | `ExamGrouping_v1.0.1.zip` | 9–12 | Proxy-Routing, Interface-Fix, Formular-Submit-Fix, `gui_file`/`gui_class` in module.json |
 | 1.0.0 | — | 9–12 | Initiale Implementierung |
 

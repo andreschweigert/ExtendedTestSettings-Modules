@@ -36,6 +36,7 @@ Eigene Tabelle: `examfullscr_settings`
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
+| 2.0.1 | `ExamFullscreen_v2.0.1.zip` | 9 | ILIAS-Kompatibilität auf 9 beschränkt |
 | 1.0.0 | `ExamFullscreen_v1.0.0.zip` | 9–12 | Initiale Version mit requestFullscreen() API |
 | 1.0.1 | `ExamFullscreen_v1.0.1.zip` | 9–12 | Silent-Restore bei Fragenwechsel |
 | 2.0.0 | `ExamFullscreen_v2.0.0.zip` | 9–12 | Umbau auf Browser-Fullscreen (F11), kein Flicker, OS-Erkennung, Session-Key pro Test |

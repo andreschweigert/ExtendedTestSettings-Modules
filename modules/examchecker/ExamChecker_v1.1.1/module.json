@@ -1,0 +1,14 @@
+{
+    "id": "examchecker",
+    "label": "Prüfungs-Checker",
+    "description": "Überprüft Test-Einstellungen gegen definierte Standards für Präsenz- und Fernprüfungen.",
+    "version": "1.1.1",
+    "ilias_min": "9",
+    "ilias_max": "9",
+    "handler_class": "ilExamCheckerHandler",
+    "handler_file": "class.ilExamCheckerHandler.php",
+    "require_files": [
+        "class.ilExamCheckerConfig.php"
+    ],
+    "tables": []
+}

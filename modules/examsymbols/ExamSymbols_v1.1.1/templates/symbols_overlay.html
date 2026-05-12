@@ -1,0 +1,114 @@
+<!--
+    symbols_overlay.html - ExamSymbols HTML Template
+    Part of ExtendedTestSettings Plugin
+    
+    Dieses Template wird dynamisch vom examsymbols-loader.js geladen
+-->
+
+<!-- Floating Symbols Button -->
+<button id="symbols-btn" title="Sonderzeichen öffnen/schließen (Alt + S)" aria-label="Sonderzeichen-Palette">
+    📝
+</button>
+
+<!-- Symbols Panel -->
+<div id="symbols-panel" role="application" aria-label="Sonderzeichen-Palette">
+    
+    <!-- Panel Header -->
+    <div class="header">
+        <h3>Symbole einfügen</h3>
+        <button class="close-btn" type="button" aria-label="Symbol-Panel schließen">×</button>
+    </div>
+    
+    <!-- Template Selector (wird dynamisch gefüllt wenn mehrere Templates verfügbar) -->
+    <select id="template-select" aria-label="Symbol-Vorlage auswählen" style="display: none;">
+        <!-- Wird dynamisch mit verfügbaren Templates gefüllt -->
+    </select>
+    
+    <!-- Symbols Grid -->
+    <div id="symbols-grid" role="grid" aria-label="Verfügbare Symbole">
+        <!-- Wird dynamisch mit Symbolen gefüllt -->
+    </div>
+    
+    <!-- Panel Info -->
+    <div class="symbols-info" role="complementary">
+        Klicken Sie in ein Textfeld und wählen Sie ein Symbol aus
+    </div>
+    
+</div>
+
+<!-- Zusätzliche Funktionen für erweiterte Editor-Unterstützung -->
+<script>
+// ExamSymbols Hilfsfunktionen - Werden nur geladen wenn das Panel vorhanden ist
+(function() {
+    'use strict';
+    
+    // TinyMCE Editor detection helper
+    window.ExamSymbols = window.ExamSymbols || {};
+    window.ExamSymbols.detectEditors = function() {
+        const editors = {
+            tinymce: typeof tinymce !== 'undefined',
+            ckeditor: typeof CKEDITOR !== 'undefined',
+            ckeditor5: typeof ClassicEditor !== 'undefined'
+        };
+        
+        if (window.esLog) {
+            window.esLog('Editoren erkannt: ' + JSON.stringify(editors));
+        }
+        
+        return editors;
+    };
+    
+    // Editor-spezifische Event-Handler registrieren
+    window.ExamSymbols.setupEditorIntegration = function() {
+        // TinyMCE Integration
+        if (typeof tinymce !== 'undefined') {
+            tinymce.on('AddEditor', function(e) {
+                const editor = e.editor;
+                
+                // Keyboard shortcuts für Symbol-Panel
+                editor.addShortcut('Alt+83', 'Symbol-Panel öffnen', function() {
+                    if (window.ExamSymbols?.instance) {
+                        window.ExamSymbols.instance.toggle();
+                    }
+                });
+                
+                if (window.esLog) {
+                    window.esLog('TinyMCE Shortcuts für Editor ' + editor.id + ' registriert');
+                }
+            });
+        }
+        
+        // CKEditor Integration
+        if (typeof CKEDITOR !== 'undefined') {
+            CKEDITOR.on('instanceReady', function(e) {
+                const editor = e.editor;
+                
+                // Keyboard shortcuts für Symbol-Panel
+                editor.setKeystroke(CKEDITOR.ALT + 83, 'openSymbolPanel');
+                
+                editor.addCommand('openSymbolPanel', {
+                    exec: function(editor) {
+                        if (window.ExamSymbols?.instance) {
+                            window.ExamSymbols.instance.toggle();
+                        }
+                    }
+                });
+                
+                if (window.esLog) {
+                    window.esLog('CKEditor Shortcuts für Editor ' + editor.name + ' registriert');
+                }
+            });
+        }
+    };
+    
+    // Auto-Setup wenn DOM ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(window.ExamSymbols.setupEditorIntegration, 500);
+        });
+    } else {
+        setTimeout(window.ExamSymbols.setupEditorIntegration, 500);
+    }
+    
+})();
+</script>

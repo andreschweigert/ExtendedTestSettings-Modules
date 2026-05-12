@@ -1,0 +1,85 @@
+/* ExamFullscreen — Overlay-Stile */
+
+#examfullscreen-overlay,
+#examfullscreen-start {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+}
+
+#examfullscreen-box {
+    background: #fff;
+    border-radius: 8px;
+    padding: 40px 48px;
+    max-width: 480px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+}
+
+#examfullscreen-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: #2980b9;
+}
+
+#examfullscreen-overlay #examfullscreen-icon {
+    color: #c0392b;
+}
+
+#examfullscreen-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin: 0 0 12px;
+    color: #1a1a1a;
+}
+
+#examfullscreen-msg-warn {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #c0392b;
+    margin: 0 0 8px;
+}
+
+#examfullscreen-msg {
+    font-size: 0.95rem;
+    color: #444;
+    line-height: 1.6;
+    margin: 0 0 28px;
+}
+
+#examfullscreen-kbd {
+    display: inline-block;
+    background: #f0f0f0;
+    border: 1px solid #ccc;
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #333;
+    letter-spacing: 0.5px;
+}
+
+#examfullscreen-dismiss {
+    display: block;
+    margin: 14px auto 0;
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+#examfullscreen-dismiss:hover {
+    color: #555;
+}

@@ -1,0 +1,373 @@
+/**
+ * examalert.css - ExamAlert Styles für ExtendedTestSettings
+ * Styles für zeit-basierte Warnungen während Tests
+ */
+
+/* ============================================
+   ALERT OVERLAY (Backdrop)
+   ============================================ */
+#exam-alert-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(0, 0, 0, 0.85) !important;
+    backdrop-filter: blur(4px) !important;
+    z-index: 99999 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 1rem !important;
+    box-sizing: border-box !important;
+}
+
+/* ============================================
+   ALERT BOX (Main Container)
+   ============================================ */
+#exam-alert-box {
+    background: white !important;
+    padding: 2.5rem 2rem !important;
+    border-radius: 16px !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4) !important;
+    max-width: 520px !important;
+    width: 100% !important;
+    text-align: center !important;
+    border: 3px solid #fd7e14 !important;
+    position: relative !important;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif !important;
+}
+
+/* Alert Box Glow Effect */
+#exam-alert-box::before {
+    content: '' !important;
+    position: absolute !important;
+    top: -3px !important;
+    left: -3px !important;
+    right: -3px !important;
+    bottom: -3px !important;
+    background: linear-gradient(45deg, #fd7e14, #ffc107, #fd7e14) !important;
+    border-radius: 18px !important;
+    z-index: -1 !important;
+    animation: borderGlow 2s ease-in-out infinite alternate !important;
+}
+
+/* ============================================
+   ALERT ICON
+   ============================================ */
+.exam-alert-icon {
+    font-size: 4rem !important;
+    margin-bottom: 1rem !important;
+    color: #fd7e14 !important;
+    animation: pulse 1.5s ease-in-out infinite !important;
+    display: block !important;
+}
+
+/* ============================================
+   ALERT TITLE
+   ============================================ */
+.exam-alert-title {
+    color: #fd7e14 !important;
+    margin: 0 0 1.5rem 0 !important;
+    font-size: 1.75rem !important;
+    font-weight: 700 !important;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* ============================================
+   ALERT MESSAGE
+   ============================================ */
+.exam-alert-message {
+    font-size: 1.2rem !important;
+    line-height: 1.6 !important;
+    margin-bottom: 1.5rem !important;
+    color: #333 !important;
+    padding: 1rem !important;
+    background: #f8f9fa !important;
+    border-radius: 8px !important;
+    border-left: 4px solid #fd7e14 !important;
+}
+
+/* ============================================
+   TIME REMAINING DISPLAY
+   ============================================ */
+.exam-alert-time {
+    margin-bottom: 2rem !important;
+    padding: 1rem !important;
+    background: linear-gradient(135deg, #fd7e14, #e8590c) !important;
+    color: white !important;
+    border-radius: 8px !important;
+    font-size: 1.3rem !important;
+    font-weight: 700 !important;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3) !important;
+    box-shadow: 0 4px 12px rgba(253, 126, 20, 0.3) !important;
+}
+
+/* ============================================
+   CLOSE BUTTON
+   ============================================ */
+#exam-alert-close {
+    background: linear-gradient(135deg, #007bff, #0056b3) !important;
+    color: white !important;
+    border: none !important;
+    padding: 1rem 2.5rem !important;
+    border-radius: 8px !important;
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    min-width: 150px !important;
+}
+
+#exam-alert-close:hover {
+    background: linear-gradient(135deg, #0056b3, #004085) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 16px rgba(0, 123, 255, 0.4) !important;
+}
+
+#exam-alert-close:active {
+    transform: translateY(0) !important;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3) !important;
+}
+
+#exam-alert-close:focus {
+    outline: 3px solid rgba(0, 123, 255, 0.5) !important;
+    outline-offset: 2px !important;
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+/* Fade In Animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Fade Out Animation */
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+/* Slide In Animation */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-80px) scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Icon Pulse Animation */
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+}
+
+/* Border Glow Animation */
+@keyframes borderGlow {
+    0% {
+        opacity: 0.8;
+        filter: blur(1px);
+    }
+    100% {
+        opacity: 1;
+        filter: blur(2px);
+    }
+}
+
+/* Shake Animation für Urgent Alerts */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+
+/* Tablet Screens */
+@media (max-width: 768px) {
+    #exam-alert-box {
+        padding: 2rem 1.5rem !important;
+        margin: 1rem !important;
+        max-width: 90vw !important;
+    }
+
+    .exam-alert-icon {
+        font-size: 3rem !important;
+    }
+
+    .exam-alert-title {
+        font-size: 1.5rem !important;
+    }
+
+    .exam-alert-message {
+        font-size: 1.1rem !important;
+        padding: 0.8rem !important;
+    }
+
+    .exam-alert-time {
+        font-size: 1.1rem !important;
+        padding: 0.8rem !important;
+    }
+
+    #exam-alert-close {
+        padding: 0.8rem 2rem !important;
+        font-size: 1rem !important;
+    }
+}
+
+/* Mobile Screens */
+@media (max-width: 480px) {
+    #exam-alert-overlay {
+        padding: 0.5rem !important;
+    }
+
+    #exam-alert-box {
+        padding: 1.5rem 1rem !important;
+        border-radius: 12px !important;
+        max-width: 95vw !important;
+    }
+
+    .exam-alert-icon {
+        font-size: 2.5rem !important;
+        margin-bottom: 0.8rem !important;
+    }
+
+    .exam-alert-title {
+        font-size: 1.3rem !important;
+        margin-bottom: 1rem !important;
+    }
+
+    .exam-alert-message {
+        font-size: 1rem !important;
+        padding: 0.8rem !important;
+        margin-bottom: 1rem !important;
+    }
+
+    .exam-alert-time {
+        font-size: 1rem !important;
+        padding: 0.8rem !important;
+        margin-bottom: 1.5rem !important;
+    }
+
+    #exam-alert-close {
+        padding: 0.8rem 1.5rem !important;
+        font-size: 0.9rem !important;
+        width: 100% !important;
+    }
+}
+
+/* ============================================
+   ACCESSIBILITY IMPROVEMENTS
+   ============================================ */
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    #exam-alert-box {
+        border-width: 4px !important;
+        border-color: black !important;
+    }
+
+    .exam-alert-title {
+        color: black !important;
+    }
+
+    .exam-alert-message {
+        background: white !important;
+        border-color: black !important;
+        border-width: 2px !important;
+    }
+
+    #exam-alert-close {
+        background: black !important;
+        border: 2px solid white !important;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    #exam-alert-overlay {
+        animation: none !important;
+    }
+
+    #exam-alert-box {
+        animation: none !important;
+    }
+
+    #exam-alert-box::before {
+        animation: none !important;
+    }
+
+    .exam-alert-icon {
+        animation: none !important;
+    }
+
+    #exam-alert-close {
+        transition: none !important;
+    }
+
+    #exam-alert-close:hover {
+        transform: none !important;
+    }
+}
+
+/* Focus management */
+#exam-alert-close:focus-visible {
+    outline: 3px solid #ffc107 !important;
+    outline-offset: 3px !important;
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+@media print {
+    #exam-alert-overlay {
+        display: none !important;
+    }
+}
+
+/* ============================================
+   DARK MODE SUPPORT
+   ============================================ */
+@media (prefers-color-scheme: dark) {
+    #exam-alert-box {
+        background: #2d3748 !important;
+        color: #f7fafc !important;
+        border-color: #fbb360 !important;
+    }
+
+    .exam-alert-title {
+        color: #fbb360 !important;
+    }
+
+    .exam-alert-message {
+        background: #4a5568 !important;
+        color: #f7fafc !important;
+        border-color: #fbb360 !important;
+    }
+}

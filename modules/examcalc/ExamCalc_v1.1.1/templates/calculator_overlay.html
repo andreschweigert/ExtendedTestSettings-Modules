@@ -1,0 +1,128 @@
+<!-- Floating Calculator Button -->
+<button id="calculator-btn" title="Taschenrechner öffnen/schließen (Alt + R)" aria-label="Taschenrechner">
+    🧮
+</button>
+
+<!-- Calculator Window (leicht breiter via bestehender .with-history Regel) -->
+<div id="calculator" class="with-history" role="application" aria-label="Wissenschaftlicher Taschenrechner">
+
+    <!-- Panel Header -->
+    <div class="header">
+        <h3>Taschenrechner</h3>
+        <div class="header-buttons">
+            <button id="history-toggle" class="history-btn" type="button" aria-label="Verlauf anzeigen/verstecken" title="Verlauf">
+                📜
+            </button>
+            <button class="close-btn" type="button" aria-label="Taschenrechner schließen">×</button>
+        </div>
+    </div>
+
+    <!-- Calculator Content Container -->
+    <div class="calculator-content">
+        <!-- Main Calculator -->
+        <div class="calculator-main">
+            <!-- Display (readonly — Eingabe nur über Buttons) -->
+            <input
+                type="text"
+                id="calc-display"
+                readonly
+                placeholder="0"
+                aria-label="Rechenergebnis"
+                autocomplete="off"
+                spellcheck="false"
+            />
+            <!-- Status-Leiste: Badges mit fixer Höhe → kein Layout-Shift -->
+            <div class="display-badges">
+                <span id="angle-mode-display" class="angle-mode-indicator">DEG</span>
+                <span id="memory-indicator" class="memory-indicator" style="display: none;">M: 0</span>
+            </div>
+
+            <!-- Button Grid -->
+            <div class="buttons" role="grid">
+                <!-- ROW 0: Speicher-Buttons (NEU) -->
+                <button type="button" aria-label="Speicher hinzufügen" class="memory-btn" data-action="add" title="M+ (Zum Speicher hinzufügen)">M+</button>
+                <button type="button" aria-label="Speicher subtrahieren" class="memory-btn" data-action="subtract" title="M- (Vom Speicher abziehen)">M-</button>
+                <button type="button" aria-label="Speicher abrufen" class="memory-btn" data-action="recall" title="MR (Speicher abrufen)">MR</button>
+                <button type="button" aria-label="Speicher löschen" class="memory-btn" data-action="clear" title="MC (Speicher löschen)">MC</button>
+                <button type="button" aria-label="Verlaufsaddition" class="history-add-btn" id="history-add-btn" title="Rechnungen aus Verlauf addieren">Σ</button>
+
+                <!-- ROW 1: Mode Toggle Buttons -->
+                <button type="button" aria-label="Winkeleinheit umschalten" class="angle-toggle" id="angle-toggle" title="Grad/Radiant umschalten">DEG</button>
+                <button type="button" aria-label="Zweite Funktionen" class="shift-toggle" id="shift-toggle" title="Inverse Funktionen aktivieren">2nd</button>
+                <button type="button" aria-label="Öffnende Klammer" title="Öffnende Klammer">(</button>
+                <button type="button" aria-label="Schließende Klammer" title="Schließende Klammer">)</button>
+                <button type="button" aria-label="1 durch x" title="Kehrwert (1/x)">1/x</button>
+
+                <!-- ROW 2: Edit/Clear -->
+                <button type="button" aria-label="Alles löschen" title="Alles löschen (All Clear)">AC</button>
+                <button type="button" aria-label="Letztes Zeichen löschen" class="del-btn" title="Letztes Zeichen löschen">DEL</button>
+                <button type="button" aria-label="Eulersche Zahl" title="Eulersche Zahl e (≈2.718)">e</button>
+                <button type="button" aria-label="Pi" title="Kreiszahl π (≈3.1416)">π</button>
+                <button type="button" aria-label="Quadratwurzel" title="Quadratwurzel √x">√</button>
+
+                <!-- ROW 3: 7–9 -->
+                <button type="button" aria-label="Sieben">7</button>
+                <button type="button" aria-label="Acht">8</button>
+                <button type="button" aria-label="Neun">9</button>
+                <button type="button" aria-label="Division" title="Division (÷)">/ </button>
+                <button type="button" aria-label="x hoch 2" title="Quadrat (x²)">x²</button>
+
+                <!-- ROW 4: 4–6 -->
+                <button type="button" aria-label="Vier">4</button>
+                <button type="button" aria-label="Fünf">5</button>
+                <button type="button" aria-label="Sechs">6</button>
+                <button type="button" aria-label="Multiplikation" title="Multiplikation (×)">*</button>
+                <button type="button" aria-label="Potenz" title="Potenz (x^y)">^</button>
+
+                <!-- ROW 5: 1–3 -->
+                <button type="button" aria-label="Eins">1</button>
+                <button type="button" aria-label="Zwei">2</button>
+                <button type="button" aria-label="Drei">3</button>
+                <button type="button" aria-label="Subtraktion" title="Subtraktion (−)">-</button>
+                <button type="button" aria-label="Prozent" title="Prozent (%): teilt durch 100 (z.B. 50% = 0.5, nicht kontextabhängig)">%</button>
+
+                <!-- ROW 6: 0 . + -->
+                <button type="button" aria-label="Null">0</button>
+                <button type="button" aria-label="Dezimalkomma" title="Dezimalpunkt">.</button>
+                <button type="button" aria-label="Addition" title="Addition (+)">+</button>
+                <button type="button" aria-label="Fakultät" title="Fakultät (n!)">!</button>
+                <button type="button" aria-label="Bruchdarstellung umschalten" class="fraction-toggle" id="fraction-toggle" title="Bruchdarstellung umschalten">⅓</button>
+
+                <!-- ROW 7: Logarithmen + "=" startet hier und ist doppelt hoch -->
+                <button type="button" aria-label="Natürlicher Logarithmus" class="func-btn" id="ln-btn" title="Natürlicher Logarithmus (ln)">ln</button>
+                <button type="button" aria-label="Logarithmus" class="func-btn" id="log-btn" title="Logarithmus zur Basis 10 (log₁₀)">log</button>
+                <button type="button" aria-label="Exponentialfunktion" class="func-btn" id="exp-btn" title="Exponentialfunktion (e^x)">exp</button>
+                <button type="button" aria-label="10 hoch x" class="func-btn" id="pow10-btn" data-primary="10^x" data-secondary="EE" title="10 hoch x (10^x) / EE = Wissenschaftliche Notation (2nd)"><span class="primary-label">10^x</span><span class="secondary-label">EE</span></button>
+                <button type="button" aria-label="Gleich" class="equals" title="Berechnen (=)"
+                        style="grid-column: 5; grid-row: 8 / span 2;">=</button>
+
+                <!-- ROW 8: Trig-Funktionen (zeigen sin/cos/tan oder arcsin/arccos/arctan je nach 2nd) -->
+                <button type="button" aria-label="Sinus" class="trig-btn" id="sin-btn" data-primary="sin" data-secondary="asin" title="Sinus / Arcussinus (2nd)"><span class="primary-label">sin</span><span class="secondary-label">asin</span></button>
+                <button type="button" aria-label="Cosinus" class="trig-btn" id="cos-btn" data-primary="cos" data-secondary="acos" title="Cosinus / Arcuscosinus (2nd)"><span class="primary-label">cos</span><span class="secondary-label">acos</span></button>
+                <button type="button" aria-label="Tangens" class="trig-btn" id="tan-btn" data-primary="tan" data-secondary="atan" title="Tangens / Arcustangens (2nd)"><span class="primary-label">tan</span><span class="secondary-label">atan</span></button>
+                <button type="button" aria-label="Hyperbolische Funktionen" class="hyp-toggle" id="hyp-toggle"
+                        title="Hyperbolische Funktionen (noch nicht verfügbar)"
+                        disabled style="opacity: 0.4; cursor: not-allowed;">hyp</button>
+                <!-- Spalte 5 ist durch "=" belegt -->
+            </div>
+
+            <!-- Panel Info -->
+            <div class="calc-info" role="complementary">
+                Wissenschaftlicher Taschenrechner
+            </div>
+        </div>
+
+        <!-- History Panel (Hidden by default) -->
+        <div id="history-panel" class="history-panel hidden">
+            <div class="history-header">
+                <h4>Verlauf</h4>
+                <button id="clear-history" class="clear-history-btn" type="button" aria-label="Verlauf löschen" title="Verlauf löschen">
+                    🗑️
+                </button>
+            </div>
+            <div id="history-list" class="history-list">
+                <div class="history-empty">Noch keine Rechnungen</div>
+            </div>
+        </div>
+    </div>
+</div>
