@@ -1,0 +1,75 @@
+# ExamLogger
+
+Externes Modul für das ILIAS-Plugin **ExtendedTestSettings**.
+
+Protokolliert Test-Ereignisse **serverseitig** in einer eigenen Datenbanktabelle —
+ohne ILIAS-Kernanpassungen, ohne zusätzliches JavaScript beim Nutzer.
+
+Geloggte Ereignisse:
+- Test gestartet / fortgesetzt
+- Navigation (nächste Frage, vorherige Frage, Sprung zu Frage)
+- Test abgegeben (Bestätigungsseite aufgerufen)
+- Abgabe bestätigt (tatsächliche Einreichung)
+- Plugin-Einstellungen gespeichert
+- ILIAS-Einstellungsseite aufgerufen
+
+## Protokoll-Ansicht
+
+**Global (alle Tests):**  
+`Administration → Plugins → ExtendedTestSettings → Tab "Protokoll"`
+
+**Per Test:**  
+Test-Einstellungen → Erweiterte Test-Einstellungen → Abschnitt "Prüfungs-Protokoll"
+
+Beide Ansichten bieten Filter nach Ereignis-Typ und Datumsbereich sowie CSV-Export.
+
+## Datenbank
+
+Eigene Tabellen: `examlogger_events`, `examlogger_hosts`
+
+**`examlogger_events`** — zentrale Log-Tabelle:
+
+| Spalte | Bedeutung |
+|---|---|
+| `id` (PK) | Auto-Increment |
+| `test_obj_id` | ILIAS obj_id des Tests |
+| `test_ref_id` | ILIAS ref_id des Tests |
+| `user_id` | Nutzer-ID |
+| `event_type` | Ereignis-Typ (z.B. `test_start`, `navigate_next`) |
+| `question_id` | Frage-ID bei Navigation (sonst 0) |
+| `ip_addr` | Client-IP-Adresse |
+| `tstamp` | Unix-Timestamp |
+| `details` | Freitext (Antworten-Snapshot, Einstellungs-Snapshot) |
+
+**`examlogger_hosts`** — IP→Gerät-Übersetzungstabelle (CSV-Import):
+
+| Spalte | Bedeutung |
+|---|---|
+| `ip_addr` (PK) | IP-Adresse |
+| `hostname` | Hostname |
+| `ili_nr` | ILI-Nummer |
+| `koffer` | Koffer-Bezeichnung (z.B. K01) |
+| `geraet_nr` | Gerät-Nummer (z.B. 1/01) |
+| `import_note` | Freitext-Hinweis |
+
+## Einschränkung: POST+Redirect
+
+Ereignisse die ILIAS intern mit direktem Redirect verarbeitet (z.B. Formular-Speicherungen)
+können nicht über den UIHook erfasst werden. Zuverlässig sind: Seitenaufrufe im Testplayer
+und Navigation zwischen Fragen.
+
+## Versionen
+
+| Version | Datei | ILIAS | Änderungen |
+|---|---|---|---|
+| 1.1.0 | `ExamLogger_v1.1.0.zip` | 9 | Frage-ID + Fragenname in Protokoll/CSV; Geräteverwaltung (examlogger_hosts); `test_submit` / `test_submit_confirmed` differenziert (GET vs. POST) |
+| 1.0.0 | `archive/ExamLogger_v1.0.0.zip` | 9 | Erstveröffentlichung |
+
+## Installation
+
+Siehe [`/docs/how-to.md`](../../docs/how-to.md).
+
+## Entwickler-Dokumentation
+
+Vollständige Doku (Dateistruktur, DB-Schema, Event-Typen, onRequest()-Pattern):
+→ [`/docs/modules/ExamLogger.md`](../../docs/modules/ExamLogger.md)

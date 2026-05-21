@@ -31,6 +31,7 @@ Jeder Branch entspricht einer ILIAS-Hauptversion:
 | [examsymbols](modules/examsymbols/) | Sonderzeichen-Palette für Prüfungen (Mathe, Chemie, Physik, Sprachen), Shortcut Alt + S |
 | [examgrouping](modules/examgrouping/) | Fragen zu Gruppen zusammenfassen, Ergebnisse je Gruppe auswerten, CSV-Export |
 | [examresourcesheet](modules/examresourcesheet/) | Hilfsmittelblatt (PDF/HTML) als seitliches Panel im Test-Player, Text markierbar, Push-Modus |
+| [examlogger](modules/examlogger/) | Serverseitiges Audit-Logging: Start, Navigation, Abgabe, Gerätezuordnung via IP, CSV-Export |
 
 ---
 

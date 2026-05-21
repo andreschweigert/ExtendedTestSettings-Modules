@@ -1,0 +1,570 @@
+<?php
+
+class ilExamLoggerViewGUI
+{
+    private const TABLE       = 'examlogger_events';
+    private const HOSTS_TABLE = 'examlogger_hosts';
+
+    private string $form_cmd   = 'showLog';
+    private string $export_cmd = 'exportCsv';
+    private string $device_cmd = 'showDevices';
+    private string $import_cmd = 'importDevices';
+    private int    $default_ref = 0;
+
+    public function setFormCmd(string $cmd): void   { $this->form_cmd   = $cmd; }
+    public function setExportCmd(string $cmd): void { $this->export_cmd = $cmd; }
+    public function setDeviceCmd(string $cmd): void { $this->device_cmd = $cmd; }
+    public function setImportCmd(string $cmd): void { $this->import_cmd = $cmd; }
+    public function setDefaultFilterRef(int $ref_id): void { $this->default_ref = $ref_id; }
+
+    private const EVENT_LABELS = [
+        'test_start'            => 'Test gestartet',
+        'test_submit'           => 'Test abgegeben',
+        'test_submit_confirmed' => 'Abgabe bestätigt',
+        'navigate_next'         => 'Navigation: Nächste Frage',
+        'navigate_prev'         => 'Navigation: Vorherige Frage',
+        'navigate_jump'         => 'Navigation: Sprung zu Frage',
+        'plugin_settings_saved' => 'Plugin-Einstellungen gespeichert',
+        'test_settings_saved'   => 'Test-Einstellungen gespeichert',
+        'test_settings_viewed'  => 'Test-Einstellungsseite aufgerufen',
+    ];
+
+    public function executeCommand(): void
+    {
+        $cmd = (string)($_REQUEST['cmd'] ?? 'showLog');
+        if ($cmd === $this->export_cmd || $cmd === 'exportCsv') {
+            $this->exportCsv();
+        } else {
+            $this->showLog();
+        }
+    }
+
+    // ─── LOG VIEW ────────────────────────────────────────────────────────────
+
+    private function showLog(): void
+    {
+        global $DIC;
+
+        $filter_event  = $this->sanitizeEventType((string)($_GET['filter_event']  ?? ''));
+        $filter_ref    = (int)($_GET['filter_ref_id'] ?? $this->default_ref);
+        $filter_from   = $this->sanitizeDate((string)($_GET['filter_from']   ?? ''));
+        $filter_to     = $this->sanitizeDate((string)($_GET['filter_to']     ?? ''));
+        $filter_user   = $this->sanitizeUserFilter((string)($_GET['filter_user']   ?? ''));
+        $filter_koffer = $this->sanitizeKoffer((string)($_GET['filter_koffer'] ?? ''));
+
+        [$rows, $eventTypes, $kofferList] = $this->fetchRows(
+            $filter_event, $filter_ref, $filter_from, $filter_to, $filter_user, $filter_koffer, 1000
+        );
+
+        $DIC['tpl']->setContent(
+            $this->renderView($rows, $eventTypes, $kofferList, $filter_event, $filter_ref, $filter_from, $filter_to, $filter_user, $filter_koffer)
+        );
+    }
+
+    private function fetchRows(
+        string $filter_event, int $filter_ref, string $filter_from, string $filter_to,
+        string $filter_user, string $filter_koffer, int $limit
+    ): array {
+        global $DIC;
+        $db = $DIC->database();
+
+        $where  = [];
+        $types  = [];
+        $values = [];
+
+        if ($filter_event !== '') {
+            $where[] = 'e.event_type = %s'; $types[] = 'text'; $values[] = $filter_event;
+        }
+        if ($filter_ref > 0) {
+            $where[] = 'e.test_ref_id = %s'; $types[] = 'integer'; $values[] = $filter_ref;
+        }
+        if ($filter_from !== '') {
+            $where[] = 'e.tstamp >= %s'; $types[] = 'integer'; $values[] = strtotime($filter_from . ' 00:00:00');
+        }
+        if ($filter_to !== '') {
+            $where[] = 'e.tstamp <= %s'; $types[] = 'integer'; $values[] = strtotime($filter_to . ' 23:59:59');
+        }
+        if ($filter_user !== '') {
+            $pattern = '%' . $filter_user . '%';
+            $where[] = '(u.login LIKE %s OR u.firstname LIKE %s OR u.lastname LIKE %s)';
+            $types[] = 'text'; $types[] = 'text'; $types[] = 'text';
+            $values[] = $pattern; $values[] = $pattern; $values[] = $pattern;
+        }
+        if ($filter_koffer !== '') {
+            $where[] = 'h.koffer = %s'; $types[] = 'text'; $values[] = $filter_koffer;
+        }
+
+        $whereStr = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+
+        $sql = "SELECT e.id, e.test_ref_id, e.test_obj_id, e.user_id, e.event_type,
+                       e.question_id, e.ip_addr, e.tstamp, e.details,
+                       u.login, o.title AS test_title,
+                       h.ili_nr, h.koffer, h.geraet_nr,
+                       q.title AS question_title
+                FROM " . self::TABLE . " e
+                LEFT JOIN usr_data u ON u.usr_id = e.user_id
+                LEFT JOIN object_data o ON o.obj_id = e.test_obj_id
+                LEFT JOIN " . self::HOSTS_TABLE . " h ON h.ip_addr = e.ip_addr
+                LEFT JOIN qpl_questions q ON q.question_id = e.question_id
+                $whereStr
+                ORDER BY e.tstamp DESC
+                LIMIT $limit";
+
+        $rows = [];
+        $result = $types ? $db->queryF($sql, $types, $values) : $db->query($sql);
+        while ($row = $db->fetchAssoc($result)) {
+            $rows[] = $row;
+        }
+
+        $typeResult = $db->query('SELECT DISTINCT event_type FROM ' . self::TABLE . ' ORDER BY event_type');
+        $eventTypes = [];
+        while ($r = $db->fetchAssoc($typeResult)) {
+            $eventTypes[] = $r['event_type'];
+        }
+
+        $kofferList = [];
+        if ($db->tableExists(self::HOSTS_TABLE)) {
+            $kofferResult = $db->query("SELECT DISTINCT koffer FROM " . self::HOSTS_TABLE . " WHERE koffer != '' ORDER BY koffer");
+            while ($r = $db->fetchAssoc($kofferResult)) {
+                $kofferList[] = $r['koffer'];
+            }
+        }
+
+        return [$rows, $eventTypes, $kofferList];
+    }
+
+    private function renderView(
+        array $rows, array $eventTypes, array $kofferList,
+        string $filter_event, int $filter_ref, string $filter_from, string $filter_to,
+        string $filter_user, string $filter_koffer
+    ): string {
+        $base     = $this->buildBaseUrl();
+        $exportQs = http_build_query(array_filter([
+            'filter_event'  => $filter_event,
+            'filter_ref_id' => $filter_ref > 0 ? $filter_ref : '',
+            'filter_from'   => $filter_from,
+            'filter_to'     => $filter_to,
+            'filter_user'   => $filter_user,
+            'filter_koffer' => $filter_koffer,
+            'cmd'           => $this->export_cmd,
+        ]));
+
+        $html  = $this->renderFilterForm($eventTypes, $kofferList, $filter_event, $filter_ref, $filter_from, $filter_to, $filter_user, $filter_koffer);
+
+        $html .= '<p style="margin:10px 0 15px;">';
+        $html .= '<a href="' . htmlspecialchars($base . '&' . $exportQs) . '" class="btn btn-default btn-sm">Als CSV exportieren</a>';
+        $html .= '&nbsp;&nbsp;<strong>' . count($rows) . '</strong> Einträge';
+        if (count($rows) >= 1000) {
+            $html .= ' <span class="text-muted">(Limit: 1000 — Filter verwenden)</span>';
+        }
+        $html .= '</p>';
+
+        if (empty($rows)) {
+            $html .= '<div class="alert alert-info">Keine Einträge für den gewählten Filter.</div>';
+            return $html;
+        }
+
+        $html .= '<table class="table table-striped table-condensed" style="font-size:13px;">';
+        $html .= '<thead><tr>'
+               . '<th>Datum / Zeit</th>'
+               . '<th>Nutzer</th>'
+               . '<th>Test</th>'
+               . '<th>Ereignis</th>'
+               . '<th>Details</th>'
+               . '<th>Frage</th>'
+               . '<th>Gerät</th>'
+               . '</tr></thead><tbody>';
+
+        foreach ($rows as $row) {
+            $label    = self::EVENT_LABELS[$row['event_type']] ?? htmlspecialchars($row['event_type']);
+            $details  = $row['details'] ?? '';
+            $koffer   = $row['koffer']    ?? '';
+            $geraetNr = $row['geraet_nr'] ?? '';
+            $iliNr    = $row['ili_nr']    ?? '';
+            $ipAddr   = $row['ip_addr']   ?? '';
+
+            if ($koffer !== '' && $geraetNr !== '') {
+                $tooltip    = htmlspecialchars(trim("$iliNr  $ipAddr"));
+                $deviceCell = '<td title="' . $tooltip . '">'
+                            . htmlspecialchars($koffer) . ' &middot; ' . htmlspecialchars($geraetNr)
+                            . '</td>';
+            } elseif ($iliNr !== '') {
+                $deviceCell = '<td title="' . htmlspecialchars($ipAddr) . '">' . htmlspecialchars($iliNr) . '</td>';
+            } else {
+                $deviceCell = '<td style="font-size:12px;color:#999;">' . htmlspecialchars($ipAddr) . '</td>';
+            }
+
+            $html .= '<tr>'
+                   . '<td>' . date('d.m.Y H:i:s', (int)$row['tstamp']) . '</td>'
+                   . '<td>' . htmlspecialchars($row['login'] ?? 'ID ' . $row['user_id']) . '</td>'
+                   . '<td>' . htmlspecialchars($row['test_title'] ?? 'ref_id ' . $row['test_ref_id']) . '</td>'
+                   . '<td>' . $this->renderEventBadge($row['event_type'], $label) . '</td>'
+                   . '<td style="font-size:12px;color:#555;">' . htmlspecialchars($details) . '</td>'
+                   . '<td>' . $this->renderQuestionCell((int)$row['question_id'], $row['question_title'] ?? '') . '</td>'
+                   . $deviceCell
+                   . '</tr>';
+        }
+
+        $html .= '</tbody></table>';
+        return $html;
+    }
+
+    private function renderFilterForm(
+        array $eventTypes, array $kofferList,
+        string $filter_event, int $filter_ref, string $filter_from, string $filter_to,
+        string $filter_user, string $filter_koffer
+    ): string {
+        $action    = $this->buildBaseUrl();
+        $hasFilter = $filter_event !== '' || $filter_from !== '' || $filter_to !== ''
+                  || $filter_user !== '' || $filter_koffer !== '';
+
+        $html  = '<form method="get" action="' . htmlspecialchars($action) . '" class="form-inline"'
+               . ' style="margin-bottom:10px;padding:12px;background:#f5f5f5;border-radius:4px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">';
+        $html .= '<input type="hidden" name="cmd" value="' . htmlspecialchars($this->form_cmd) . '">';
+
+        foreach (['baseClass', 'cmdClass', 'cmdNode', 'module_id', 'ref_id'] as $key) {
+            if (isset($_GET[$key])) {
+                $html .= '<input type="hidden" name="' . htmlspecialchars($key) . '" value="' . htmlspecialchars($_GET[$key]) . '">';
+            }
+        }
+        if ($filter_ref > 0) {
+            $html .= '<input type="hidden" name="filter_ref_id" value="' . (int)$filter_ref . '">';
+        }
+
+        // Ereignis
+        $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">Ereignis:</label>';
+        $html .= '<select name="filter_event" class="form-control input-sm" style="margin-right:8px;">';
+        $html .= '<option value="">— Alle —</option>';
+        foreach ($eventTypes as $type) {
+            $label    = self::EVENT_LABELS[$type] ?? $type;
+            $selected = ($filter_event === $type) ? ' selected' : '';
+            $html .= '<option value="' . htmlspecialchars($type) . '"' . $selected . '>'
+                   . htmlspecialchars($label) . '</option>';
+        }
+        $html .= '</select>';
+
+        // Nutzer
+        $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">Nutzer:</label>';
+        $html .= '<input type="text" name="filter_user" class="form-control input-sm"'
+               . ' value="' . htmlspecialchars($filter_user) . '" placeholder="Login / Name"'
+               . ' style="width:140px;margin-right:8px;">';
+
+        // Koffer (nur wenn Geräte importiert)
+        if (!empty($kofferList)) {
+            $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">Koffer:</label>';
+            $html .= '<select name="filter_koffer" class="form-control input-sm" style="margin-right:8px;">';
+            $html .= '<option value="">— Alle —</option>';
+            foreach ($kofferList as $k) {
+                $selected = ($filter_koffer === $k) ? ' selected' : '';
+                $html .= '<option value="' . htmlspecialchars($k) . '"' . $selected . '>'
+                       . htmlspecialchars($k) . '</option>';
+            }
+            $html .= '</select>';
+        }
+
+        // Datum Von/Bis
+        $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">Von:</label>';
+        $html .= '<input type="date" name="filter_from" class="form-control input-sm" value="' . htmlspecialchars($filter_from) . '" style="margin-right:8px;">';
+        $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">Bis:</label>';
+        $html .= '<input type="date" name="filter_to" class="form-control input-sm" value="' . htmlspecialchars($filter_to) . '" style="margin-right:8px;">';
+
+        $html .= '<button type="submit" class="btn btn-default btn-sm">Filtern</button>';
+        if ($hasFilter) {
+            $resetUrl = $this->buildBaseUrl() . '&cmd=' . urlencode($this->form_cmd);
+            $html .= '&nbsp;<a href="' . htmlspecialchars($resetUrl) . '" class="btn btn-link btn-sm">Zurücksetzen</a>';
+        }
+
+        $html .= '</form>';
+        return $html;
+    }
+
+    // ─── DEVICE MANAGEMENT ───────────────────────────────────────────────────
+
+    public function renderDevicesView(): string
+    {
+        global $DIC;
+        $db = $DIC->database();
+
+        $base      = $this->buildBaseUrl();
+        $importUrl = $base . '&cmd=' . urlencode($this->import_cmd);
+
+        $html  = '<div style="padding:15px;background:#f9f9f9;border:1px solid #ddd;border-radius:4px;margin-bottom:20px;">';
+        $html .= '<h4 style="margin-top:0;">CSV importieren</h4>';
+        $html .= '<p style="color:#666;font-size:13px;margin-bottom:10px;">';
+        $html .= 'Format: <code>ip_addr;hostname;ili_nr;koffer;geraet_nr;import_note</code>';
+        $html .= ' &nbsp;(Semikolon-getrennt, UTF-8 mit oder ohne BOM)';
+        $html .= '</p>';
+        $html .= '<form method="post" action="' . htmlspecialchars($importUrl) . '" enctype="multipart/form-data">';
+        foreach (['baseClass', 'cmdClass', 'cmdNode', 'module_id', 'ref_id'] as $key) {
+            if (isset($_GET[$key])) {
+                $html .= '<input type="hidden" name="' . htmlspecialchars($key) . '" value="' . htmlspecialchars($_GET[$key]) . '">';
+            }
+        }
+        $html .= '<input type="hidden" name="cmd" value="' . htmlspecialchars($this->import_cmd) . '">';
+        $html .= '<div style="display:flex;align-items:center;gap:12px;">';
+        $html .= '<input type="file" name="geraete_csv" accept=".csv" class="form-control" style="max-width:420px;">';
+        $html .= '<button type="submit" class="btn btn-primary btn-sm">Importieren</button>';
+        $html .= '</div>';
+        $html .= '</form>';
+        $html .= '</div>';
+
+        if (!$db->tableExists(self::HOSTS_TABLE)) {
+            $html .= '<div class="alert alert-warning">Tabelle <code>examlogger_hosts</code> fehlt — Plugin bitte neu installieren.</div>';
+            return $html;
+        }
+
+        $result  = $db->query('SELECT ip_addr, hostname, ili_nr, koffer, geraet_nr, import_note FROM ' . self::HOSTS_TABLE . ' ORDER BY koffer, geraet_nr');
+        $devices = [];
+        while ($row = $db->fetchAssoc($result)) {
+            $devices[] = $row;
+        }
+
+        $html .= '<p><strong>' . count($devices) . '</strong> Geräte gespeichert</p>';
+
+        if (empty($devices)) {
+            $html .= '<div class="alert alert-info">Noch keine Geräte importiert. CSV oben hochladen.</div>';
+            return $html;
+        }
+
+        $html .= '<table class="table table-striped table-condensed" style="font-size:13px;">';
+        $html .= '<thead><tr><th>Koffer</th><th>Gerät-Nr</th><th>ILI-Nr</th><th>IP-Adresse</th><th>Hostname</th><th>Hinweis</th></tr></thead><tbody>';
+        foreach ($devices as $dev) {
+            $noteStyle = $dev['import_note'] !== '' ? 'color:#bbb;font-size:12px;' : '';
+            $html .= '<tr>'
+                   . '<td><strong>' . htmlspecialchars($dev['koffer']) . '</strong></td>'
+                   . '<td>' . htmlspecialchars($dev['geraet_nr']) . '</td>'
+                   . '<td>' . htmlspecialchars($dev['ili_nr']) . '</td>'
+                   . '<td style="font-size:12px;color:#666;">' . htmlspecialchars($dev['ip_addr']) . '</td>'
+                   . '<td style="font-size:12px;color:#888;">' . htmlspecialchars($dev['hostname']) . '</td>'
+                   . '<td style="' . $noteStyle . '">' . htmlspecialchars($dev['import_note']) . '</td>'
+                   . '</tr>';
+        }
+        $html .= '</tbody></table>';
+        return $html;
+    }
+
+    public function handleCsvImport(): array
+    {
+        global $DIC;
+        $db = $DIC->database();
+
+        $errorCode = (int)($_FILES['geraete_csv']['error'] ?? -1);
+        if (empty($_FILES['geraete_csv']['tmp_name']) || $errorCode !== UPLOAD_ERR_OK) {
+            return ['Keine Datei hochgeladen oder Fehler beim Upload (Code: ' . $errorCode . ').', 'failure'];
+        }
+
+        $content = file_get_contents($_FILES['geraete_csv']['tmp_name']);
+        if ($content === false || $content === '') {
+            return ['Datei ist leer oder konnte nicht gelesen werden.', 'failure'];
+        }
+        // UTF-8 BOM entfernen
+        if (substr($content, 0, 3) === "\xEF\xBB\xBF") {
+            $content = substr($content, 3);
+        }
+
+        $lines = preg_split('/\r?\n/', trim($content));
+        if (empty($lines)) {
+            return ['Leere Datei.', 'failure'];
+        }
+
+        $header   = str_getcsv(array_shift($lines), ';');
+        $expected = ['ip_addr', 'hostname', 'ili_nr', 'koffer', 'geraet_nr', 'import_note'];
+        if (array_map('trim', array_slice($header, 0, 6)) !== $expected) {
+            return ['Ungültiges Format. Erwartete Kopfzeile: ' . implode(';', $expected), 'failure'];
+        }
+
+        $count   = 0;
+        $skipped = 0;
+
+        if (!$db->tableExists(self::HOSTS_TABLE)) {
+            return ['Tabelle examlogger_hosts existiert nicht. Plugin bitte neu installieren.', 'failure'];
+        }
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if ($line === '') continue;
+
+            $cols     = str_getcsv($line, ';');
+            $ip       = trim($cols[0] ?? '');
+            $hostname = trim($cols[1] ?? '');
+            $ili_nr   = trim($cols[2] ?? '');
+            $koffer   = trim($cols[3] ?? '');
+            $geraet   = trim($cols[4] ?? '');
+            $note     = trim($cols[5] ?? '');
+
+            if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+                $skipped++;
+                continue;
+            }
+
+            $db->replace(self::HOSTS_TABLE,
+                ['ip_addr' => ['text', $ip]],
+                [
+                    'hostname'    => ['text', $hostname],
+                    'ili_nr'      => ['text', $ili_nr],
+                    'koffer'      => ['text', $koffer],
+                    'geraet_nr'   => ['text', $geraet],
+                    'import_note' => ['text', $note],
+                ]
+            );
+            $count++;
+        }
+
+        $msg = "$count Geräte erfolgreich importiert/aktualisiert.";
+        if ($skipped > 0) {
+            $msg .= " $skipped Zeile(n) übersprungen (ungültige IP-Adresse).";
+        }
+        return [$msg, 'success'];
+    }
+
+    // ─── CSV EXPORT ──────────────────────────────────────────────────────────
+
+    private function exportCsv(): void
+    {
+        global $DIC;
+        $db = $DIC->database();
+
+        $filter_event  = $this->sanitizeEventType((string)($_GET['filter_event']  ?? ''));
+        $filter_ref    = (int)($_GET['filter_ref_id'] ?? $this->default_ref);
+        $filter_from   = $this->sanitizeDate((string)($_GET['filter_from']   ?? ''));
+        $filter_to     = $this->sanitizeDate((string)($_GET['filter_to']     ?? ''));
+        $filter_user   = $this->sanitizeUserFilter((string)($_GET['filter_user']   ?? ''));
+        $filter_koffer = $this->sanitizeKoffer((string)($_GET['filter_koffer'] ?? ''));
+
+        $where  = [];
+        $types  = [];
+        $values = [];
+
+        if ($filter_event !== '') {
+            $where[] = 'e.event_type = %s'; $types[] = 'text'; $values[] = $filter_event;
+        }
+        if ($filter_ref > 0) {
+            $where[] = 'e.test_ref_id = %s'; $types[] = 'integer'; $values[] = $filter_ref;
+        }
+        if ($filter_from !== '') {
+            $where[] = 'e.tstamp >= %s'; $types[] = 'integer'; $values[] = strtotime($filter_from . ' 00:00:00');
+        }
+        if ($filter_to !== '') {
+            $where[] = 'e.tstamp <= %s'; $types[] = 'integer'; $values[] = strtotime($filter_to . ' 23:59:59');
+        }
+        if ($filter_user !== '') {
+            $pattern = '%' . $filter_user . '%';
+            $where[] = '(u.login LIKE %s OR u.firstname LIKE %s OR u.lastname LIKE %s)';
+            $types[] = 'text'; $types[] = 'text'; $types[] = 'text';
+            $values[] = $pattern; $values[] = $pattern; $values[] = $pattern;
+        }
+        if ($filter_koffer !== '') {
+            $where[] = 'h.koffer = %s'; $types[] = 'text'; $values[] = $filter_koffer;
+        }
+
+        $whereStr = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+
+        $sql = "SELECT e.id, e.test_ref_id, e.user_id, e.event_type, e.question_id, e.ip_addr, e.tstamp, e.details,
+                       u.login, u.firstname, u.lastname, o.title AS test_title,
+                       h.ili_nr, h.koffer, h.geraet_nr,
+                       q.title AS question_title
+                FROM " . self::TABLE . " e
+                LEFT JOIN usr_data u ON u.usr_id = e.user_id
+                LEFT JOIN object_data o ON o.obj_id = e.test_obj_id
+                LEFT JOIN " . self::HOSTS_TABLE . " h ON h.ip_addr = e.ip_addr
+                LEFT JOIN qpl_questions q ON q.question_id = e.question_id
+                $whereStr
+                ORDER BY e.tstamp DESC";
+
+        $result = $types ? $db->queryF($sql, $types, $values) : $db->query($sql);
+
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="examlog_' . date('Ymd_His') . '.csv"');
+        header('Pragma: no-cache');
+
+        $out = fopen('php://output', 'w');
+        fprintf($out, chr(0xEF) . chr(0xBB) . chr(0xBF));
+        fputcsv($out, ['Datum', 'Uhrzeit', 'Login', 'Vorname', 'Nachname', 'Test', 'Ref-ID', 'Ereignis', 'Details', 'Frage-ID', 'Fragenname', 'Koffer', 'Gerät-Nr', 'ILI-Nr', 'IP-Adresse'], ';');
+
+        while ($row = $db->fetchAssoc($result)) {
+            fputcsv($out, [
+                date('d.m.Y', (int)$row['tstamp']),
+                date('H:i:s', (int)$row['tstamp']),
+                $row['login']      ?? '',
+                $row['firstname']  ?? '',
+                $row['lastname']   ?? '',
+                $row['test_title'] ?? '',
+                $row['test_ref_id'],
+                self::EVENT_LABELS[$row['event_type']] ?? $row['event_type'],
+                $row['details']    ?? '',
+                $row['question_id'] > 0 ? $row['question_id'] : '',
+                $row['question_title'] ?? '',
+                $row['koffer']     ?? '',
+                $row['geraet_nr']  ?? '',
+                $row['ili_nr']     ?? '',
+                $row['ip_addr']    ?? '',
+            ], ';');
+        }
+
+        fclose($out);
+        exit;
+    }
+
+    // ─── HELPERS ─────────────────────────────────────────────────────────────
+
+    private function renderQuestionCell(int $question_id, string $question_title): string
+    {
+        if ($question_id <= 0) {
+            return '—';
+        }
+        $id = $question_id;
+        if ($question_title !== '') {
+            return $id . ' &middot; <span style="color:#555;">' . htmlspecialchars($question_title) . '</span>';
+        }
+        return (string)$id;
+    }
+
+    private function renderEventBadge(string $event_type, string $label): string
+    {
+        $colorMap = [
+            'test_start'            => 'success',
+            'test_submit'           => 'primary',
+            'test_submit_confirmed' => 'danger',
+            'navigate_next'         => 'default',
+            'navigate_prev'         => 'default',
+            'navigate_jump'         => 'default',
+            'plugin_settings_saved' => 'warning',
+            'test_settings_saved'   => 'warning',
+            'test_settings_viewed'  => 'info',
+        ];
+        $cls = $colorMap[$event_type] ?? 'default';
+        return '<span class="label label-' . $cls . '">' . $label . '</span>';
+    }
+
+    private function buildBaseUrl(): string
+    {
+        $params = [];
+        foreach (['baseClass', 'cmdClass', 'cmdNode', 'module_id', 'ref_id'] as $key) {
+            if (isset($_GET[$key])) {
+                $params[$key] = $_GET[$key];
+            }
+        }
+        return 'ilias.php?' . http_build_query($params);
+    }
+
+    private function sanitizeEventType(string $value): string
+    {
+        return preg_match('/^[a-z_]{1,64}$/', $value) ? $value : '';
+    }
+
+    private function sanitizeDate(string $value): string
+    {
+        return preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) ? $value : '';
+    }
+
+    private function sanitizeUserFilter(string $value): string
+    {
+        $value = trim($value);
+        return (strlen($value) > 0 && strlen($value) <= 100) ? $value : '';
+    }
+
+    private function sanitizeKoffer(string $value): string
+    {
+        return preg_match('/^K\d{1,4}$/', $value) ? $value : '';
+    }
+}
