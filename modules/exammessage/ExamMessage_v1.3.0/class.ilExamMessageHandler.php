@@ -86,6 +86,8 @@ class ilExamMessageHandler implements ilExamModuleInterface
         try {
             $test_id = ilObject::_lookupObjectId($ref_id);
 
+            $force_send = !empty($post_data['exammessage_send_now']);
+
             $new_text = strip_tags(trim($post_data['exammessage_text'] ?? ''), self::ALLOWED_TAGS);
             if (mb_strlen($new_text) > 2000) {
                 $new_text = mb_substr($new_text, 0, 2000);
@@ -120,7 +122,7 @@ class ilExamMessageHandler implements ilExamModuleInterface
             $cur_dur  = $current ? (int) $current['duration'] : 60;
             $cur_type = $current ? (int) $current['type'] : 0;
 
-            if ($new_text !== $cur_text) {
+            if ($force_send || $new_text !== $cur_text) {
                 $sent_at = time();
                 $sent_by = $DIC->user()->getLogin();
 
@@ -201,6 +203,15 @@ class ilExamMessageHandler implements ilExamModuleInterface
         $dur_sel->setOptions($dur_opts);
         $dur_sel->setValue((string) ($cfg ? $cfg['duration'] : 60));
         $items[] = $dur_sel;
+
+        $send_btn = new ilCustomInputGUI('', '');
+        $send_btn->setHtml(
+            '<button type="submit" name="exammessage_send_now" value="1" class="btn btn-default btn-sm">'
+            . '&#x1F4E4;&nbsp;Nachricht jetzt senden</button>'
+            . '<span style="margin-left:10px;font-size:0.85em;color:#6c757d;">'
+            . 'Speichert und sendet sofort — auch wenn sich der Text nicht ge&auml;ndert hat.</span>'
+        );
+        $items[] = $send_btn;
 
         $log_html = $this->buildLogHtml($test_id);
         if ($log_html !== '') {
