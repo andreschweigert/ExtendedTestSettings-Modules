@@ -2,8 +2,8 @@
 
 **Modul-ID:** `examconnguard`  
 **Speicherort:** `modules/examconnguard/` (externes Modul, nicht im Git-Repo)  
-**Referenz-ZIP:** `modules-zip/modules/examconnguard/ExamConnGuard_v1.0.5.zip`  
-**Zuletzt aktualisiert:** 2026-05-11
+**Referenz-ZIP:** `modules-zip/modules/examconnguard/ExamConnGuard_v1.0.6.zip`  
+**Zuletzt aktualisiert:** 2026-05-12
 
 ---
 
@@ -66,9 +66,9 @@ modules/examconnguard/
     "id": "examconnguard",
     "label": "Verbindungs-Schutz",
     "description": "Fängt WLAN-Aussetzer im Test-Player ab. Pre-Flight-Probe bei jedem Submit/Klick verhindert Browser-Fehlerseiten. Bei Outage: Wartebild, queued Action, Auto-Replay nach Reconnect. Wrappt fetch() für Autosave-Retry.",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "ilias_min": "9",
-    "ilias_max": "12",
+    "ilias_max": "9",
     "handler_class": "ilExamConnGuardHandler",
     "handler_file": "class.ilExamConnGuardHandler.php",
     "require_files": [],
@@ -241,6 +241,7 @@ Gleiches Vorgehen wie Erstinstallation — `sql/install.php` läuft erneut
 
 | Datum | Was |
 |---|---|
+| 2026-05-12 | **v1.0.6:** ILIAS-Kompatibilität auf 9 beschränkt |
 | 2026-05-11 | v1.0.5: `window.offline`-Listener entfernt. Overlay erscheint jetzt ausschließlich beim Submit/Klick-Versuch (strikt reaktiv). `navigator.onLine === false`-Shortcut in `dispatchAction` für sofortigen Outage ohne Probe-Latenz. |
 | 2026-05-11 | v1.0.4: Root-Cause-Fix für spurious exit-outage: `cfg()` liest live aus `window.ExamConnGuard.config` (kein Caching beim IIFE-Init). Probe-Default bei leerer URL ist jetzt `resolve(false)`. Overlay-Watchdog alle 500 ms. Live-Debug via `config.debug` zur Laufzeit. |
 | 2026-05-11 | v1.0.3: Probe gehärtet: `navigator.onLine`-Veto + GET mit Body-Check statt HEAD. |

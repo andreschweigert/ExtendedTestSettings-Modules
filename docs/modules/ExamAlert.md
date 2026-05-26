@@ -2,8 +2,8 @@
 
 **Modul-ID:** `examalert`  
 **Speicherort:** `modules/examalert/` (externes Modul, nicht im Git-Repo)  
-**Referenz-ZIP:** `modules-zip/modules/examalert/ExamAlert_v1.1.0.zip`  
-**Zuletzt aktualisiert:** 2026-04-10
+**Referenz-ZIP:** `modules-zip/modules/examalert/ExamAlert_v1.1.1.zip`  
+**Zuletzt aktualisiert:** 2026-05-12
 
 ---
 
@@ -55,9 +55,9 @@ modules/examalert/
     "id": "examalert",
     "label": "Zeit-Warnung",
     "description": "Zeigt eine Warnung an wenn die Prüfungszeit fast abgelaufen ist.",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "ilias_min": "9",
-    "ilias_max": "12",
+    "ilias_max": "9",
     "handler_class": "ilExamAlertHandler",
     "handler_file": "class.ilExamAlertHandler.php",
     "require_files": [],
@@ -180,13 +180,8 @@ Schließen sichtbar. Die Warnung wird pro Sitzung nur einmal gezeigt.
 ## Standardnachricht (DEFAULT_MESSAGE)
 
 ```
-<strong><u>Achtung:</u></strong> Ihr Test endet bald! Klicken Sie auf „Speichern und
-Test beenden", <strong>bevor</strong> die Zeit abläuft. Sonst kann nicht gewährleistet
-werden, dass die letzte Eingabe gespeichert und bewertet wird.
-
-<strong><u>Attention:</u></strong> Your test will end soon! Click on "Save Answers and
-Finish the Test" <strong>before</strong> the time runs out. Otherwise, we cannot
-guarantee that your last entry will be saved and evaluated.
+Ihr Test endet in 30 Sekunden! Klicken Sie <strong>vor Ablauf der Zeit</strong> auf <strong>„Speichern und Test beenden"</strong> , um Ihre Abgabe zu autorisieren und abzugeben.
+Your test will end in 30 seconds! Click on <strong>"Save Answers and Finish the Test"</strong> to authorise and submit your test <strong>before the time runs out.</strong>
 ```
 
 Zweisprachig (DE/EN). Wird als Fallback in `saveSettings()` verwendet wenn die
@@ -216,6 +211,7 @@ Gleiches Vorgehen wie Erstinstallation — `sql/install.php` läuft erneut
 
 | Datum | Was |
 |---|---|
+| 2026-05-12 | **v1.1.1:** ILIAS-Kompatibilität auf 9 beschränkt; Standardnachricht überarbeitet |
 | 2026-04-10 | Initiale Version: konfig. Warnzeit, zweisprachige Standardnachricht, Popup mit Countdown |
 | 2026-04-10 | Auto-Aktivierungs-Logik: neuer Test erhält automatisch Default-Eintrag |
 | 2026-04-10 | In modulares System migriert (`modules/examalert/`), `module.json` hinzugefügt |

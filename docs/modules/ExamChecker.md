@@ -2,8 +2,8 @@
 
 **Modul-ID:** `examchecker`  
 **Speicherort:** `modules/examchecker/` (externes Modul, nicht im Git-Repo)  
-**Referenz-ZIP:** `modules-zip/modules/examchecker/ExamChecker_v1.1.0.zip`  
-**Zuletzt aktualisiert:** 2026-04-10
+**Referenz-ZIP:** `modules-zip/modules/examchecker/ExamChecker_v1.1.1.zip`  
+**Zuletzt aktualisiert:** 2026-05-12
 
 ---
 
@@ -57,9 +57,9 @@ modules/examchecker/
     "id": "examchecker",
     "label": "Prüfungs-Checker",
     "description": "Überprüft Test-Einstellungen gegen definierte Standards für Präsenz- und Fernprüfungen.",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "ilias_min": "9",
-    "ilias_max": "12",
+    "ilias_max": "9",
     "handler_class": "ilExamCheckerHandler",
     "handler_file": "class.ilExamCheckerHandler.php",
     "require_files": [
@@ -269,6 +269,7 @@ verwendet.
 
 | Datum | Was |
 |---|---|
+| 2026-05-12 | **v1.1.1:** ILIAS-Kompatibilität auf 9 beschränkt |
 | 2026-04-10 | Initiale Version: Präsenz- und Fernprüfungs-Standards, AJAX-Check, HTML-Ergebnisdarstellung |
 | 2026-04-10 | Vorbedingungs-Check mit Detail-Anzeige (Objekte + Typen) |
 | 2026-04-10 | Manuelle Checks: Start/Endzeiten + Bearbeitungsdauer |

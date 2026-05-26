@@ -1,9 +1,9 @@
 # ExamSymbols — Entwicklerdokumentation
 
 **Modul-ID:** `examsymbols`  
-**Speicherort:** (noch nicht installiert) — Quelle: `modules-zip/modules/examsymbols/ExamSymbols_v1.1.0.zip`  
-**Referenz-ZIP:** `modules-zip/modules/examsymbols/ExamSymbols_v1.1.0.zip`  
-**Zuletzt aktualisiert:** 2026-04-10
+**Speicherort:** (noch nicht installiert) — Quelle: `modules-zip/modules/examsymbols/ExamSymbols_v1.1.1.zip`  
+**Referenz-ZIP:** `modules-zip/modules/examsymbols/ExamSymbols_v1.1.1.zip`  
+**Zuletzt aktualisiert:** 2026-05-12
 
 ---
 
@@ -60,9 +60,9 @@ modules/examsymbols/                        ← entsteht nach Installation
     "id": "examsymbols",
     "label": "Sonderzeichen-Palette",
     "description": "Stellt eine klickbare Palette mit mathematischen und wissenschaftlichen Sonderzeichen bereit.",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "ilias_min": "9",
-    "ilias_max": "12",
+    "ilias_max": "9",
     "handler_class": "ilExamSymbolsHandler",
     "handler_file": "class.ilExamSymbolsHandler.php",
     "require_files": [
@@ -203,6 +203,7 @@ Gleiches Vorgehen wie Erstinstallation — `sql/install.php` läuft erneut
 
 | Datum | Was |
 |---|---|
+| 2026-05-12 | **v1.1.1:** ILIAS-Kompatibilität auf 9 beschränkt |
 | 2026-04-10 | Initiale Version: 8 Symbol-Templates, Floating-Button, Focus-Tracking, TinyMCE/CKEditor-Support |
 | 2026-04-10 | In modulares System migriert (`modules/examsymbols/`), `module.json` hinzugefügt |
 | 2026-04-10 | **v1.1.0:** Config-Klasse ausgelagert (`ilExamSymbolsConfig`), Handler bereinigt (`getAvailableTemplates()` + `getSymbolsForTemplate()` entfernt) |

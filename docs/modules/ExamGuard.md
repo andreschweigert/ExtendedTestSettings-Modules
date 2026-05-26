@@ -2,8 +2,8 @@
 
 **Modul-ID:** `examguard`  
 **Speicherort:** `modules/examguard/` (externes Modul, nicht im Git-Repo)  
-**Referenz-ZIP:** `modules-zip/modules/examguard/ExamGuard_v1.1.0.zip`  
-**Zuletzt aktualisiert:** 2026-04-10
+**Referenz-ZIP:** `modules-zip/modules/examguard/ExamGuard_v1.1.1.zip`  
+**Zuletzt aktualisiert:** 2026-05-12
 
 ---
 
@@ -51,9 +51,9 @@ modules/examguard/
     "id": "examguard",
     "label": "Prüfungsschutz",
     "description": "Verhindert das versehentliche Verlassen des Tests (Browser-Back, Tab schließen, etc.).",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "ilias_min": "9",
-    "ilias_max": "12",
+    "ilias_max": "9",
     "handler_class": "ilExamGuardHandler",
     "handler_file": "class.ilExamGuardHandler.php",
     "require_files": [],
@@ -149,6 +149,7 @@ Gleiches Vorgehen wie Erstinstallation — `sql/install.php` läuft erneut
 
 | Datum | Was |
 |---|---|
+| 2026-05-12 | **v1.1.1:** ILIAS-Kompatibilität auf 9 beschränkt |
 | 2026-04-10 | Initiale Version: Copy&Paste, Rechtsklick, Keyboard-Shortcuts blockieren |
 | 2026-04-10 | In modulares System migriert (`modules/examguard/`), `module.json` hinzugefügt |
 | 2026-04-10 | **v1.1.0:** `implements ilExamModuleInterface` vollständig, `getFormItems()` mit ILIAS-Formular-Element |

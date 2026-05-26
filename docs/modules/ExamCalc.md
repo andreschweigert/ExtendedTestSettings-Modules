@@ -2,8 +2,8 @@
 
 **Modul-ID:** `examcalc`  
 **Speicherort:** `modules/examcalc/` (externes Modul, nicht im Git-Repo)  
-**Referenz-ZIP:** `.dev/` → `modules-zip/modules/examcalc/ExamCalc_v1.1.0.zip`  
-**Zuletzt aktualisiert:** 2026-04-10
+**Referenz-ZIP:** `.dev/` → `modules-zip/modules/examcalc/ExamCalc_v1.1.1.zip`  
+**Zuletzt aktualisiert:** 2026-05-12
 
 ---
 
@@ -59,9 +59,9 @@ modules/examcalc/
     "id": "examcalc",
     "label": "Wissenschaftlicher Taschenrechner",
     "description": "Stellt einen Taschenrechner während der Prüfung zur Verfügung (einfach oder wissenschaftlich).",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "ilias_min": "9",
-    "ilias_max": "12",
+    "ilias_max": "9",
     "handler_class": "ilExamCalcHandler",
     "handler_file": "class.ilExamCalcHandler.php",
     "require_files": [
@@ -185,6 +185,7 @@ Gleiches Vorgehen wie Erstinstallation — `sql/install.php` läuft erneut
 
 | Datum | Was |
 |---|---|
+| 2026-05-12 | **v1.1.1:** ILIAS-Kompatibilität auf 9 beschränkt |
 | 2026-04-10 | Initiale Version: einfacher + wissenschaftlicher Modus, Testplayer-Integration |
 | 2026-04-10 | In modulares System migriert (`modules/examcalc/`), `module.json` hinzugefügt |
 | 2026-04-10 | **v1.1.0:** `implements ilExamModuleInterface` vollständig, `getFormItems()` mit ILIAS-Formular-Elementen |

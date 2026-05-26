@@ -2,8 +2,8 @@
 
 **Modul-ID:** `examfullscreen`  
 **Speicherort:** `modules/examfullscreen/` (externes Modul, nicht im Git-Repo)  
-**Referenz-ZIP:** `modules-zip/modules/examfullscreen/ExamFullscreen_v2.0.0.zip`  
-**Zuletzt aktualisiert:** 2026-04-13
+**Referenz-ZIP:** `modules-zip/modules/examfullscreen/ExamFullscreen_v2.0.1.zip`  
+**Zuletzt aktualisiert:** 2026-05-12
 
 ---
 
@@ -68,9 +68,9 @@ modules/examfullscreen/
     "id": "examfullscreen",
     "label": "Vollbild-Modus",
     "description": "Fordert Browser-Vollbild (F11) beim Teststart an. Erkennt Vollbild-Verlassen und warnt oder sperrt den Test bis der Vollbild-Modus wiederhergestellt wird.",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "ilias_min": "9",
-    "ilias_max": "12",
+    "ilias_max": "9",
     "handler_class": "ilExamFullscreenHandler",
     "handler_file": "class.ilExamFullscreenHandler.php",
     "require_files": [],
@@ -223,6 +223,7 @@ Gleiches Vorgehen wie Erstinstallation — `sql/install.php` läuft erneut
 
 | Datum | Was |
 |---|---|
+| 2026-05-12 | **v2.0.1:** ILIAS-Kompatibilität auf 9 beschränkt |
 | 2026-04-10 | v1.0.0: Initiale Version mit requestFullscreen() API |
 | 2026-04-10 | v1.0.1: Silent-Restore bei Fragenwechsel via User-Gesture |
 | 2026-04-10 | v1.0.2–v1.0.4: Bugfixes Flicker, Overlay-Timing |
