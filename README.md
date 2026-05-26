@@ -33,6 +33,7 @@ Jeder Branch entspricht einer ILIAS-Hauptversion:
 | [examresourcesheet](modules/examresourcesheet/) | Hilfsmittelblatt (PDF/HTML) als seitliches Panel im Test-Player, Text markierbar, Push-Modus |
 | [examlogger](modules/examlogger/) | Serverseitiges Audit-Logging: Start, Navigation, Abgabe, Gerätezuordnung via IP, CSV-Export |
 | [exammessage](modules/exammessage/) | Echtzeit-Nachricht an alle Prüfungsteilnehmer per AJAX-Polling (15 s), drei Nachrichtentypen, Countdown |
+| [examdyslexia](modules/examdyslexia/) | Legasthenie-Modus: aktivierbarer Lesemodus für Studierende während der Prüfung |
 
 ---
 
