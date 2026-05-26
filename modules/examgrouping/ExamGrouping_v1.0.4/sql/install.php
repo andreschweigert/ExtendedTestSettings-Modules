@@ -48,7 +48,7 @@ if (!$db->tableExists('examgrouping_groups')) {
     $db->addIndex('examgrouping_groups', ['test_id'], 'i1');
 }
 
-// Tabelle: examgrouping_items
+// Tabelle: examgrouping_items (fixer Test – Fragen-Zuordnung)
 if (!$db->tableExists('examgrouping_items')) {
     $db->createTable('examgrouping_items', [
         'id' => [
@@ -70,4 +70,28 @@ if (!$db->tableExists('examgrouping_items')) {
     $db->addPrimaryKey('examgrouping_items', ['id']);
     $db->createSequence('examgrouping_items');
     $db->addIndex('examgrouping_items', ['group_id'], 'i1');
+}
+
+// Tabelle: examgrp_pool_items (Zufallstest – Pool-Zuordnung)
+if (!$db->tableExists('examgrp_pool_items')) {
+    $db->createTable('examgrp_pool_items', [
+        'id' => [
+            'type'    => 'integer',
+            'length'  => 4,
+            'notnull' => true,
+        ],
+        'group_id' => [
+            'type'    => 'integer',
+            'length'  => 4,
+            'notnull' => true,
+        ],
+        'pool_id' => [
+            'type'    => 'integer',
+            'length'  => 4,
+            'notnull' => true,
+        ],
+    ]);
+    $db->addPrimaryKey('examgrp_pool_items', ['id']);
+    $db->createSequence('examgrp_pool_items');
+    $db->addIndex('examgrp_pool_items', ['group_id'], 'i1');
 }

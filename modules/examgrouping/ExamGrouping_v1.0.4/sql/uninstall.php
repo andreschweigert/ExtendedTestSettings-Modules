@@ -3,6 +3,14 @@
 global $DIC;
 $db = $DIC->database();
 
+if ($db->tableExists('examgrp_pool_items')) {
+    $db->dropTable('examgrp_pool_items');
+}
+
+if ($db->sequenceExists('examgrp_pool_items')) {
+    $db->dropSequence('examgrp_pool_items');
+}
+
 if ($db->tableExists('examgrouping_items')) {
     $db->dropTable('examgrouping_items');
 }

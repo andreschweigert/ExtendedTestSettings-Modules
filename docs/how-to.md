@@ -8,7 +8,7 @@
 ## Schritt-für-Schritt
 
 1. ZIP-Datei des gewünschten Moduls aus diesem Repository herunterladen
-   (z.B. `modules/examgrouping/ExamGrouping_v1.0.1.zip`)
+   (z.B. `modules/examgrouping/ExamGrouping_v1.0.4.zip`)
 
 2. In ILIAS einloggen und navigieren zu:
    `Administration → Plugins → ExtendedTestSettings → Module`

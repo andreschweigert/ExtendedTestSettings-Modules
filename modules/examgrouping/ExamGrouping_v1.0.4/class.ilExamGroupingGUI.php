@@ -170,20 +170,22 @@ class ilExamGroupingGUI
             return;
         }
 
+        $groups = $this->getGroupsForTest($obj_id);
+
         if ($this->isRandomTest($obj_id)) {
-            $this->tpl->setOnScreenMessage('info',
-                'Fragengruppierung ist bei Tests mit zufälligen Fragenpools nicht verfügbar, '
-                . 'da die Fragenzusammenstellung je Teilnehmer unterschiedlich ist.'
-            );
-            $this->tpl->setContent(
-                '<p>Dieser Test verwendet einen zufälligen Fragenpool. '
-                . 'Die Fragengruppierung ist nur bei Tests mit fixer Fragenliste verfügbar.</p>'
-            );
+            $pools = $this->getTestPools($obj_id);
+            if (empty($pools)) {
+                $this->tpl->setOnScreenMessage('info', 'Dieser Test hat keine konfigurierten Fragenpools.');
+                $this->tpl->setContent('<p>Bitte zuerst Fragenpools im Test hinterlegen.</p>');
+                return;
+            }
+            $html  = $this->buildPoolGroupsSection($ref_id, $obj_id, $groups, $pools);
+            $html .= $this->buildRandomResultsSection($ref_id, $obj_id, $groups, $pools);
+            $this->tpl->setContent($html);
             return;
         }
 
         $questions = $this->getTestQuestions($obj_id);
-        $groups    = $this->getGroupsForTest($obj_id);
 
         if (empty($questions)) {
             $this->tpl->setOnScreenMessage('info', 'Dieser Test hat noch keine Fragen.');
@@ -818,8 +820,17 @@ class ilExamGroupingGUI
 
     private function editGroup(int $ref_id): void
     {
+        $obj_id = ilObject::_lookupObjectId($ref_id);
+        if ($this->isRandomTest($obj_id)) {
+            $this->editGroupPools($ref_id, $obj_id);
+            return;
+        }
+        $this->editGroupQuestions($ref_id, $obj_id);
+    }
+
+    private function editGroupQuestions(int $ref_id, int $obj_id): void
+    {
         $group_id = (int) ($_GET['group_id'] ?? 0);
-        $obj_id   = ilObject::_lookupObjectId($ref_id);
 
         if ($group_id <= 0) {
             $this->proxyRedirect('show', ['ref_id' => $ref_id]);
@@ -883,17 +894,85 @@ class ilExamGroupingGUI
         $this->tpl->setContent($form->getHTML());
     }
 
-    private function saveGroupQuestions(int $ref_id): void
+    private function editGroupPools(int $ref_id, int $obj_id): void
     {
-        $group_id = (int) ($_POST['group_id'] ?? 0);
-        $obj_id   = ilObject::_lookupObjectId($ref_id);
+        $group_id = (int) ($_GET['group_id'] ?? 0);
 
         if ($group_id <= 0) {
             $this->proxyRedirect('show', ['ref_id' => $ref_id]);
             return;
         }
 
-        // Sicherheitsprüfung: Gruppe muss zu diesem Test gehören
+        $result = $this->db->queryF(
+            "SELECT id, name FROM examgrouping_groups WHERE id = %s AND test_id = %s",
+            ['integer', 'integer'],
+            [$group_id, $obj_id]
+        );
+        $group = $this->db->fetchAssoc($result);
+
+        if (!$group) {
+            $this->tpl->setOnScreenMessage('failure', 'Gruppe nicht gefunden.');
+            $this->proxyRedirect('show', ['ref_id' => $ref_id]);
+            return;
+        }
+
+        $this->setupNavigation($ref_id);
+
+        $pools        = $this->getTestPools($obj_id);
+        $assigned     = $this->getGroupPools($group_id);
+        $assigned_set = array_flip($assigned);
+
+        $form = new ilPropertyFormGUI();
+        $form->setFormAction($this->proxyFormAction('saveGroupQuestions', ['ref_id' => $ref_id, 'group_id' => $group_id]));
+        $form->setTitle('Fragenpools zuordnen: „' . htmlspecialchars($group['name']) . '"');
+
+        $section = new ilFormSectionHeaderGUI();
+        $section->setTitle('Pools auswählen (mehrere möglich)');
+        $form->addItem($section);
+
+        foreach ($pools as $pool_id => $pool) {
+            $cb = new ilCheckboxInputGUI(
+                htmlspecialchars($pool['title'])
+                . ' (' . $pool['quest_amount'] . ' Fragen pro Teilnehmer)',
+                'pool_' . $pool_id
+            );
+            $cb->setChecked(isset($assigned_set[$pool_id]));
+            $form->addItem($cb);
+        }
+
+        $ref_hidden = new ilHiddenInputGUI('ref_id');
+        $ref_hidden->setValue((string) $ref_id);
+        $form->addItem($ref_hidden);
+
+        $gid_hidden = new ilHiddenInputGUI('group_id');
+        $gid_hidden->setValue((string) $group_id);
+        $form->addItem($gid_hidden);
+
+        $form->addCommandButton('saveGroupQuestions', 'Speichern');
+        $form->addCommandButton('show', 'Abbrechen');
+
+        $this->tpl->setContent($form->getHTML());
+    }
+
+    private function saveGroupQuestions(int $ref_id): void
+    {
+        $obj_id = ilObject::_lookupObjectId($ref_id);
+        if ($this->isRandomTest($obj_id)) {
+            $this->saveGroupPools($ref_id, $obj_id);
+            return;
+        }
+        $this->saveGroupFixedQuestions($ref_id, $obj_id);
+    }
+
+    private function saveGroupFixedQuestions(int $ref_id, int $obj_id): void
+    {
+        $group_id = (int) ($_POST['group_id'] ?? 0);
+
+        if ($group_id <= 0) {
+            $this->proxyRedirect('show', ['ref_id' => $ref_id]);
+            return;
+        }
+
         $result = $this->db->queryF(
             "SELECT id FROM examgrouping_groups WHERE id = %s AND test_id = %s",
             ['integer', 'integer'],
@@ -907,13 +986,11 @@ class ilExamGroupingGUI
 
         $questions = $this->getTestQuestions($obj_id);
 
-        // Alte Zuordnungen löschen
         $this->db->manipulate(
             "DELETE FROM examgrouping_items WHERE group_id = "
             . $this->db->quote($group_id, 'integer')
         );
 
-        // Neue Zuordnungen einfügen
         $count = 0;
         foreach ($questions as $qid => $q) {
             if (!empty($_POST['question_' . $qid])) {
@@ -931,6 +1008,411 @@ class ilExamGroupingGUI
         $this->proxyRedirect('show', ['ref_id' => $ref_id]);
     }
 
+    private function saveGroupPools(int $ref_id, int $obj_id): void
+    {
+        $group_id = (int) ($_POST['group_id'] ?? 0);
+
+        if ($group_id <= 0) {
+            $this->proxyRedirect('show', ['ref_id' => $ref_id]);
+            return;
+        }
+
+        $result = $this->db->queryF(
+            "SELECT id FROM examgrouping_groups WHERE id = %s AND test_id = %s",
+            ['integer', 'integer'],
+            [$group_id, $obj_id]
+        );
+        if ($this->db->numRows($result) === 0) {
+            $this->tpl->setOnScreenMessage('failure', 'Gruppe nicht gefunden.');
+            $this->proxyRedirect('show', ['ref_id' => $ref_id]);
+            return;
+        }
+
+        $pools = $this->getTestPools($obj_id);
+
+        $this->db->manipulate(
+            "DELETE FROM examgrp_pool_items WHERE group_id = "
+            . $this->db->quote($group_id, 'integer')
+        );
+
+        $count = 0;
+        foreach ($pools as $pool_id => $pool) {
+            if (!empty($_POST['pool_' . $pool_id])) {
+                $new_id = $this->db->nextId('examgrp_pool_items');
+                $this->db->insert('examgrp_pool_items', [
+                    'id'       => ['integer', $new_id],
+                    'group_id' => ['integer', $group_id],
+                    'pool_id'  => ['integer', $pool_id],
+                ]);
+                $count++;
+            }
+        }
+
+        $this->tpl->setOnScreenMessage('success', $count . ' Pool(s) der Gruppe zugeordnet.');
+        $this->proxyRedirect('show', ['ref_id' => $ref_id]);
+    }
+
+    // =========================================================================
+    // Pool-basierte Gruppen-Übersicht (Zufallstest)
+    // =========================================================================
+
+    private function buildPoolGroupsSection(int $ref_id, int $obj_id, array $groups, array $pools): string
+    {
+        $add_link = $this->proxyLink('addGroup', ['ref_id' => $ref_id]);
+
+        $html  = '<div style="margin-bottom:2rem;">';
+        $html .= '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">';
+        $html .= '<h3 style="margin:0;">Fragengruppen</h3>';
+        $html .= '<a href="' . htmlspecialchars($add_link) . '" class="btn btn-primary">+ Neue Gruppe</a>';
+        $html .= '</div>';
+        $html .= '<p class="text-muted" style="margin-bottom:1rem;">'
+               . 'Zufallstest: Gruppen werden Fragenpools zugeordnet. '
+               . 'Die Max-Punkte variieren je Teilnehmer (abhängig von den gezogenen Fragen).'
+               . '</p>';
+
+        if (empty($groups)) {
+            $html .= '<p class="text-muted">Noch keine Gruppen definiert. '
+                   . 'Klicken Sie auf „Neue Gruppe", um eine Gruppe zu erstellen.</p>';
+        } else {
+            $html .= '<table class="table table-striped" style="width:100%;">';
+            $html .= '<thead><tr>'
+                   . '<th>Gruppe</th>'
+                   . '<th>Zugeordnete Pools</th>'
+                   . '<th>Bestandens-Schwelle</th>'
+                   . '<th>Aktionen</th>'
+                   . '</tr></thead><tbody>';
+
+            foreach ($groups as $group) {
+                $assigned_pool_ids = $this->getGroupPools($group['id']);
+                $pool_labels = [];
+                foreach ($assigned_pool_ids as $pid) {
+                    if (isset($pools[$pid])) {
+                        $pool_labels[] = htmlspecialchars($pools[$pid]['title'])
+                            . ' <small style="color:#666;">(' . $pools[$pid]['quest_amount'] . ' Fragen)</small>';
+                    }
+                }
+
+                $edit_link     = $this->proxyLink('editGroup',         ['ref_id' => $ref_id, 'group_id' => $group['id']]);
+                $settings_link = $this->proxyLink('editGroupSettings', ['ref_id' => $ref_id, 'group_id' => $group['id']]);
+                $delete_link   = $this->proxyLink('deleteGroup',       ['ref_id' => $ref_id, 'group_id' => $group['id']]);
+
+                $pool_display = empty($pool_labels)
+                    ? '<em style="color:#999;">Keine Pools zugeordnet</em>'
+                    : implode('<br>', $pool_labels);
+
+                $ttype = $group['threshold_type']  ?? 'percent';
+                $tval  = $group['threshold_value'] ?? 50.0;
+                $threshold_display = $ttype === 'points'
+                    ? number_format((float) $tval, 2) . ' Pkt'
+                    : number_format((float) $tval, 0) . '%';
+
+                $html .= '<tr>';
+                $html .= '<td><strong>' . htmlspecialchars($group['name']) . '</strong></td>';
+                $html .= '<td>' . $pool_display . '</td>';
+                $html .= '<td>' . htmlspecialchars($threshold_display) . '</td>';
+                $html .= '<td style="white-space:nowrap;">';
+                $html .= '<a href="' . htmlspecialchars($settings_link) . '" class="btn btn-sm btn-default">Einstellungen</a> ';
+                $html .= '<a href="' . htmlspecialchars($edit_link) . '" class="btn btn-sm btn-default">Pools</a> ';
+                $html .= '<a href="' . htmlspecialchars($delete_link) . '" class="btn btn-sm btn-danger" '
+                       . 'onclick="return confirm(\'Gruppe &quot;' . htmlspecialchars(addslashes($group['name'])) . '&quot; wirklich löschen?\');">'
+                       . 'Löschen</a>';
+                $html .= '</td>';
+                $html .= '</tr>';
+            }
+
+            $html .= '</tbody></table>';
+        }
+
+        $html .= '</div>';
+        return $html;
+    }
+
+    // =========================================================================
+    // Pool-basierte Ergebnisse (Zufallstest)
+    // =========================================================================
+
+    private function buildRandomResultsSection(int $ref_id, int $obj_id, array $groups, array $pools): string
+    {
+        if (empty($groups)) {
+            return '';
+        }
+
+        $active_groups = [];
+        foreach ($groups as $group) {
+            $pool_ids = $this->getGroupPools($group['id']);
+            if (!empty($pool_ids)) {
+                $active_groups[] = ['group' => $group, 'pool_ids' => $pool_ids];
+            }
+        }
+
+        $html  = '<hr>';
+        $html .= '<h3>Ergebnisse nach Gruppen</h3>';
+
+        if (empty($active_groups)) {
+            $html .= '<p class="text-muted">Ordnen Sie den Gruppen Pools zu, um Ergebnisse anzuzeigen.</p>';
+            return $html;
+        }
+
+        $passes = $this->getSubmittedPassesRandom($obj_id);
+
+        if (empty($passes)) {
+            $html .= '<p class="text-muted">Noch keine abgeschlossenen Testdurchläufe vorhanden.</p>';
+            return $html;
+        }
+
+        // Alle Pool-IDs die einer Gruppe zugeordnet sind
+        $all_grouped_pool_ids = [];
+        foreach ($active_groups as $ag) {
+            foreach ($ag['pool_ids'] as $pid) {
+                $all_grouped_pool_ids[$pid] = true;
+            }
+        }
+        $has_ungrouped = count($all_grouped_pool_ids) < count($pools);
+
+        // Export-Button
+        $export_link = $this->proxyLink('exportResults', ['ref_id' => $ref_id]);
+        $html .= '<div style="text-align:right;margin-bottom:0.5rem;">'
+               . '<a href="' . htmlspecialchars($export_link) . '" class="btn btn-default btn-sm">&#11015; CSV exportieren</a>'
+               . '</div>';
+
+        // Tabellenkopf
+        $html .= '<div style="overflow-x:auto;">';
+        $html .= '<table class="table table-sm table-bordered">';
+        $html .= '<thead><tr>';
+        $html .= '<th>Teilnehmer</th>';
+        $html .= '<th style="white-space:nowrap;">Durchlauf</th>';
+
+        foreach ($active_groups as $ag) {
+            $ttype = $ag['group']['threshold_type']  ?? 'percent';
+            $tval  = (float) ($ag['group']['threshold_value'] ?? 50);
+            $threshold_label = $ttype === 'points'
+                ? 'ab ' . number_format($tval, 2) . ' Pkt'
+                : 'ab ' . number_format($tval, 0) . '%';
+            $pool_names = [];
+            foreach ($ag['pool_ids'] as $pid) {
+                if (isset($pools[$pid])) {
+                    $pool_names[] = htmlspecialchars($pools[$pid]['title']);
+                }
+            }
+            $html .= '<th style="white-space:nowrap;">'
+                   . htmlspecialchars($ag['group']['name'])
+                   . '<br><small style="font-weight:normal;color:#666;">' . implode(', ', $pool_names) . '</small>'
+                   . '<br><small style="color:#555;">✓ ' . $threshold_label . '</small>'
+                   . '</th>';
+        }
+
+        if ($has_ungrouped) {
+            $html .= '<th style="white-space:nowrap;color:#856404;background:#fff3cd;">'
+                   . 'Nicht zugeordnet</th>';
+        }
+
+        $html .= '<th>Gesamt</th>';
+        $html .= '</tr></thead><tbody>';
+
+        // Passes nach Teilnehmer gruppieren
+        $by_participant = [];
+        foreach ($passes as $pass) {
+            $aid = $pass['active_id'];
+            if (!isset($by_participant[$aid])) {
+                $by_participant[$aid] = [
+                    'firstname' => $pass['firstname'],
+                    'lastname'  => $pass['lastname'],
+                    'login'     => $pass['login'],
+                    'passes'    => [],
+                ];
+            }
+            $by_participant[$aid]['passes'][] = $pass;
+        }
+
+        // Akkumulatoren für Ø-Zeile
+        $summary_reached       = array_fill_keys(array_column(array_column($active_groups, 'group'), 'id'), 0.0);
+        $summary_max           = array_fill_keys(array_column(array_column($active_groups, 'group'), 'id'), 0.0);
+        $summary_ungrouped_r   = 0.0;
+        $summary_ungrouped_m   = 0.0;
+        $summary_total_reached = 0.0;
+        $summary_total_max     = 0.0;
+        $participant_count     = count($by_participant);
+
+        foreach ($by_participant as $aid => $participant) {
+            $participant_passes = $participant['passes'];
+            $pass_count_local   = count($participant_passes);
+            $name  = trim(($participant['firstname'] ?? '') . ' ' . ($participant['lastname'] ?? ''));
+            $login = $participant['login'] ?? 'Anonym';
+
+            // Gesamtpunkte je Pass (für Trendpfeil) via alle Fragen des Teilnehmers
+            $totals_per_pass = [];
+            foreach ($participant_passes as $p) {
+                $res = $this->getRandomGroupResults($p['active_id'], $p['pass'], array_keys($pools));
+                $totals_per_pass[$p['pass']] = $res;
+            }
+
+            foreach ($participant_passes as $idx => $pass) {
+                $is_first = ($idx === 0);
+                $is_last  = ($idx === $pass_count_local - 1);
+                $pass_nr  = $pass['pass'] + 1;
+
+                $row_bg = $is_first ? '' : 'background:#fafafa;';
+                $html  .= '<tr style="' . $row_bg . '">';
+
+                if ($is_first) {
+                    $html .= '<td rowspan="' . $pass_count_local . '" style="vertical-align:top;border-right:2px solid #dee2e6;">'
+                           . '<strong>' . htmlspecialchars($name ?: $login) . '</strong>'
+                           . '<br><small style="color:#999;">' . htmlspecialchars($login) . '</small>'
+                           . ($pass_count_local > 1
+                               ? '<br><small style="color:#6c757d;margin-top:4px;display:block;">'
+                                 . $pass_count_local . ' Durchläufe</small>'
+                               : '')
+                           . '</td>';
+                }
+
+                // Pass-Info + Trendpfeil
+                $date_str = '';
+                if (!empty($pass['submitted_at'])) {
+                    $ts = strtotime($pass['submitted_at']);
+                    if ($ts) {
+                        $date_str = date('d.m.Y H:i', $ts);
+                    }
+                }
+                $trend = '';
+                if ($idx > 0) {
+                    $prev = $totals_per_pass[$participant_passes[$idx - 1]['pass']]['reached'];
+                    $curr = $totals_per_pass[$pass['pass']]['reached'];
+                    if ($curr > $prev) {
+                        $trend = ' <span style="color:#28a745;font-weight:bold;" title="Besser als vorheriger Durchlauf">▲</span>';
+                    } elseif ($curr < $prev) {
+                        $trend = ' <span style="color:#dc3545;font-weight:bold;" title="Schlechter als vorheriger Durchlauf">▼</span>';
+                    } else {
+                        $trend = ' <span style="color:#6c757d;" title="Gleich">→</span>';
+                    }
+                }
+                $html .= '<td style="white-space:nowrap;color:#555;font-size:0.85em;vertical-align:top;">'
+                       . '<strong>Durchlauf ' . $pass_nr . '</strong>' . $trend
+                       . ($date_str ? '<br><small>' . $date_str . '</small>' : '')
+                       . '</td>';
+
+                // Punkte je Gruppe
+                foreach ($active_groups as $ag) {
+                    $gid = $ag['group']['id'];
+                    $res = $this->getRandomGroupResults($pass['active_id'], $pass['pass'], $ag['pool_ids']);
+                    $reached = $res['reached'];
+                    $max     = $res['max'];
+
+                    if ($is_last) {
+                        $summary_reached[$gid] += $reached;
+                        $summary_max[$gid]     += $max;
+                    }
+
+                    $pct    = $max > 0 ? ($reached / $max) * 100 : 0;
+                    $ttype  = $ag['group']['threshold_type']  ?? 'percent';
+                    $tval   = (float) ($ag['group']['threshold_value'] ?? 50);
+                    $passed = $ttype === 'points' ? $reached >= $tval : ($max > 0 && $pct >= $tval);
+                    $bg     = $max > 0 ? ($passed ? '#d4edda' : '#f8d7da') : '#f8f9fa';
+                    $label  = $max > 0 ? ($passed ? '✓ Bestanden' : '✗ Nicht best.') : '–';
+
+                    $html .= '<td style="background:' . $bg . ';white-space:nowrap;vertical-align:top;">';
+                    if ($max > 0) {
+                        $html .= '<strong>' . number_format($reached, 2) . ' Pkt</strong>'
+                               . '<br><small>von ' . number_format($max, 2) . ' Pkt'
+                               . ' (' . number_format($pct, 1) . '%)</small>'
+                               . '<br><small>' . $label . '</small>';
+                    } else {
+                        $html .= '<em style="color:#999;">Keine Fragen</em>';
+                    }
+                    $html .= '</td>';
+                }
+
+                // Nicht zugeordnete Pools
+                if ($has_ungrouped) {
+                    $ungrouped_pool_ids = array_values(array_diff(array_keys($pools), array_keys($all_grouped_pool_ids)));
+                    $ug_res = $this->getRandomGroupResults($pass['active_id'], $pass['pass'], $ungrouped_pool_ids);
+                    if ($is_last) {
+                        $summary_ungrouped_r += $ug_res['reached'];
+                        $summary_ungrouped_m += $ug_res['max'];
+                    }
+                    $ug_pct = $ug_res['max'] > 0 ? ($ug_res['reached'] / $ug_res['max']) * 100 : 0;
+                    $html .= '<td style="background:#fff3cd;white-space:nowrap;vertical-align:top;">'
+                           . number_format($ug_res['reached'], 2) . ' Pkt'
+                           . ($ug_res['max'] > 0
+                               ? '<br><small>von ' . number_format($ug_res['max'], 2) . ' Pkt'
+                                 . ' (' . number_format($ug_pct, 1) . '%)</small>'
+                               : '<br><small>—</small>')
+                           . '</td>';
+                }
+
+                // Gesamt
+                $total = $totals_per_pass[$pass['pass']];
+                if ($is_last) {
+                    $summary_total_reached += $total['reached'];
+                    $summary_total_max     += $total['max'];
+                }
+                $total_pct = $total['max'] > 0 ? ($total['reached'] / $total['max']) * 100 : 0;
+                $html .= '<td style="white-space:nowrap;font-weight:bold;vertical-align:top;">'
+                       . number_format($total['reached'], 2) . ' Pkt'
+                       . ($total['max'] > 0
+                           ? '<br><small>von ' . number_format($total['max'], 2) . ' Pkt'
+                             . ' (' . number_format($total_pct, 1) . '%)</small>'
+                           : '')
+                       . '</td>';
+
+                $html .= '</tr>';
+            }
+
+            if ($aid !== array_key_last($by_participant)) {
+                $col_count = 2 + count($active_groups) + ($has_ungrouped ? 1 : 0) + 1;
+                $html .= '<tr><td colspan="' . $col_count . '" style="padding:0;border-top:2px solid #dee2e6;"></td></tr>';
+            }
+        }
+
+        // Ø-Zeile
+        if ($participant_count > 0) {
+            $html .= '<tr style="background:#f8f9fa;font-style:italic;border-top:2px solid #adb5bd;">';
+            $html .= '<td colspan="2"><strong>Ø letzter Durchlauf</strong>'
+                   . '<br><small>(' . $participant_count . ' Teilnehmer)</small></td>';
+
+            foreach ($active_groups as $ag) {
+                $gid     = $ag['group']['id'];
+                $avg_r   = $summary_reached[$gid] / $participant_count;
+                $avg_m   = $summary_max[$gid]     / $participant_count;
+                $avg_pct = $avg_m > 0 ? ($avg_r / $avg_m) * 100 : 0;
+                $html .= '<td style="white-space:nowrap;">'
+                       . number_format($avg_r, 2) . ' Pkt'
+                       . ($avg_m > 0
+                           ? '<br><small>von Ø ' . number_format($avg_m, 2) . ' Pkt'
+                             . ' (' . number_format($avg_pct, 1) . '%)</small>'
+                           : '')
+                       . '</td>';
+            }
+
+            if ($has_ungrouped) {
+                $ug_avg_r   = $summary_ungrouped_r / $participant_count;
+                $ug_avg_m   = $summary_ungrouped_m / $participant_count;
+                $ug_avg_pct = $ug_avg_m > 0 ? ($ug_avg_r / $ug_avg_m) * 100 : 0;
+                $html .= '<td style="background:#fff3cd;white-space:nowrap;">'
+                       . number_format($ug_avg_r, 2) . ' Pkt'
+                       . ($ug_avg_m > 0
+                           ? '<br><small>von Ø ' . number_format($ug_avg_m, 2) . ' Pkt'
+                             . ' (' . number_format($ug_avg_pct, 1) . '%)</small>'
+                           : '')
+                       . '</td>';
+            }
+
+            $t_avg_r   = $summary_total_reached / $participant_count;
+            $t_avg_m   = $summary_total_max     / $participant_count;
+            $t_avg_pct = $t_avg_m > 0 ? ($t_avg_r / $t_avg_m) * 100 : 0;
+            $html .= '<td style="white-space:nowrap;font-weight:bold;">'
+                   . number_format($t_avg_r, 2) . ' Pkt'
+                   . ($t_avg_m > 0
+                       ? '<br><small>von Ø ' . number_format($t_avg_m, 2) . ' Pkt'
+                         . ' (' . number_format($t_avg_pct, 1) . '%)</small>'
+                       : '')
+                   . '</td>';
+            $html .= '</tr>';
+        }
+
+        $html .= '</tbody></table></div>';
+        return $html;
+    }
+
     // =========================================================================
     // CSV-Export
     // =========================================================================
@@ -939,7 +1421,12 @@ class ilExamGroupingGUI
     {
         $obj_id = ilObject::_lookupObjectId($ref_id);
 
-        if (ilObject::_lookupType($obj_id) !== 'tst' || $this->isRandomTest($obj_id)) {
+        if ($this->isRandomTest($obj_id)) {
+            $this->exportRandomResults($ref_id, $obj_id);
+            return;
+        }
+
+        if (ilObject::_lookupType($obj_id) !== 'tst') {
             $this->tpl->setOnScreenMessage('failure', 'Export nicht möglich.');
             $this->proxyRedirect('show', ['ref_id' => $ref_id]);
             return;
@@ -1148,6 +1635,120 @@ class ilExamGroupingGUI
         exit();
     }
 
+    private function exportRandomResults(int $ref_id, int $obj_id): void
+    {
+        $pools  = $this->getTestPools($obj_id);
+        $groups = $this->getGroupsForTest($obj_id);
+
+        $active_groups = [];
+        foreach ($groups as $group) {
+            $pool_ids = $this->getGroupPools($group['id']);
+            if (!empty($pool_ids)) {
+                $active_groups[] = ['group' => $group, 'pool_ids' => $pool_ids];
+            }
+        }
+
+        $all_grouped_pool_ids = [];
+        foreach ($active_groups as $ag) {
+            foreach ($ag['pool_ids'] as $pid) {
+                $all_grouped_pool_ids[$pid] = true;
+            }
+        }
+        $ungrouped_pool_ids = array_values(array_diff(array_keys($pools), array_keys($all_grouped_pool_ids)));
+        $has_ungrouped = !empty($ungrouped_pool_ids);
+
+        $passes     = $this->getSubmittedPassesRandom($obj_id);
+        $test_title = ilObject::_lookupTitle($obj_id);
+
+        $header = ['Name', 'Login', 'Durchlauf', 'Datum'];
+        foreach ($active_groups as $ag) {
+            $gname = $ag['group']['name'];
+            $pool_names = [];
+            foreach ($ag['pool_ids'] as $pid) {
+                if (isset($pools[$pid])) {
+                    $pool_names[] = $pools[$pid]['title'];
+                }
+            }
+            $header[] = '[' . $gname . '] Pools: ' . implode(', ', $pool_names);
+            $header[] = '[' . $gname . '] Erreicht (Pkt)';
+            $header[] = '[' . $gname . '] Max (Pkt)';
+            $header[] = '[' . $gname . '] (%)';
+            $header[] = '[' . $gname . '] Bestanden';
+        }
+        if ($has_ungrouped) {
+            $header[] = '[Nicht zugeordnet] Erreicht (Pkt)';
+            $header[] = '[Nicht zugeordnet] Max (Pkt)';
+            $header[] = '[Nicht zugeordnet] (%)';
+        }
+        $header[] = 'Gesamt (Pkt)';
+        $header[] = 'Gesamt Max (Pkt)';
+        $header[] = 'Gesamt (%)';
+
+        $safe_title = preg_replace('/[^a-zA-Z0-9_-]/', '_', $test_title);
+        $filename   = 'fragengruppierung_' . $safe_title . '_' . date('Ymd_His') . '.csv';
+
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        $out = fopen('php://output', 'w');
+        fputs($out, "\xEF\xBB\xBF");
+        fputcsv($out, $header, ';');
+
+        foreach ($passes as $pass) {
+            $name    = trim(($pass['firstname'] ?? '') . ' ' . ($pass['lastname'] ?? ''));
+            $login   = $pass['login'] ?? '';
+            $pass_nr = $pass['pass'] + 1;
+            $date_str = '';
+            if (!empty($pass['submitted_at'])) {
+                $ts = strtotime($pass['submitted_at']);
+                if ($ts) {
+                    $date_str = date('d.m.Y H:i', $ts);
+                }
+            }
+            $row = [$name ?: $login, $login, $pass_nr, $date_str];
+
+            foreach ($active_groups as $ag) {
+                $res    = $this->getRandomGroupResults($pass['active_id'], $pass['pass'], $ag['pool_ids']);
+                $pct    = $res['max'] > 0 ? ($res['reached'] / $res['max']) * 100 : 0;
+                $ttype  = $ag['group']['threshold_type']  ?? 'percent';
+                $tval   = (float) ($ag['group']['threshold_value'] ?? 50);
+                $passed = $ttype === 'points' ? $res['reached'] >= $tval : ($res['max'] > 0 && $pct >= $tval);
+                $pool_names = [];
+                foreach ($ag['pool_ids'] as $pid) {
+                    if (isset($pools[$pid])) {
+                        $pool_names[] = $pools[$pid]['title'];
+                    }
+                }
+                $row[] = implode(', ', $pool_names);
+                $row[] = number_format($res['reached'], 2, ',', '');
+                $row[] = number_format($res['max'],     2, ',', '');
+                $row[] = number_format($pct,            1, ',', '');
+                $row[] = $passed ? 'Ja' : 'Nein';
+            }
+
+            if ($has_ungrouped) {
+                $ug_res = $this->getRandomGroupResults($pass['active_id'], $pass['pass'], $ungrouped_pool_ids);
+                $ug_pct = $ug_res['max'] > 0 ? ($ug_res['reached'] / $ug_res['max']) * 100 : 0;
+                $row[] = number_format($ug_res['reached'], 2, ',', '');
+                $row[] = number_format($ug_res['max'],     2, ',', '');
+                $row[] = number_format($ug_pct,            1, ',', '');
+            }
+
+            $total = $this->getRandomGroupResults($pass['active_id'], $pass['pass'], array_keys($pools));
+            $total_pct = $total['max'] > 0 ? ($total['reached'] / $total['max']) * 100 : 0;
+            $row[] = number_format($total['reached'], 2, ',', '');
+            $row[] = number_format($total['max'],     2, ',', '');
+            $row[] = number_format($total_pct,        1, ',', '');
+
+            fputcsv($out, $row, ';');
+        }
+
+        fclose($out);
+        exit();
+    }
+
     // =========================================================================
     // Hilfsmethoden (nur lesend auf ILIAS-Kerntabellen)
     // =========================================================================
@@ -1163,6 +1764,117 @@ class ilExamGroupingGUI
             return $row['question_set_type'] === 'RANDOM_QUEST_SET';
         }
         return false;
+    }
+
+    /**
+     * Gibt die konfigurierten Fragenpools eines Zufallstests zurück, indiziert nach pool_id (obj_id).
+     */
+    private function getTestPools(int $obj_id): array
+    {
+        $result = $this->db->queryF(
+            "SELECT test_id FROM tst_tests WHERE obj_fi = %s",
+            ['integer'],
+            [$obj_id]
+        );
+        $row = $this->db->fetchAssoc($result);
+        if (!$row) {
+            return [];
+        }
+        $test_id = (int) $row['test_id'];
+
+        $result = $this->db->queryF(
+            "SELECT p.pool_fi, p.pool_title, p.quest_amount, p.sequence_pos,
+                    COALESCE(od.title, p.pool_title) AS actual_title
+             FROM tst_rnd_quest_set_qpls p
+             LEFT JOIN object_data od ON od.obj_id = p.pool_fi
+             WHERE p.test_fi = %s
+             ORDER BY p.sequence_pos",
+            ['integer'],
+            [$test_id]
+        );
+
+        $pools = [];
+        while ($row = $this->db->fetchAssoc($result)) {
+            $pid = (int) $row['pool_fi'];
+            $pools[$pid] = [
+                'pool_id'      => $pid,
+                'title'        => $row['actual_title'] ?? $row['pool_title'] ?? ('Pool #' . $pid),
+                'quest_amount' => (int)   $row['quest_amount'],
+                'sequence_pos' => (int)   $row['sequence_pos'],
+            ];
+        }
+
+        return $pools;
+    }
+
+    /**
+     * Gibt die Pool-IDs zurück, die einer Gruppe zugeordnet sind (Zufallstest).
+     */
+    private function getGroupPools(int $group_id): array
+    {
+        $result = $this->db->queryF(
+            "SELECT pool_id FROM examgrp_pool_items WHERE group_id = %s",
+            ['integer'],
+            [$group_id]
+        );
+
+        $pool_ids = [];
+        while ($row = $this->db->fetchAssoc($result)) {
+            $pool_ids[] = (int) $row['pool_id'];
+        }
+
+        return $pool_ids;
+    }
+
+    /**
+     * Berechnet erreichte und maximale Punkte eines Teilnehmers für eine Menge von Pool-IDs.
+     * ILIAS kopiert Pool-Fragen intern: tst_test_rnd_qst.question_fi zeigt auf die Kopie.
+     * Über qpl_questions.original_id kommt man zur Originalfrage mit dem echten obj_fi (Pool-ID).
+     * Gibt ['reached' => float, 'max' => float] zurück.
+     */
+    private function getRandomGroupResults(int $active_id, int $pass, array $pool_ids): array
+    {
+        if (empty($pool_ids)) {
+            return ['reached' => 0.0, 'max' => 0.0];
+        }
+
+        $in_clause = $this->db->in('orig.obj_fi', $pool_ids, false, 'integer');
+
+        $result = $this->db->queryF(
+            "SELECT ttrq.question_fi, copy_q.points AS max_points
+             FROM tst_test_rnd_qst ttrq
+             JOIN qpl_questions copy_q ON copy_q.question_id = ttrq.question_fi
+             JOIN qpl_questions orig    ON orig.question_id  = copy_q.original_id
+             WHERE ttrq.active_fi = %s AND ttrq.pass = %s AND " . $in_clause,
+            ['integer', 'integer'],
+            [$active_id, $pass]
+        );
+
+        $question_ids = [];
+        $max          = 0.0;
+        while ($row = $this->db->fetchAssoc($result)) {
+            $question_ids[] = (int) $row['question_fi'];
+            $max           += (float) $row['max_points'];
+        }
+
+        if (empty($question_ids)) {
+            return ['reached' => 0.0, 'max' => 0.0];
+        }
+
+        $in_q   = $this->db->in('question_fi', $question_ids, false, 'integer');
+        $result = $this->db->queryF(
+            "SELECT SUM(points) AS reached
+             FROM tst_test_result
+             WHERE active_fi = %s AND pass = %s AND " . $in_q,
+            ['integer', 'integer'],
+            [$active_id, $pass]
+        );
+        $row = $this->db->fetchAssoc($result);
+
+        return [
+            'reached' => (float) ($row['reached'] ?? 0.0),
+            'max'     => $max,
+        ];
     }
 
     /**
@@ -1287,6 +1999,56 @@ class ilExamGroupingGUI
              ) tr ON tr.active_fi = ta.active_id
              WHERE ta.test_fi = %s AND ta.submitted = 1
              ORDER BY ud.lastname, ud.firstname, ta.active_id, tr.pass ASC",
+            ['integer'],
+            [$test_id]
+        );
+
+        $passes = [];
+        while ($row = $this->db->fetchAssoc($result)) {
+            $passes[] = [
+                'active_id'    => (int) $row['active_id'],
+                'user_fi'      => (int) $row['user_fi'],
+                'login'        =>       $row['login']          ?? '',
+                'firstname'    =>       $row['firstname']      ?? '',
+                'lastname'     =>       $row['lastname']       ?? '',
+                'pass'         => (int) $row['pass'],
+                'submitted_at' =>       $row['submittimestamp'] ?? '',
+            ];
+        }
+
+        return $passes;
+    }
+
+    /**
+     * Wie getSubmittedPasses, aber für Zufallstests.
+     * Nutzt tst_test_rnd_qst statt tst_test_result zur Pass-Erkennung,
+     * da tst_test_result bei automatischer Auswertung leer sein kann.
+     */
+    private function getSubmittedPassesRandom(int $obj_id): array
+    {
+        $result = $this->db->queryF(
+            "SELECT test_id FROM tst_tests WHERE obj_fi = %s",
+            ['integer'],
+            [$obj_id]
+        );
+        $row = $this->db->fetchAssoc($result);
+        if (!$row) {
+            return [];
+        }
+        $test_id = (int) $row['test_id'];
+
+        $result = $this->db->queryF(
+            "SELECT ta.active_id, ta.user_fi, ta.submittimestamp,
+                    ud.login, ud.firstname, ud.lastname,
+                    rq.pass
+             FROM tst_active ta
+             LEFT JOIN usr_data ud ON ta.user_fi = ud.usr_id
+             INNER JOIN (
+                 SELECT DISTINCT active_fi, pass
+                 FROM tst_test_rnd_qst
+             ) rq ON rq.active_fi = ta.active_id
+             WHERE ta.test_fi = %s AND ta.submitted = 1
+             ORDER BY ud.lastname, ud.firstname, ta.active_id, rq.pass ASC",
             ['integer'],
             [$test_id]
         );

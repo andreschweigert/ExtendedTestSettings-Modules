@@ -4,14 +4,15 @@ Externes Modul für das ILIAS-Plugin **ExtendedTestSettings**.
 
 Erlaubt es, die Fragen eines Tests zu **benannten Gruppen** (z.B. "Grundlagen", "Anwendung") zusammenzufassen und die Punkte je Gruppe aus den Testergebnissen auszuwerten. Für jede Gruppe ist ein Bestehensschwellenwert konfigurierbar (Prozent oder absolute Punkte).
 
-> **Einschränkung:** Nur bei Tests mit **fixer Fragenliste** (`FIXED_QUEST_SET`). Bei Random-Question-Sets wird die Funktion verweigert.
+Unterstützt sowohl **Tests mit fixer Fragenliste** als auch **Tests mit Fragenpools (Zufallstests)**.
 
 ## Features
 
 - Gruppen anlegen, benennen, sortieren
-- Fragen per Checkbox den Gruppen zuordnen
+- **Fixer Test:** Fragen per Checkbox den Gruppen zuordnen
+- **Zufallstest:** Fragenpools per Checkbox den Gruppen zuordnen; Max-Punkte werden individuell je Teilnehmer aus den tatsächlich gezogenen Fragen berechnet
 - Ergebnistabelle mit allen Teilnehmern und Durchläufen (inkl. Trendpfeile ▲▼→)
-- Spalte "Nicht zugeordnet" für Fragen ohne Gruppe
+- Spalte "Nicht zugeordnet" für Fragen/Pools ohne Gruppe
 - Bestehensschwellenwert pro Gruppe (Prozent oder Punkte)
 - CSV-Export (Semikolon, UTF-8 mit BOM, alle Durchläufe)
 
@@ -24,18 +25,19 @@ Pro Test über die Verwaltungsoberfläche (Link in den Erweiterten Test-Einstell
 | Gruppenname | Freitext |
 | Schwellenwert-Typ | `percent` oder `points` |
 | Schwellenwert-Wert | Zahl (Default: 50) |
-| Fragen-Zuweisung | Checkboxen je Gruppe |
+| Fragen-/Pool-Zuweisung | Checkboxen je Gruppe (Test-Typ wird automatisch erkannt) |
 
 ## Datenbank
 
-Eigene Tabellen: `examgrouping_groups`, `examgrouping_items`
+Eigene Tabellen: `examgrouping_groups`, `examgrouping_items`, `examgrp_pool_items`
 
 | Tabelle | Inhalt |
 |---|---|
 | `examgrouping_groups` | Gruppen-Definitionen je Test (Name, Position, Schwellenwert) |
-| `examgrouping_items` | Fragen-Zuordnung (group_id → question_id) |
+| `examgrouping_items` | Fragen-Zuordnung für fixe Tests (group_id → question_id) |
+| `examgrp_pool_items` | Pool-Zuordnung für Zufallstests (group_id → pool_id) |
 
-Gelesene ILIAS-Tabellen (read-only): `tst_tests`, `tst_test_question`, `qpl_questions`, `tst_active`, `tst_test_result`, `usr_data`
+Gelesene ILIAS-Tabellen (read-only): `tst_tests`, `tst_test_question`, `qpl_questions`, `tst_rnd_quest_set_qpls`, `tst_test_rnd_qst`, `tst_active`, `tst_test_result`, `usr_data`
 
 ## Routing
 
@@ -51,8 +53,10 @@ Alle URL/Redirect-Generierungen laufen über `proxyLink()` / `proxyFormAction()`
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
-| 1.0.2 | `ExamGrouping_v1.0.2.zip` | 9 | ILIAS-Kompatibilität auf 9 beschränkt |
-| 1.0.1 | `ExamGrouping_v1.0.1.zip` | 9–12 | Proxy-Routing, Interface-Fix, Formular-Submit-Fix, `gui_file`/`gui_class` in module.json |
+| 1.0.4 | `ExamGrouping_v1.0.4.zip` | 9 | Bugfix: Pass-Erkennung für Zufallstests via `tst_test_rnd_qst`; Pool-Matching über `original_id` |
+| 1.0.3 | — | 9 | Zufallstest-Unterstützung: Pool-basierte Gruppierung, neue Tabelle `examgrp_pool_items` |
+| 1.0.2 | — | 9 | ILIAS-Kompatibilität auf 9 beschränkt |
+| 1.0.1 | — | 9–12 | Proxy-Routing, Interface-Fix, Formular-Submit-Fix, `gui_file`/`gui_class` in module.json |
 | 1.0.0 | — | 9–12 | Initiale Implementierung |
 
 ## Installation

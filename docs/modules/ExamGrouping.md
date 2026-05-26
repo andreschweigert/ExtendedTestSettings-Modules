@@ -2,8 +2,8 @@
 
 **Modul-ID:** `examgrouping`  
 **Speicherort:** `modules/examgrouping/` (externes Modul, nicht im Git-Repo)  
-**Referenz-ZIP:** `.dev/ExamGrouping_v1.0.1.zip`  
-**Zuletzt aktualisiert:** 2026-04-10
+**Referenz-ZIP:** `ExamGrouping_v1.0.4.zip`  
+**Zuletzt aktualisiert:** 2026-05-26
 
 ---
 
@@ -13,17 +13,15 @@ Erlaubt es, die Fragen eines ILIAS-Tests zu **benannten Gruppen** (z.B. "Grundla
 "Anwendung", "Analyse") zusammenzufassen und die **Gesamtpunktzahl je Gruppe** aus
 den Testergebnissen auszuwerten.
 
-**Wichtig:** Das Modul schreibt ausschließlich in eigene Tabellen (`examgrouping_*`).
+Das Modul erkennt automatisch ob ein Test eine **fixe Fragenliste** oder **Fragenpools
+(Zufallstest)** verwendet und wählt die passende Gruppierungs-Logik:
+
+- **Fixer Test (`FIXED_QUEST_SET`):** Einzelne Fragen werden Gruppen zugeordnet.
+- **Zufallstest (`RANDOM_QUEST_SET`):** Fragenpools werden Gruppen zugeordnet.
+  Die Max-Punkte je Gruppe variieren pro Teilnehmer abhängig von den gezogenen Fragen.
+
+**Wichtig:** Das Modul schreibt ausschließlich in eigene Tabellen (`examgrouping_*`, `examgrp_*`).
 ILIAS-Kerntabellen werden nur gelesen.
-
----
-
-## Einschränkungen
-
-- Nur bei Tests mit **fixer Fragenliste** (`FIXED_QUEST_SET`).
-  Bei Random-Question-Sets wird eine Hinweismeldung angezeigt und die Funktion verweigert,
-  weil die Fragenzusammenstellung je Teilnehmer variiert.
-- Zugänglich nur für Nutzer mit Schreibrecht auf den Test oder System-Admins.
 
 ---
 
@@ -35,8 +33,9 @@ modules/examgrouping/
 ├── class.ilExamGroupingHandler.php ← Handler (implements ilExamModuleInterface)
 ├── class.ilExamGroupingGUI.php     ← Verwaltungs-GUI (Gruppen + Ergebnisse + Export)
 └── sql/
-    ├── install.php                 ← Legt examgrouping_groups + examgrouping_items an
-    └── uninstall.php               ← Löscht beide Tabellen
+    ├── install.php                 ← Legt examgrouping_groups, examgrouping_items,
+    │                                  examgrp_pool_items an
+    └── uninstall.php               ← Löscht alle drei Tabellen
 ```
 
 ---
@@ -48,21 +47,17 @@ modules/examgrouping/
     "id": "examgrouping",
     "label": "Fragengruppierung",
     "description": "Fragen eines Tests zu benannten Gruppen zusammenfassen ...",
-    "version": "1.0.1",
+    "version": "1.0.4",
     "ilias_min": "9",
-    "ilias_max": "12",
+    "ilias_max": "9",
     "handler_class": "ilExamGroupingHandler",
     "handler_file": "class.ilExamGroupingHandler.php",
     "gui_file": "class.ilExamGroupingGUI.php",
     "gui_class": "ilExamGroupingGUI",
     "require_files": [],
-    "tables": ["examgrouping_groups", "examgrouping_items"]
+    "tables": ["examgrouping_groups", "examgrouping_items", "examgrp_pool_items"]
 }
 ```
-
-`gui_file` + `gui_class` sind nötig damit der Proxy-Router die GUI-Klasse findet.
-`require_files` ist leer, weil `ilExamGroupingGUI` direkt in `gui_file` angegeben ist
-und nicht als Abhängigkeit des Handlers geladen werden muss.
 
 ---
 
@@ -84,7 +79,7 @@ Die eigentliche Verwaltungsoberfläche läuft in `ilExamGroupingGUI`.
 
 ### `examgrouping_groups`
 
-Speichert Gruppen-Definitionen je Test.
+Speichert Gruppen-Definitionen je Test — identisch für fixe und Zufallstests.
 
 | Spalte | Typ | Beschreibung |
 |---|---|---|
@@ -100,7 +95,7 @@ Index: `i1` auf `test_id`.
 
 ### `examgrouping_items`
 
-Speichert Fragen-Zuordnungen zu Gruppen.
+Fragen-Zuordnung für **fixe Tests**.
 
 | Spalte | Typ | Beschreibung |
 |---|---|---|
@@ -110,16 +105,30 @@ Speichert Fragen-Zuordnungen zu Gruppen.
 
 Index: `i1` auf `group_id`.
 
+### `examgrp_pool_items`
+
+Pool-Zuordnung für **Zufallstests**.
+
+| Spalte | Typ | Beschreibung |
+|---|---|---|
+| `id` | integer (PK, Sequence) | Auto-Increment |
+| `group_id` | integer | FK → `examgrouping_groups.id` |
+| `pool_id` | integer | ILIAS `obj_id` des Fragenpools (`tst_rnd_quest_set_qpls.pool_fi`) |
+
+Index: `i1` auf `group_id`.
+
 Keine echte FK-Constraint (ILIAS-Konvention). Beim Löschen einer Gruppe werden die
-zugehörigen Items im Code explizit mitgelöscht.
+zugehörigen Items in beiden Tabellen im Code explizit mitgelöscht.
 
 ### Gelesene ILIAS-Tabellen (read-only)
 
 | Tabelle | Wozu |
 |---|---|
-| `tst_tests` | `test_id` (interner PK) und `question_set_type` ermitteln |
-| `tst_test_question` | Fragen des Tests mit Sequence-Nummer laden |
-| `qpl_questions` | Fragetitel und Maximalpunktzahl |
+| `tst_tests` | `test_id` und `question_set_type` ermitteln |
+| `tst_test_question` | Fragen des Tests mit Sequence-Nummer (fixer Test) |
+| `qpl_questions` | Fragetitel, Maximalpunktzahl, `obj_fi` (Pool-Zugehörigkeit), `original_id` |
+| `tst_rnd_quest_set_qpls` | Konfigurierte Fragenpools des Zufallstests |
+| `tst_test_rnd_qst` | Gezogene Fragen je Teilnehmer/Pass (Zufallstest) |
 | `tst_active` | Abgeschlossene Durchläufe (`submitted = 1`) + Abgabedatum |
 | `tst_test_result` | Erreichte Punkte je Frage und Durchlauf |
 | `usr_data` | Name und Login der Teilnehmer |
@@ -138,33 +147,40 @@ saveSettings()  → gibt true zurück (nichts zu speichern)
 getInfo()       → liefert title, icon, description (für AdvancedGUI-Formular-Header)
 ```
 
-`getFormItems()` ruft intern `getSettingsHTML()` auf und verpackt das Ergebnis in eine
-`ilCustomInputGUI`. Der Link darin zeigt über den Proxy auf `ilExtendedTestSettingsModuleProxyGUI`:
-
-```php
-$ctrl->setParameterByClass('ilExtendedTestSettingsModuleProxyGUI', 'module_id', 'examgrouping');
-$ctrl->setParameterByClass('ilExtendedTestSettingsModuleProxyGUI', 'ref_id', $ref_id);
-$link = $ctrl->getLinkTargetByClass(
-    ['ilUIPluginRouterGUI', 'ilExtendedTestSettingsModuleProxyGUI'],
-    'show'
-);
-```
-
 ---
 
 ## ilExamGroupingGUI — Commands
 
 | cmd | Methode | Beschreibung |
 |---|---|---|
-| `show` (default) | `show()` | Hauptansicht: Gruppen-Tabelle + Ergebnistabelle |
+| `show` (default) | `show()` | Hauptansicht: erkennt Test-Typ, verzweigt in fixe oder Pool-Ansicht |
 | `addGroup` | `addGroup()` | Formular: neue Gruppe anlegen |
 | `saveGroup` | `saveGroup()` | POST: neue Gruppe speichern |
 | `deleteGroup` | `deleteGroup()` | Gruppe + Items löschen |
-| `editGroup` | `editGroup()` | Fragen-Zuweisung (Checkboxen) |
-| `saveGroupQuestions` | `saveGroupQuestions()` | POST: Fragen-Zuweisung speichern |
+| `editGroup` | `editGroup()` | Fragen- oder Pool-Zuweisung (erkennt Test-Typ automatisch) |
+| `saveGroupQuestions` | `saveGroupQuestions()` | POST: Zuweisung speichern (fixer Test oder Zufallstest) |
 | `editGroupSettings` | `editGroupSettings()` | Name + Schwellenwert bearbeiten |
 | `saveGroupSettings` | `saveGroupSettings()` | POST: Einstellungen speichern |
 | `exportResults` | `exportResults()` | CSV-Download, ruft `exit()` auf |
+
+### Interne Verzweigung nach Test-Typ
+
+`show()`, `editGroup()`, `saveGroupQuestions()` und `exportResults()` rufen `isRandomTest()`
+und leiten in den jeweils passenden privaten Zweig weiter:
+
+```
+editGroup()
+  ├── isRandomTest() → editGroupPools()       ← Pool-Checkboxen, speichert in examgrp_pool_items
+  └── !isRandomTest() → editGroupQuestions()  ← Fragen-Checkboxen, speichert in examgrouping_items
+
+saveGroupQuestions()
+  ├── isRandomTest() → saveGroupPools()
+  └── !isRandomTest() → saveGroupFixedQuestions()
+
+exportResults()
+  ├── isRandomTest() → exportRandomResults()
+  └── !isRandomTest() → [bestehende Export-Logik]
+```
 
 ### Command-Erkennung
 
@@ -176,48 +192,73 @@ $post_cmd = $_POST['cmd'] ?? null;
 $cmd = is_array($post_cmd) ? (string) array_key_first($post_cmd) : ($_GET['cmd'] ?? 'show');
 ```
 
-ILIAS rendert Command-Buttons als `<input name="cmd[saveGroup]">` — daher ist
-`$_POST['cmd']` ein Array, dessen erster Key der Command-Name ist.
-
 ### Proxy-Routing in der GUI
 
 Da `ilExamGroupingGUI` nicht in ilCtrl registriert ist, werden alle URL- und
-Redirect-Generierungen über drei Hilfsmethoden auf den Proxy umgeleitet.
-Parameter werden **immer als zweites Array-Argument** übergeben:
+Redirect-Generierungen über drei Hilfsmethoden auf den Proxy umgeleitet:
 
 ```php
-// Navigations-Link
 private function proxyLink(string $cmd, array $params = []): string
-
-// Form-Action für ilPropertyFormGUI
 private function proxyFormAction(string $cmd, array $params = []): string
-
-// Redirect (wirft Header-Location)
 private function proxyRedirect(string $cmd, array $params = []): void
 ```
 
-Alle drei setzen intern `module_id=examgrouping` via `setParameterByClass` auf
-`ilExtendedTestSettingsModuleProxyGUI` und routen über
-`['ilUIPluginRouterGUI', 'ilExtendedTestSettingsModuleProxyGUI']`.
+> **Nie** `$this->ctrl->setParameter($this, ...)` oder `$this->ctrl->redirect($this, ...)`
+> verwenden — `ilExamGroupingGUI` ist nicht in ilCtrl und jeder solche Aufruf wirft
+> `RuntimeException: Class not found in control structure`.
 
-**Beispiele:**
-```php
-// Link generieren
-$add_link = $this->proxyLink('addGroup', ['ref_id' => $ref_id]);
+---
 
-// Formular-Action mit mehreren Params
-$form->setFormAction($this->proxyFormAction('saveGroupSettings', [
-    'ref_id'   => $ref_id,
-    'group_id' => $group_id,
-]));
+## Zufallstest — Besonderheiten
 
-// Redirect nach Speichern
-$this->proxyRedirect('show', ['ref_id' => $ref_id]);
+### Pool-Konfiguration lesen
+
+Die konfigurierten Pools werden aus `tst_rnd_quest_set_qpls` geladen (JOIN mit
+`object_data` für den aktuellen Pool-Titel):
+
+```sql
+SELECT p.pool_fi, p.pool_title, p.quest_amount, p.sequence_pos,
+       COALESCE(od.title, p.pool_title) AS actual_title
+FROM tst_rnd_quest_set_qpls p
+LEFT JOIN object_data od ON od.obj_id = p.pool_fi
+WHERE p.test_fi = ?
+ORDER BY p.sequence_pos
 ```
 
-> **Nie** `$this->ctrl->setParameter($this, ...)` oder `$this->ctrl->redirect($this, ...)`
-> verwenden — `ilExamGroupingGUI` ist nicht in ilCtrl und jeder solche Aufruf führt zu
-> einem `RuntimeException: Class not found in control structure`.
+### Pass-Erkennung (Zufallstest)
+
+Für Zufallstests wird `getSubmittedPassesRandom()` statt `getSubmittedPasses()`
+verwendet. Die Passes werden über `tst_test_rnd_qst` identifiziert (gezogene Fragen),
+nicht über `tst_test_result` — da letzteres bei automatischer Auswertung leer sein kann:
+
+```sql
+SELECT DISTINCT active_fi, pass FROM tst_test_rnd_qst
+```
+
+### Fragen-Kopien und `original_id`
+
+ILIAS kopiert Pool-Fragen intern beim Zufallstest. `tst_test_rnd_qst.question_fi`
+zeigt auf die **Kopie** in `qpl_questions`. Die Kopie hat eine abweichende `obj_fi`
+(interner Schatten-Pool), nicht die Original-Pool-ID.
+
+Die Pool-Zuordnung wird deshalb über `original_id` hergestellt:
+
+```sql
+SELECT ttrq.question_fi, copy_q.points AS max_points
+FROM tst_test_rnd_qst ttrq
+JOIN qpl_questions copy_q ON copy_q.question_id = ttrq.question_fi
+JOIN qpl_questions orig    ON orig.question_id  = copy_q.original_id
+WHERE ttrq.active_fi = ? AND ttrq.pass = ? AND orig.obj_fi IN (pool_ids)
+```
+
+`copy_q.points` wird für die Maximalpunkte verwendet (korrekt für Scoring),
+`orig.obj_fi` für den Pool-Vergleich.
+
+### Max-Punkte variieren je Teilnehmer
+
+Da jeder Teilnehmer andere Fragen gezogen bekommt, ist die maximale Punktzahl
+pro Gruppe individuell. Die Ergebnistabelle zeigt daher "X von Y Pkt" mit
+dem jeweils individuellen Y. Die Ø-Zeile zeigt "von Ø Z Pkt".
 
 ---
 
@@ -226,11 +267,10 @@ $this->proxyRedirect('show', ['ref_id' => $ref_id]);
 Pro Gruppe konfigurierbar:
 
 - **`percent`:** Bestanden wenn `(erreicht / max) * 100 >= schwellenwert`
+  (bei max = 0: nicht bewertet)
 - **`points`:** Bestanden wenn `erreicht >= schwellenwert`
 
-Default: `percent`, Wert `50` (= mind. 50% der Gruppenpunkte).
-
-Wird für die Grün/Rot-Färbung in der Ergebnistabelle und die "Bestanden"-Spalte im CSV verwendet.
+Default: `percent`, Wert `50`.
 
 ---
 
@@ -238,66 +278,79 @@ Wird für die Grün/Rot-Färbung in der Ergebnistabelle und die "Bestanden"-Spal
 
 ### Mehrere Durchläufe
 
-Jeder Teilnehmer kann mehrere Testdurchläufe haben (`tst_active` + `tst_test_result`).
-Die Tabelle zeigt alle Durchläufe untereinander, der Teilnehmername wird via `rowspan`
-zusammengefasst.
+Jeder Teilnehmer kann mehrere Testdurchläufe haben. Die Tabelle zeigt alle
+Durchläufe untereinander, der Teilnehmername wird via `rowspan` zusammengefasst.
 
 **Trendpfeile** (gegenüber dem vorherigen Durchlauf, basierend auf Gesamt-Punkten):
 - `▲` grün = Verbesserung
-- `▼` rot = Verschlechterung  
+- `▼` rot = Verschlechterung
 - `→` grau = gleich
 
-### Spaltenstruktur
+### Spaltenstruktur (fixer Test)
 
 ```
 Teilnehmer | Durchlauf | [Gruppe A] | [Gruppe B] | ... | Nicht zugeordnet* | Gesamt
 ```
 
-*Spalte "Nicht zugeordnet" erscheint nur wenn es Fragen gibt, die keiner Gruppe zugewiesen sind.
-
-**Gesamt-Spalte:** Summe aller Fragen des Tests unabhängig von Gruppen — entspricht immer
-dem tatsächlichen ILIAS-Testergebnis.
-
-**Ø-Zeile:** Durchschnitt über den **letzten Durchlauf** je Teilnehmer (nicht alle Durchläufe,
-damit mehrfach antretende Teilnehmer den Schnitt nicht verzerren).
-
-### Technische Umsetzung
+### Spaltenstruktur (Zufallstest)
 
 ```
-getSubmittedPasses()     → alle Passes aller Teilnehmer (aufsteigend nach pass-Nr)
-                           → gruppiert nach active_id in $by_participant
+Teilnehmer | Durchlauf | [Gruppe A (Pool-Namen)] | ... | Nicht zugeordnet* | Gesamt
+```
+
+*Spalte "Nicht zugeordnet" erscheint nur wenn es Fragen/Pools ohne Gruppe gibt.
+
+**Ø-Zeile:** Durchschnitt über den **letzten Durchlauf** je Teilnehmer.
+
+### Technische Umsetzung (fixer Test)
+
+```
+getSubmittedPasses()     → alle Passes aller Teilnehmer (tst_test_result)
 getTestQuestions()       → Fragen mit Sequence + Titel + Maximalpunktzahl
 getQuestionResults()     → erreichte Punkte je Frage für einen Pass
-getGroupsForTest()       → Gruppen-Definitionen mit threshold-Feldern
 getGroupQuestions()      → zugeordnete question_ids für eine Gruppe
 ```
 
-`getGroupsForTest()` prüft via `tableColumnExists()` ob `threshold_type`/`threshold_value`
-existieren — Rückfall auf Query ohne diese Spalten wenn Tabelle noch altes Schema hat.
+### Technische Umsetzung (Zufallstest)
+
+```
+getSubmittedPassesRandom() → alle Passes aller Teilnehmer (tst_test_rnd_qst)
+getTestPools()             → konfigurierte Pools (tst_rnd_quest_set_qpls)
+getGroupPools()            → zugeordnete pool_ids für eine Gruppe
+getRandomGroupResults()    → erreichte + max Punkte je Gruppe/Pass
+                             (über original_id auf Pool-IDs gemappt)
+```
 
 ---
 
 ## CSV-Export
 
-**Trigger:** Button "CSV exportieren" rechts über der Ergebnistabelle.  
-**Alle Durchläufe** aller Teilnehmer werden als einzelne Zeilen exportiert.
-
-**Spaltenstruktur:**
-```
-Name | Login | Durchlauf | Datum |
-  [Gruppe A] F1: Titel (Max Pkt) | F1 Max |
-  [Gruppe A] ... |
-  [Gruppe A] Gesamt Pkt | Max Pkt | % | Bestanden |
-  ... weitere Gruppen ...
-  [Nicht zugeordnet] ...   ← nur wenn vorhanden
-  Gesamt Test Pkt | Gesamt Test Max | Gesamt Test %
-```
+**Alle Durchläufe** aller Teilnehmer als einzelne Zeilen.
 
 **Format:**
 - Trennzeichen: `;` (Excel-DE-kompatibel)
-- Encoding: UTF-8 mit BOM (Excel erkennt Umlaute direkt)
+- Encoding: UTF-8 mit BOM
 - Dezimaltrennzeichen: `,`
 - Dateiname: `fragengruppierung_<Testname>_<YYYYMMDD_HHmmss>.csv`
+
+**Spaltenstruktur fixer Test:**
+```
+Name | Login | Durchlauf | Datum |
+  [Gruppe A] F1: Titel (Pkt) | F1 Max |
+  [Gruppe A] Gesamt Pkt | Max Pkt | % | Bestanden |
+  ... weitere Gruppen ...
+  [Nicht zugeordnet] ...
+  Gesamt Test Pkt | Gesamt Test Max | Gesamt Test %
+```
+
+**Spaltenstruktur Zufallstest:**
+```
+Name | Login | Durchlauf | Datum |
+  [Gruppe A] Pools: Pool1, Pool2 | Erreicht Pkt | Max Pkt | % | Bestanden |
+  ... weitere Gruppen ...
+  [Nicht zugeordnet] Erreicht | Max | %
+  Gesamt Pkt | Gesamt Max | Gesamt %
+```
 
 ---
 
@@ -308,31 +361,24 @@ Name | Login | Durchlauf | Datum |
 1. ZIP in ILIAS hochladen:
    `Administration → Plugins → ExtendedTestSettings → Module → ZIP hochladen`
 2. Modul in der Liste aktivieren (Standard: inaktiv)
-3. In den Erweiterten Test-Einstellungen eines Tests erscheint jetzt der Link
-   "Gruppen verwalten / Ergebnisse anzeigen"
+3. In den Erweiterten Test-Einstellungen eines Tests erscheint der Link
 
 ### Update (neue ZIP-Version)
 
-Gleiches Vorgehen wie Erstinstallation — der Installer entfernt das alte
-Modul-Verzeichnis und entpackt die neue Version. `sql/install.php` läuft erneut
-(daher immer `tableExists()`-Guard!).
+Gleiches Vorgehen wie Erstinstallation — der Installer ersetzt das alte
+Modul-Verzeichnis. `sql/install.php` läuft erneut (daher immer `tableExists()`-Guard!).
 
-> Achtung: Es gibt derzeit keinen automatischen DB-Migrations-Mechanismus für
-> externe Module. Wenn das Schema sich ändert, muss `install.php` defensiv sein
-> (z.B. via `tableColumnExists()` prüfen und Spalten nachträglich hinzufügen).
+> Bei einem Update von v1.0.2 auf v1.0.3+: Die neue Tabelle `examgrp_pool_items`
+> wird von `install.php` automatisch angelegt, falls noch nicht vorhanden.
 
 ---
 
 ## Changelog
 
-| Datum | Was |
-|---|---|
-| 2026-04-10 | Initiale Implementierung: Gruppen, Fragen-Zuweisung, Schwellenwert, Ergebnistabelle, CSV-Export |
-| 2026-04-10 | Mehrere Durchläufe je Teilnehmer (rowspan, Trendpfeile, Abgabedatum) |
-| 2026-04-10 | Nicht-zugeordnete-Fragen-Spalte + Gesamt summiert alle Fragen |
-| 2026-04-10 | In modulares System migriert (`modules/examgrouping/`), Proxy-Routing |
-| 2026-04-10 | Handler: `implements ilExamModuleInterface` ergänzt (war Bug — Modul lud nicht) |
-| 2026-04-10 | **v1.0.1:** `module.json`: `gui_file`/`gui_class` ergänzt, `require_files: []` |
-| 2026-04-10 | **v1.0.1:** Handler: `injectAssets()` + `getFormItems()` implementiert (Interface vollständig) |
-| 2026-04-10 | **v1.0.1:** GUI: alle `ctrl->...($this,...)` durch `proxyLink/proxyFormAction/proxyRedirect` ersetzt |
-| 2026-04-10 | **v1.0.1:** GUI: `executeCommand()` liest cmd aus `$_POST['cmd']` (Array) statt `$ctrl->getCmd()` |
+| Datum | Version | Was |
+|---|---|---|
+| 2026-05-26 | **v1.0.4** | Bugfix: Pass-Erkennung für Zufallstests via `tst_test_rnd_qst` statt `tst_test_result`; Pool-Matching über `qpl_questions.original_id` (ILIAS kopiert Pool-Fragen intern) |
+| 2026-05-26 | **v1.0.3** | Zufallstest-Unterstützung: Pool-basierte Gruppierung, neue Tabelle `examgrp_pool_items`, `getSubmittedPassesRandom()`, `getRandomGroupResults()`, eigener CSV-Export für Zufallstests |
+| 2026-05-12 | **v1.0.2** | ILIAS-Kompatibilität auf 9 beschränkt |
+| 2026-04-10 | **v1.0.1** | Proxy-Routing, Interface-Fix, Formular-Submit-Fix, `gui_file`/`gui_class` in module.json |
+| 2026-04-10 | **v1.0.0** | Initiale Implementierung: Gruppen, Fragen-Zuweisung, Schwellenwert, Ergebnistabelle, CSV-Export, mehrere Durchläufe, Trendpfeile |
