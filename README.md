@@ -32,6 +32,7 @@ Jeder Branch entspricht einer ILIAS-Hauptversion:
 | [examgrouping](modules/examgrouping/) | Fragen zu Gruppen zusammenfassen, Ergebnisse je Gruppe auswerten, CSV-Export |
 | [examresourcesheet](modules/examresourcesheet/) | Hilfsmittelblatt (PDF/HTML) als seitliches Panel im Test-Player, Text markierbar, Push-Modus |
 | [examlogger](modules/examlogger/) | Serverseitiges Audit-Logging: Start, Navigation, Abgabe, Gerätezuordnung via IP, CSV-Export |
+| [exammessage](modules/exammessage/) | Echtzeit-Nachricht an alle Prüfungsteilnehmer per AJAX-Polling (15 s), drei Nachrichtentypen, Countdown |
 
 ---
 
