@@ -1,0 +1,7 @@
+{
+    "id": "exammessage",
+    "label": "Prüfungs-Nachricht",
+    "description": "Sendet eine Nachricht an alle Teilnehmer mit AJAX-Polling (15 s) für Echtzeit-Zustellung ohne Seitenneuladen.",
+    "version": "1.3.0",
+    "download": "ExamMessage_v1.3.0.zip"
+}
