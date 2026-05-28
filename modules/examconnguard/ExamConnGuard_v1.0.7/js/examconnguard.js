@@ -230,6 +230,13 @@
         stopReconnectHeartbeat();
         hideOverlay();
         disableBeforeUnload();
+        // Signal für andere Module (z.B. ExamNetQos) — vor replayQueued damit
+        // der Reconnect-Zeitpunkt korrekt erfasst wird, bevor die Seite navigiert.
+        try {
+            document.dispatchEvent(new CustomEvent('examconnguard:reconnect', {
+                detail: { source: source }
+            }));
+        } catch (e) { /* ignore */ }
         replayQueued();
     }
 

@@ -1,0 +1,6 @@
+{
+    "id": "examnetqos",
+    "label": "Netzwerk-Qualität",
+    "description": "Clientseitige Latenz- und Paketverlust-Messung. Korreliert Teilnehmer-Beschwerden mit echten Netz-Ereignissen via Admin-Zeitstrahl.",
+    "version": "1.0.1"
+}
