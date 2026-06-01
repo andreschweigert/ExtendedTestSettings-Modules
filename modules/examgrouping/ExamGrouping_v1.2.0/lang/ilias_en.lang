@@ -1,0 +1,101 @@
+<!-- language file start -->
+title#:#Question grouping
+description#:#Combine questions into groups and evaluate the total score per group.
+no_groups#:#No groups defined yet.
+groups_count#:#%d group(s) configured.
+intro#:#Combine questions of this test into named groups and evaluate the total score per group.
+manage_btn#:#Manage groups / show results
+nav_desc#:#Combine questions into groups and evaluate results
+no_valid_test#:#No valid test selected.
+no_permission#:#No permission.
+not_a_test#:#The selected object is not a test.
+no_pools#:#This test has no configured question pools.
+no_pools_hint#:#Please configure question pools in the test first.
+no_questions#:#This test has no questions yet.
+groups_heading#:#Question groups
+btn_new_group#:#+ New group
+no_groups_hint#:#No groups defined yet. Click "New group" to create one.
+th_group#:#Group
+th_questions#:#Contained questions
+th_max_points#:#Max. points
+th_threshold#:#Pass threshold
+th_actions#:#Actions
+th_assigned_pools#:#Assigned pools
+no_questions_assigned#:#No questions assigned
+no_pools_assigned#:#No pools assigned
+unit_pts#:#pts
+btn_settings#:#Settings
+btn_questions#:#Questions
+btn_pools#:#Pools
+btn_delete#:#Delete
+confirm_delete#:#Really delete group "%s"?
+results_heading#:#Results by group
+assign_questions_hint#:#Assign questions to the groups to display results.
+assign_pools_hint#:#Assign pools to the groups to display results.
+no_passes#:#No completed test runs yet.
+btn_export_csv#:#Export CSV
+th_participant#:#Participant
+th_pass#:#Run
+th_total_all#:#Total (all questions)
+th_total#:#Total
+lbl_max#:#max.
+lbl_from#:#from
+lbl_of#:#of
+lbl_of_avg#:#of avg
+ungrouped#:#Unassigned
+unit_questions#:#question(s)
+unit_questions_short#:#questions
+unit_passes#:#runs
+unit_participants#:#participants
+unit_questions_per_participant#:#questions per participant
+lbl_pass#:#Run
+trend_better#:#Better than previous run
+trend_worse#:#Worse than previous run
+trend_equal#:#Same as previous run
+trend_equal_short#:#Equal
+status_passed#:#Passed
+status_failed#:#Not passed
+no_questions_short#:#No questions
+anon#:#Anonymous
+avg_last_pass#:#avg last run
+form_new_group_title#:#Create new question group
+group_name#:#Group name
+btn_create_group#:#Create group
+btn_cancel#:#Cancel
+btn_save#:#Save
+err_empty_name#:#Please enter a group name.
+err_name_empty2#:#Group name must not be empty.
+err_group_not_found#:#Group not found.
+msg_group_created#:#Group "%s" was created.
+msg_group_deleted#:#Group "%s" was deleted.
+msg_settings_saved#:#Settings saved.
+msg_questions_assigned#:#%d questions assigned to the group.
+msg_pools_assigned#:#%d pool(s) assigned to the group.
+form_settings_title#:#Settings: "%s"
+threshold_section#:#Pass threshold
+threshold_type_label#:#Type
+threshold_percent#:#Percent (%)
+threshold_points#:#Points (pts)
+threshold_value_label#:#Threshold value
+threshold_value_info#:#For type "Percent": value between 0 and 100 (e.g. 50 = at least 50% of the group points).<br>For type "Points": absolute minimum score in this group.
+form_assign_questions_title#:#Assign questions: "%s"
+select_questions_section#:#Select questions (multiple possible)
+form_assign_pools_title#:#Assign question pools: "%s"
+select_pools_section#:#Select pools (multiple possible)
+pool_intro#:#Random test: groups are assigned to question pools. The max points vary per participant (depending on the drawn questions).
+csv_name#:#Name
+csv_login#:#Login
+csv_pass#:#Run
+csv_date#:#Date
+csv_total_col#:#Total
+csv_total_max_col#:#Total max
+csv_passed_col#:#Passed
+csv_pools_col#:#Pools
+csv_reached_col#:#Reached
+csv_max_col#:#Max
+csv_total_test_pts#:#Total test (pts)
+csv_total_test_max#:#Total test max
+csv_total_test_pct#:#Total test (%)
+csv_yes#:#Yes
+csv_no#:#No
+export_not_possible#:#Export not possible.

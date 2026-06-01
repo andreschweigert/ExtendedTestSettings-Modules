@@ -1,0 +1,101 @@
+<!-- language file start -->
+title#:#Fragengruppierung
+description#:#Fragen zu Gruppen zusammenfassen und Gesamtpunktzahl je Gruppe auswerten.
+no_groups#:#Noch keine Gruppen definiert.
+groups_count#:#%d Gruppe(n) konfiguriert.
+intro#:#Fassen Sie Fragen dieses Tests zu benannten Gruppen zusammen und werten Sie die Gesamtpunktzahl je Gruppe aus.
+manage_btn#:#Gruppen verwalten / Ergebnisse anzeigen
+nav_desc#:#Fragen zu Gruppen zusammenfassen und Ergebnisse auswerten
+no_valid_test#:#Kein gültiger Test ausgewählt.
+no_permission#:#Keine Berechtigung.
+not_a_test#:#Das ausgewählte Objekt ist kein Test.
+no_pools#:#Dieser Test hat keine konfigurierten Fragenpools.
+no_pools_hint#:#Bitte zuerst Fragenpools im Test hinterlegen.
+no_questions#:#Dieser Test hat noch keine Fragen.
+groups_heading#:#Fragengruppen
+btn_new_group#:#+ Neue Gruppe
+no_groups_hint#:#Noch keine Gruppen definiert. Klicken Sie auf „Neue Gruppe", um eine Gruppe zu erstellen.
+th_group#:#Gruppe
+th_questions#:#Enthaltene Fragen
+th_max_points#:#Max. Punkte
+th_threshold#:#Bestandens-Schwelle
+th_actions#:#Aktionen
+th_assigned_pools#:#Zugeordnete Pools
+no_questions_assigned#:#Keine Fragen zugeordnet
+no_pools_assigned#:#Keine Pools zugeordnet
+unit_pts#:#Pkt
+btn_settings#:#Einstellungen
+btn_questions#:#Fragen
+btn_pools#:#Pools
+btn_delete#:#Löschen
+confirm_delete#:#Gruppe „%s" wirklich löschen?
+results_heading#:#Ergebnisse nach Gruppen
+assign_questions_hint#:#Ordnen Sie den Gruppen Fragen zu, um Ergebnisse anzuzeigen.
+assign_pools_hint#:#Ordnen Sie den Gruppen Pools zu, um Ergebnisse anzuzeigen.
+no_passes#:#Noch keine abgeschlossenen Testdurchläufe vorhanden.
+btn_export_csv#:#CSV exportieren
+th_participant#:#Teilnehmer
+th_pass#:#Durchlauf
+th_total_all#:#Gesamt (alle Fragen)
+th_total#:#Gesamt
+lbl_max#:#max.
+lbl_from#:#ab
+lbl_of#:#von
+lbl_of_avg#:#von Ø
+ungrouped#:#Nicht zugeordnet
+unit_questions#:#Frage(n)
+unit_questions_short#:#Fragen
+unit_passes#:#Durchläufe
+unit_participants#:#Teilnehmer
+unit_questions_per_participant#:#Fragen pro Teilnehmer
+lbl_pass#:#Durchlauf
+trend_better#:#Besser als vorheriger Durchlauf
+trend_worse#:#Schlechter als vorheriger Durchlauf
+trend_equal#:#Gleich wie vorheriger Durchlauf
+trend_equal_short#:#Gleich
+status_passed#:#Bestanden
+status_failed#:#Nicht best.
+no_questions_short#:#Keine Fragen
+anon#:#Anonym
+avg_last_pass#:#Ø letzter Durchlauf
+form_new_group_title#:#Neue Fragengruppe erstellen
+group_name#:#Gruppenname
+btn_create_group#:#Gruppe erstellen
+btn_cancel#:#Abbrechen
+btn_save#:#Speichern
+err_empty_name#:#Bitte geben Sie einen Gruppennamen ein.
+err_name_empty2#:#Gruppenname darf nicht leer sein.
+err_group_not_found#:#Gruppe nicht gefunden.
+msg_group_created#:#Gruppe „%s" wurde erstellt.
+msg_group_deleted#:#Gruppe „%s" wurde gelöscht.
+msg_settings_saved#:#Einstellungen gespeichert.
+msg_questions_assigned#:#%d Fragen der Gruppe zugeordnet.
+msg_pools_assigned#:#%d Pool(s) der Gruppe zugeordnet.
+form_settings_title#:#Einstellungen: „%s"
+threshold_section#:#Bestandens-Schwelle
+threshold_type_label#:#Typ
+threshold_percent#:#Prozent (%)
+threshold_points#:#Punkte (Pkt)
+threshold_value_label#:#Schwellenwert
+threshold_value_info#:#Bei Typ "Prozent": Wert zwischen 0 und 100 (z.B. 50 = mind. 50% der Gruppenpunkte).<br>Bei Typ "Punkte": absolute Mindestpunktzahl in dieser Gruppe.
+form_assign_questions_title#:#Fragen zuordnen: „%s"
+select_questions_section#:#Fragen auswählen (mehrere möglich)
+form_assign_pools_title#:#Fragenpools zuordnen: „%s"
+select_pools_section#:#Pools auswählen (mehrere möglich)
+pool_intro#:#Zufallstest: Gruppen werden Fragenpools zugeordnet. Die Max-Punkte variieren je Teilnehmer (abhängig von den gezogenen Fragen).
+csv_name#:#Name
+csv_login#:#Login
+csv_pass#:#Durchlauf
+csv_date#:#Datum
+csv_total_col#:#Gesamt
+csv_total_max_col#:#Gesamt Max
+csv_passed_col#:#Bestanden
+csv_pools_col#:#Pools
+csv_reached_col#:#Erreicht
+csv_max_col#:#Max
+csv_total_test_pts#:#Gesamt Test (Pkt)
+csv_total_test_max#:#Gesamt Test Max
+csv_total_test_pct#:#Gesamt Test (%)
+csv_yes#:#Ja
+csv_no#:#Nein
+export_not_possible#:#Export nicht möglich.

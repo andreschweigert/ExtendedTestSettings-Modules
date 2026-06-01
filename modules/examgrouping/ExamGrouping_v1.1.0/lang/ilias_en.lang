@@ -1,7 +1,0 @@
-<!-- language file start -->
-title#:#Question grouping
-description#:#Combine questions into groups and evaluate the total score per group.
-no_groups#:#No groups defined yet.
-groups_count#:#%d group(s) configured.
-intro#:#Combine questions of this test into named groups and evaluate the total score per group.
-manage_btn#:#Manage groups / show results

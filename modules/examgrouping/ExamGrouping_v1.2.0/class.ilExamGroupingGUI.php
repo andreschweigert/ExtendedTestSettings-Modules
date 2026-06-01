@@ -13,6 +13,7 @@ class ilExamGroupingGUI
     private ilCtrl $ctrl;
     private ilGlobalTemplateInterface $tpl;
     private ilDBInterface $db;
+    private ilModuleLanguage $lng;
 
     public function __construct()
     {
@@ -20,6 +21,15 @@ class ilExamGroupingGUI
         $this->ctrl = $DIC->ctrl();
         $this->tpl  = $DIC->ui()->mainTemplate();
         $this->db   = $DIC->database();
+
+        // Modul-eigene Sprachdatei (lang/ilias_<lang>.lang in diesem Modulverzeichnis)
+        require_once __DIR__ . '/../../classes/Module/ilModuleLanguage.php';
+        $this->lng  = new ilModuleLanguage(__DIR__);
+    }
+
+    private function txt(string $key): string
+    {
+        return $this->lng->txt($key);
     }
 
     public function executeCommand(): void
@@ -77,7 +87,7 @@ class ilExamGroupingGUI
         }
 
         if ($ref_id <= 0) {
-            $this->tpl->setOnScreenMessage('failure', 'Kein gültiger Test ausgewählt.');
+            $this->tpl->setOnScreenMessage('failure', $this->txt('no_valid_test'));
             $this->tpl->printToStdout();
             return;
         }
@@ -86,7 +96,7 @@ class ilExamGroupingGUI
         $has_write = $rbacsystem->checkAccess('write', $ref_id);
 
         if (!$is_admin && !$has_write) {
-            $this->tpl->setOnScreenMessage('failure', 'Keine Berechtigung.');
+            $this->tpl->setOnScreenMessage('failure', $this->txt('no_permission'));
             $DIC->ctrl()->redirectToURL("ilias.php?ref_id={$ref_id}&baseClass=ilRepositoryGUI");
             return;
         }
@@ -142,14 +152,14 @@ class ilExamGroupingGUI
 
                 $tabs->addTab(
                     'exam_grouping',
-                    'Fragengruppierung',
+                    $this->txt('title'),
                     $this->proxyLink('show', ['ref_id' => $ref_id])
                 );
                 $tabs->activateTab('exam_grouping');
             }
 
-            $this->tpl->setTitle('Fragengruppierung');
-            $this->tpl->setDescription('Fragen zu Gruppen zusammenfassen und Ergebnisse auswerten');
+            $this->tpl->setTitle($this->txt('title'));
+            $this->tpl->setDescription($this->txt('nav_desc'));
         } catch (Exception $e) {
             // Navigation-Setup ist nicht kritisch
         }
@@ -166,7 +176,7 @@ class ilExamGroupingGUI
         $this->setupNavigation($ref_id);
 
         if (ilObject::_lookupType($obj_id) !== 'tst') {
-            $this->tpl->setOnScreenMessage('failure', 'Das ausgewählte Objekt ist kein Test.');
+            $this->tpl->setOnScreenMessage('failure', $this->txt('not_a_test'));
             return;
         }
 
@@ -175,8 +185,8 @@ class ilExamGroupingGUI
         if ($this->isRandomTest($obj_id)) {
             $pools = $this->getTestPools($obj_id);
             if (empty($pools)) {
-                $this->tpl->setOnScreenMessage('info', 'Dieser Test hat keine konfigurierten Fragenpools.');
-                $this->tpl->setContent('<p>Bitte zuerst Fragenpools im Test hinterlegen.</p>');
+                $this->tpl->setOnScreenMessage('info', $this->txt('no_pools'));
+                $this->tpl->setContent('<p>' . $this->txt('no_pools_hint') . '</p>');
                 return;
             }
             $html  = $this->buildPoolGroupsSection($ref_id, $obj_id, $groups, $pools);
@@ -188,7 +198,7 @@ class ilExamGroupingGUI
         $questions = $this->getTestQuestions($obj_id);
 
         if (empty($questions)) {
-            $this->tpl->setOnScreenMessage('info', 'Dieser Test hat noch keine Fragen.');
+            $this->tpl->setOnScreenMessage('info', $this->txt('no_questions'));
         }
 
         $html  = $this->buildGroupsSection($ref_id, $obj_id, $groups, $questions);
@@ -207,21 +217,20 @@ class ilExamGroupingGUI
 
         $html  = '<div style="margin-bottom:2rem;">';
         $html .= '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">';
-        $html .= '<h3 style="margin:0;">Fragengruppen</h3>';
-        $html .= '<a href="' . htmlspecialchars($add_link) . '" class="btn btn-primary">+ Neue Gruppe</a>';
+        $html .= '<h3 style="margin:0;">' . $this->txt('groups_heading') . '</h3>';
+        $html .= '<a href="' . htmlspecialchars($add_link) . '" class="btn btn-primary">' . $this->txt('btn_new_group') . '</a>';
         $html .= '</div>';
 
         if (empty($groups)) {
-            $html .= '<p class="text-muted">Noch keine Gruppen definiert. '
-                   . 'Klicken Sie auf „Neue Gruppe", um eine Gruppe zu erstellen.</p>';
+            $html .= '<p class="text-muted">' . $this->txt('no_groups_hint') . '</p>';
         } else {
             $html .= '<table class="table table-striped" style="width:100%;">';
             $html .= '<thead><tr>'
-                   . '<th>Gruppe</th>'
-                   . '<th>Enthaltene Fragen</th>'
-                   . '<th>Max. Punkte</th>'
-                   . '<th>Bestandens-Schwelle</th>'
-                   . '<th>Aktionen</th>'
+                   . '<th>' . $this->txt('th_group') . '</th>'
+                   . '<th>' . $this->txt('th_questions') . '</th>'
+                   . '<th>' . $this->txt('th_max_points') . '</th>'
+                   . '<th>' . $this->txt('th_threshold') . '</th>'
+                   . '<th>' . $this->txt('th_actions') . '</th>'
                    . '</tr></thead><tbody>';
 
             foreach ($groups as $group) {
@@ -242,29 +251,31 @@ class ilExamGroupingGUI
                 $delete_link   = $this->proxyLink('deleteGroup',       ['ref_id' => $ref_id, 'group_id' => $group['id']]);
 
                 $q_display = empty($q_labels)
-                    ? '<em style="color:#999;">Keine Fragen zugeordnet</em>'
+                    ? '<em style="color:#999;">' . $this->txt('no_questions_assigned') . '</em>'
                     : implode('<br>', $q_labels);
 
                 // Schwellenwert anzeigen
                 $ttype = $group['threshold_type']  ?? 'percent';
                 $tval  = $group['threshold_value'] ?? 50.0;
                 if ($ttype === 'points') {
-                    $threshold_display = number_format((float) $tval, 2) . ' Pkt';
+                    $threshold_display = number_format((float) $tval, 2) . ' ' . $this->txt('unit_pts');
                 } else {
                     $threshold_display = number_format((float) $tval, 0) . '%';
                 }
 
+                $confirm = htmlspecialchars(addslashes(sprintf($this->txt('confirm_delete'), $group['name'])), ENT_QUOTES);
+
                 $html .= '<tr>';
                 $html .= '<td><strong>' . htmlspecialchars($group['name']) . '</strong></td>';
                 $html .= '<td>' . $q_display . '</td>';
-                $html .= '<td>' . number_format($max_points, 2) . ' Pkt</td>';
+                $html .= '<td>' . number_format($max_points, 2) . ' ' . $this->txt('unit_pts') . '</td>';
                 $html .= '<td>' . htmlspecialchars($threshold_display) . '</td>';
                 $html .= '<td style="white-space:nowrap;">';
-                $html .= '<a href="' . htmlspecialchars($settings_link) . '" class="btn btn-sm btn-default">Einstellungen</a> ';
-                $html .= '<a href="' . htmlspecialchars($edit_link) . '" class="btn btn-sm btn-default">Fragen</a> ';
+                $html .= '<a href="' . htmlspecialchars($settings_link) . '" class="btn btn-sm btn-default">' . $this->txt('btn_settings') . '</a> ';
+                $html .= '<a href="' . htmlspecialchars($edit_link) . '" class="btn btn-sm btn-default">' . $this->txt('btn_questions') . '</a> ';
                 $html .= '<a href="' . htmlspecialchars($delete_link) . '" class="btn btn-sm btn-danger" '
-                       . 'onclick="return confirm(\'Gruppe &quot;' . htmlspecialchars(addslashes($group['name'])) . '&quot; wirklich löschen?\');">'
-                       . 'Löschen</a>';
+                       . 'onclick="return confirm(\'' . $confirm . '\');">'
+                       . $this->txt('btn_delete') . '</a>';
                 $html .= '</td>';
                 $html .= '</tr>';
             }
@@ -296,17 +307,17 @@ class ilExamGroupingGUI
         }
 
         $html  = '<hr>';
-        $html .= '<h3>Ergebnisse nach Gruppen</h3>';
+        $html .= '<h3>' . $this->txt('results_heading') . '</h3>';
 
         if (empty($active_groups)) {
-            $html .= '<p class="text-muted">Ordnen Sie den Gruppen Fragen zu, um Ergebnisse anzuzeigen.</p>';
+            $html .= '<p class="text-muted">' . $this->txt('assign_questions_hint') . '</p>';
             return $html;
         }
 
         $passes = $this->getSubmittedPasses($obj_id);
 
         if (empty($passes)) {
-            $html .= '<p class="text-muted">Noch keine abgeschlossenen Testdurchläufe vorhanden.</p>';
+            $html .= '<p class="text-muted">' . $this->txt('no_passes') . '</p>';
             return $html;
         }
 
@@ -332,15 +343,15 @@ class ilExamGroupingGUI
         // Export-Button
         $export_link = $this->proxyLink('exportResults', ['ref_id' => $ref_id]);
         $html .= '<div style="text-align:right;margin-bottom:0.5rem;">'
-               . '<a href="' . htmlspecialchars($export_link) . '" class="btn btn-default btn-sm">&#11015; CSV exportieren</a>'
+               . '<a href="' . htmlspecialchars($export_link) . '" class="btn btn-default btn-sm">&#11015; ' . $this->txt('btn_export_csv') . '</a>'
                . '</div>';
 
         // Tabellenkopf
         $html .= '<div style="overflow-x:auto;">';
         $html .= '<table class="table table-sm table-bordered">';
         $html .= '<thead><tr>';
-        $html .= '<th>Teilnehmer</th>';
-        $html .= '<th style="white-space:nowrap;">Durchlauf</th>';
+        $html .= '<th>' . $this->txt('th_participant') . '</th>';
+        $html .= '<th style="white-space:nowrap;">' . $this->txt('th_pass') . '</th>';
 
         // Max-Punkte je aktiver Gruppe vorberechnen
         $group_max = [];
@@ -356,13 +367,13 @@ class ilExamGroupingGUI
             $ttype = $ag['group']['threshold_type']  ?? 'percent';
             $tval  = (float) ($ag['group']['threshold_value'] ?? 50);
             $threshold_label = $ttype === 'points'
-                ? 'ab ' . number_format($tval, 2) . ' Pkt'
-                : 'ab ' . number_format($tval, 0) . '%';
+                ? $this->txt('lbl_from') . ' ' . number_format($tval, 2) . ' ' . $this->txt('unit_pts')
+                : $this->txt('lbl_from') . ' ' . number_format($tval, 0) . '%';
 
             $html .= '<th style="white-space:nowrap;">'
                    . htmlspecialchars($ag['group']['name'])
-                   . '<br><small style="font-weight:normal;color:#666;">max. '
-                   . number_format($max_pts, 2) . ' Pkt</small>'
+                   . '<br><small style="font-weight:normal;color:#666;">' . $this->txt('lbl_max') . ' '
+                   . number_format($max_pts, 2) . ' ' . $this->txt('unit_pts') . '</small>'
                    . '<br><small style="color:#555;">✓ ' . $threshold_label . '</small>'
                    . '</th>';
         }
@@ -370,13 +381,13 @@ class ilExamGroupingGUI
         // Spalte für nicht zugeordnete Fragen (falls vorhanden)
         if ($has_ungrouped) {
             $html .= '<th style="white-space:nowrap;color:#856404;background:#fff3cd;">'
-                   . 'Nicht zugeordnet'
-                   . '<br><small style="font-weight:normal;">max. ' . number_format($ungrouped_max, 2) . ' Pkt</small>'
-                   . '<br><small>' . count($ungrouped_qids) . ' Frage(n)</small>'
+                   . $this->txt('ungrouped')
+                   . '<br><small style="font-weight:normal;">' . $this->txt('lbl_max') . ' ' . number_format($ungrouped_max, 2) . ' ' . $this->txt('unit_pts') . '</small>'
+                   . '<br><small>' . count($ungrouped_qids) . ' ' . $this->txt('unit_questions') . '</small>'
                    . '</th>';
         }
 
-        $html .= '<th>Gesamt (alle Fragen)</th>';
+        $html .= '<th>' . $this->txt('th_total_all') . '</th>';
         $html .= '</tr></thead><tbody>';
 
         // Maximalpunkte des Tests: jede Frage einmal, unabhängig von Gruppen
@@ -410,7 +421,7 @@ class ilExamGroupingGUI
             $participant_passes = $participant['passes']; // aufsteigend nach pass-Nr
             $pass_count_local   = count($participant_passes);
             $name  = trim(($participant['firstname'] ?? '') . ' ' . ($participant['lastname'] ?? ''));
-            $login = $participant['login'] ?? 'Anonym';
+            $login = $participant['login'] ?? $this->txt('anon');
 
             // Vorab Gesamtpunkte je Pass berechnen (für Trendpfeil)
             $totals_per_pass = [];
@@ -441,7 +452,7 @@ class ilExamGroupingGUI
                            . '<br><small style="color:#999;">' . htmlspecialchars($login) . '</small>'
                            . ($pass_count_local > 1
                                ? '<br><small style="color:#6c757d;margin-top:4px;display:block;">'
-                                 . $pass_count_local . ' Durchläufe</small>'
+                                 . $pass_count_local . ' ' . $this->txt('unit_passes') . '</small>'
                                : '')
                            . '</td>';
                 }
@@ -461,17 +472,17 @@ class ilExamGroupingGUI
                     $prev_total = $totals_per_pass[$participant_passes[$idx - 1]['pass']];
                     $curr_total = $totals_per_pass[$pass['pass']];
                     if ($curr_total > $prev_total) {
-                        $trend = ' <span style="color:#28a745;font-weight:bold;" title="Besser als vorheriger Durchlauf">▲</span>';
+                        $trend = ' <span style="color:#28a745;font-weight:bold;" title="' . $this->txt('trend_better') . '">▲</span>';
                     } elseif ($curr_total < $prev_total) {
-                        $trend = ' <span style="color:#dc3545;font-weight:bold;" title="Schlechter als vorheriger Durchlauf">▼</span>';
+                        $trend = ' <span style="color:#dc3545;font-weight:bold;" title="' . $this->txt('trend_worse') . '">▼</span>';
                     } else {
-                        $trend = ' <span style="color:#6c757d;" title="Gleich wie vorheriger Durchlauf">→</span>';
+                        $trend = ' <span style="color:#6c757d;" title="' . $this->txt('trend_equal') . '">→</span>';
                     }
                 }
 
                 // Pass-Info-Zelle (erste Datenspalte)
                 $html .= '<td style="white-space:nowrap;color:#555;font-size:0.85em;vertical-align:top;">'
-                       . '<strong>Durchlauf ' . $pass_nr . '</strong>' . $trend
+                       . '<strong>' . $this->txt('lbl_pass') . ' ' . $pass_nr . '</strong>' . $trend
                        . ($date_str ? '<br><small>' . $date_str . '</small>' : '')
                        . '</td>';
 
@@ -500,10 +511,10 @@ class ilExamGroupingGUI
                     $label  = $passed ? '✓' : '✗';
 
                     $html .= '<td style="background:' . $bg . ';white-space:nowrap;vertical-align:top;">'
-                           . '<strong>' . number_format($reached, 2) . ' Pkt</strong>'
-                           . '<br><small>von ' . number_format($max, 2) . ' Pkt'
+                           . '<strong>' . number_format($reached, 2) . ' ' . $this->txt('unit_pts') . '</strong>'
+                           . '<br><small>' . $this->txt('lbl_of') . ' ' . number_format($max, 2) . ' ' . $this->txt('unit_pts')
                            . ' (' . number_format($pct, 1) . '%)</small>'
-                           . '<br><small>' . $label . ($passed ? ' Bestanden' : ' Nicht best.') . '</small>'
+                           . '<br><small>' . $label . ' ' . ($passed ? $this->txt('status_passed') : $this->txt('status_failed')) . '</small>'
                            . '</td>';
                 }
 
@@ -518,8 +529,8 @@ class ilExamGroupingGUI
                     }
                     $ug_pct = $ungrouped_max > 0 ? ($ug_reached / $ungrouped_max) * 100 : 0;
                     $html .= '<td style="background:#fff3cd;white-space:nowrap;vertical-align:top;">'
-                           . number_format($ug_reached, 2) . ' Pkt'
-                           . '<br><small>von ' . number_format($ungrouped_max, 2) . ' Pkt'
+                           . number_format($ug_reached, 2) . ' ' . $this->txt('unit_pts')
+                           . '<br><small>' . $this->txt('lbl_of') . ' ' . number_format($ungrouped_max, 2) . ' ' . $this->txt('unit_pts')
                            . ' (' . number_format($ug_pct, 1) . '%)</small>'
                            . '</td>';
                 }
@@ -531,8 +542,8 @@ class ilExamGroupingGUI
                 }
                 $total_pct = $test_total_max > 0 ? ($total_reached / $test_total_max) * 100 : 0;
                 $html .= '<td style="white-space:nowrap;font-weight:bold;vertical-align:top;">'
-                       . number_format($total_reached, 2) . ' Pkt'
-                       . '<br><small>von ' . number_format($test_total_max, 2) . ' Pkt'
+                       . number_format($total_reached, 2) . ' ' . $this->txt('unit_pts')
+                       . '<br><small>' . $this->txt('lbl_of') . ' ' . number_format($test_total_max, 2) . ' ' . $this->txt('unit_pts')
                        . ' (' . number_format($total_pct, 1) . '%)</small>'
                        . '</td>';
 
@@ -550,8 +561,8 @@ class ilExamGroupingGUI
         if ($participant_count > 0) {
             $col_span_name = 2; // Name + Durchlauf-Zelle
             $html .= '<tr style="background:#f8f9fa;font-style:italic;border-top:2px solid #adb5bd;">';
-            $html .= '<td colspan="' . $col_span_name . '"><strong>Ø letzter Durchlauf</strong>'
-                   . '<br><small>(' . $participant_count . ' Teilnehmer)</small></td>';
+            $html .= '<td colspan="' . $col_span_name . '"><strong>' . $this->txt('avg_last_pass') . '</strong>'
+                   . '<br><small>(' . $participant_count . ' ' . $this->txt('unit_participants') . ')</small></td>';
 
             foreach ($active_groups as $ag) {
                 $gid     = $ag['group']['id'];
@@ -559,8 +570,8 @@ class ilExamGroupingGUI
                 $avg     = $summary_reached[$gid] / $participant_count;
                 $avg_pct = $max > 0 ? ($avg / $max) * 100 : 0;
                 $html .= '<td style="white-space:nowrap;">'
-                       . number_format($avg, 2) . ' Pkt'
-                       . '<br><small>von ' . number_format($max, 2) . ' Pkt'
+                       . number_format($avg, 2) . ' ' . $this->txt('unit_pts')
+                       . '<br><small>' . $this->txt('lbl_of') . ' ' . number_format($max, 2) . ' ' . $this->txt('unit_pts')
                        . ' (' . number_format($avg_pct, 1) . '%)</small>'
                        . '</td>';
             }
@@ -569,8 +580,8 @@ class ilExamGroupingGUI
                 $ug_avg     = $summary_ungrouped / $participant_count;
                 $ug_avg_pct = $ungrouped_max > 0 ? ($ug_avg / $ungrouped_max) * 100 : 0;
                 $html .= '<td style="background:#fff3cd;white-space:nowrap;">'
-                       . number_format($ug_avg, 2) . ' Pkt'
-                       . '<br><small>von ' . number_format($ungrouped_max, 2) . ' Pkt'
+                       . number_format($ug_avg, 2) . ' ' . $this->txt('unit_pts')
+                       . '<br><small>' . $this->txt('lbl_of') . ' ' . number_format($ungrouped_max, 2) . ' ' . $this->txt('unit_pts')
                        . ' (' . number_format($ug_avg_pct, 1) . '%)</small>'
                        . '</td>';
             }
@@ -578,8 +589,8 @@ class ilExamGroupingGUI
             $total_avg     = $summary_total_reached / $participant_count;
             $total_avg_pct = $test_total_max > 0 ? ($total_avg / $test_total_max) * 100 : 0;
             $html .= '<td style="white-space:nowrap;font-weight:bold;">'
-                   . number_format($total_avg, 2) . ' Pkt'
-                   . '<br><small>von ' . number_format($test_total_max, 2) . ' Pkt'
+                   . number_format($total_avg, 2) . ' ' . $this->txt('unit_pts')
+                   . '<br><small>' . $this->txt('lbl_of') . ' ' . number_format($test_total_max, 2) . ' ' . $this->txt('unit_pts')
                    . ' (' . number_format($total_avg_pct, 1) . '%)</small>'
                    . '</td>';
             $html .= '</tr>';
@@ -601,9 +612,9 @@ class ilExamGroupingGUI
 
         $form = new ilPropertyFormGUI();
         $form->setFormAction($this->proxyFormAction('saveGroup', ['ref_id' => $ref_id]));
-        $form->setTitle('Neue Fragengruppe erstellen');
+        $form->setTitle($this->txt('form_new_group_title'));
 
-        $name_input = new ilTextInputGUI('Gruppenname', 'group_name');
+        $name_input = new ilTextInputGUI($this->txt('group_name'), 'group_name');
         $name_input->setRequired(true);
         $name_input->setMaxLength(255);
         $form->addItem($name_input);
@@ -612,8 +623,8 @@ class ilExamGroupingGUI
         $ref_hidden->setValue((string) $ref_id);
         $form->addItem($ref_hidden);
 
-        $form->addCommandButton('saveGroup', 'Gruppe erstellen');
-        $form->addCommandButton('show', 'Abbrechen');
+        $form->addCommandButton('saveGroup', $this->txt('btn_create_group'));
+        $form->addCommandButton('show', $this->txt('btn_cancel'));
 
         $this->tpl->setContent($form->getHTML());
     }
@@ -624,7 +635,7 @@ class ilExamGroupingGUI
         $name   = trim($_POST['group_name'] ?? '');
 
         if ($name === '') {
-            $this->tpl->setOnScreenMessage('failure', 'Bitte geben Sie einen Gruppennamen ein.');
+            $this->tpl->setOnScreenMessage('failure', $this->txt('err_empty_name'));
             $this->addGroup($ref_id);
             return;
         }
@@ -646,7 +657,7 @@ class ilExamGroupingGUI
             'created_at' => ['timestamp', date('Y-m-d H:i:s')],
         ]);
 
-        $this->tpl->setOnScreenMessage('success', 'Gruppe „' . htmlspecialchars($name) . '" wurde erstellt.');
+        $this->tpl->setOnScreenMessage('success', sprintf($this->txt('msg_group_created'), htmlspecialchars($name)));
         $this->proxyRedirect('show', ['ref_id' => $ref_id]);
     }
 
@@ -679,7 +690,7 @@ class ilExamGroupingGUI
                 );
                 $this->tpl->setOnScreenMessage(
                     'success',
-                    'Gruppe „' . htmlspecialchars($group['name']) . '" wurde gelöscht.'
+                    sprintf($this->txt('msg_group_deleted'), htmlspecialchars($group['name']))
                 );
             }
         }
@@ -710,7 +721,7 @@ class ilExamGroupingGUI
         $group = $this->db->fetchAssoc($result);
 
         if (!$group) {
-            $this->tpl->setOnScreenMessage('failure', 'Gruppe nicht gefunden.');
+            $this->tpl->setOnScreenMessage('failure', $this->txt('err_group_not_found'));
             $this->proxyRedirect('show', ['ref_id' => $ref_id]);
             return;
         }
@@ -719,10 +730,10 @@ class ilExamGroupingGUI
 
         $form = new ilPropertyFormGUI();
         $form->setFormAction($this->proxyFormAction('saveGroupSettings', ['ref_id' => $ref_id, 'group_id' => $group_id]));
-        $form->setTitle('Einstellungen: „' . htmlspecialchars($group['name']) . '"');
+        $form->setTitle(sprintf($this->txt('form_settings_title'), htmlspecialchars($group['name'])));
 
         // Gruppenname
-        $name_input = new ilTextInputGUI('Gruppenname', 'group_name');
+        $name_input = new ilTextInputGUI($this->txt('group_name'), 'group_name');
         $name_input->setRequired(true);
         $name_input->setMaxLength(255);
         $name_input->setValue($group['name']);
@@ -730,26 +741,23 @@ class ilExamGroupingGUI
 
         // Schwellenwert-Typ
         $section = new ilFormSectionHeaderGUI();
-        $section->setTitle('Bestandens-Schwelle');
+        $section->setTitle($this->txt('threshold_section'));
         $form->addItem($section);
 
-        $type_select = new ilSelectInputGUI('Typ', 'threshold_type');
+        $type_select = new ilSelectInputGUI($this->txt('threshold_type_label'), 'threshold_type');
         $type_select->setOptions([
-            'percent' => 'Prozent (%)',
-            'points'  => 'Punkte (Pkt)',
+            'percent' => $this->txt('threshold_percent'),
+            'points'  => $this->txt('threshold_points'),
         ]);
         $type_select->setValue($group['threshold_type'] ?? 'percent');
         $form->addItem($type_select);
 
-        $val_input = new ilNumberInputGUI('Schwellenwert', 'threshold_value');
+        $val_input = new ilNumberInputGUI($this->txt('threshold_value_label'), 'threshold_value');
         $val_input->setRequired(true);
         $val_input->setMinValue(0);
         $val_input->setDecimals(2);
         $val_input->setValue((string) ($group['threshold_value'] ?? 50));
-        $val_input->setInfo(
-            'Bei Typ "Prozent": Wert zwischen 0 und 100 (z.B. 50 = mind. 50% der Gruppenpunkte).<br>'
-            . 'Bei Typ "Punkte": absolute Mindestpunktzahl in dieser Gruppe.'
-        );
+        $val_input->setInfo($this->txt('threshold_value_info'));
         $form->addItem($val_input);
 
         $ref_hidden = new ilHiddenInputGUI('ref_id');
@@ -760,8 +768,8 @@ class ilExamGroupingGUI
         $gid_hidden->setValue((string) $group_id);
         $form->addItem($gid_hidden);
 
-        $form->addCommandButton('saveGroupSettings', 'Speichern');
-        $form->addCommandButton('show', 'Abbrechen');
+        $form->addCommandButton('saveGroupSettings', $this->txt('btn_save'));
+        $form->addCommandButton('show', $this->txt('btn_cancel'));
 
         $this->tpl->setContent($form->getHTML());
     }
@@ -783,7 +791,7 @@ class ilExamGroupingGUI
             [$group_id, $obj_id]
         );
         if ($this->db->numRows($result) === 0) {
-            $this->tpl->setOnScreenMessage('failure', 'Gruppe nicht gefunden.');
+            $this->tpl->setOnScreenMessage('failure', $this->txt('err_group_not_found'));
             $this->proxyRedirect('show', ['ref_id' => $ref_id]);
             return;
         }
@@ -795,7 +803,7 @@ class ilExamGroupingGUI
         $tval       = max(0.0, (float) str_replace(',', '.', $_POST['threshold_value'] ?? '50'));
 
         if ($name === '') {
-            $this->tpl->setOnScreenMessage('failure', 'Gruppenname darf nicht leer sein.');
+            $this->tpl->setOnScreenMessage('failure', $this->txt('err_name_empty2'));
             $this->proxyRedirect('editGroupSettings', ['ref_id' => $ref_id, 'group_id' => $group_id]);
             return;
         }
@@ -810,7 +818,7 @@ class ilExamGroupingGUI
             ['id' => ['integer', $group_id]]
         );
 
-        $this->tpl->setOnScreenMessage('success', 'Einstellungen gespeichert.');
+        $this->tpl->setOnScreenMessage('success', $this->txt('msg_settings_saved'));
         $this->proxyRedirect('show', ['ref_id' => $ref_id]);
     }
 
@@ -845,7 +853,7 @@ class ilExamGroupingGUI
         $group = $this->db->fetchAssoc($result);
 
         if (!$group) {
-            $this->tpl->setOnScreenMessage('failure', 'Gruppe nicht gefunden.');
+            $this->tpl->setOnScreenMessage('failure', $this->txt('err_group_not_found'));
             $this->proxyRedirect('show', ['ref_id' => $ref_id]);
             return;
         }
@@ -858,21 +866,21 @@ class ilExamGroupingGUI
 
         $form = new ilPropertyFormGUI();
         $form->setFormAction($this->proxyFormAction('saveGroupQuestions', ['ref_id' => $ref_id, 'group_id' => $group_id]));
-        $form->setTitle('Fragen zuordnen: „' . htmlspecialchars($group['name']) . '"');
+        $form->setTitle(sprintf($this->txt('form_assign_questions_title'), htmlspecialchars($group['name'])));
 
         if (empty($questions)) {
             $info = new ilCustomInputGUI('');
-            $info->setHtml('<p style="color:#999;">Dieser Test hat noch keine Fragen.</p>');
+            $info->setHtml('<p style="color:#999;">' . $this->txt('no_questions') . '</p>');
             $form->addItem($info);
         } else {
             $section = new ilFormSectionHeaderGUI();
-            $section->setTitle('Fragen auswählen (mehrere möglich)');
+            $section->setTitle($this->txt('select_questions_section'));
             $form->addItem($section);
 
             foreach ($questions as $qid => $q) {
                 $cb = new ilCheckboxInputGUI(
                     'F' . $q['sequence'] . ': ' . htmlspecialchars($q['title'])
-                    . ' (' . number_format((float) $q['points'], 2) . ' Pkt)',
+                    . ' (' . number_format((float) $q['points'], 2) . ' ' . $this->txt('unit_pts') . ')',
                     'question_' . $qid
                 );
                 $cb->setChecked(isset($assigned_set[$qid]));
@@ -888,8 +896,8 @@ class ilExamGroupingGUI
         $gid_hidden->setValue((string) $group_id);
         $form->addItem($gid_hidden);
 
-        $form->addCommandButton('saveGroupQuestions', 'Speichern');
-        $form->addCommandButton('show', 'Abbrechen');
+        $form->addCommandButton('saveGroupQuestions', $this->txt('btn_save'));
+        $form->addCommandButton('show', $this->txt('btn_cancel'));
 
         $this->tpl->setContent($form->getHTML());
     }
@@ -911,7 +919,7 @@ class ilExamGroupingGUI
         $group = $this->db->fetchAssoc($result);
 
         if (!$group) {
-            $this->tpl->setOnScreenMessage('failure', 'Gruppe nicht gefunden.');
+            $this->tpl->setOnScreenMessage('failure', $this->txt('err_group_not_found'));
             $this->proxyRedirect('show', ['ref_id' => $ref_id]);
             return;
         }
@@ -924,16 +932,16 @@ class ilExamGroupingGUI
 
         $form = new ilPropertyFormGUI();
         $form->setFormAction($this->proxyFormAction('saveGroupQuestions', ['ref_id' => $ref_id, 'group_id' => $group_id]));
-        $form->setTitle('Fragenpools zuordnen: „' . htmlspecialchars($group['name']) . '"');
+        $form->setTitle(sprintf($this->txt('form_assign_pools_title'), htmlspecialchars($group['name'])));
 
         $section = new ilFormSectionHeaderGUI();
-        $section->setTitle('Pools auswählen (mehrere möglich)');
+        $section->setTitle($this->txt('select_pools_section'));
         $form->addItem($section);
 
         foreach ($pools as $pool_id => $pool) {
             $cb = new ilCheckboxInputGUI(
                 htmlspecialchars($pool['title'])
-                . ' (' . $pool['quest_amount'] . ' Fragen pro Teilnehmer)',
+                . ' (' . $pool['quest_amount'] . ' ' . $this->txt('unit_questions_per_participant') . ')',
                 'pool_' . $pool_id
             );
             $cb->setChecked(isset($assigned_set[$pool_id]));
@@ -948,8 +956,8 @@ class ilExamGroupingGUI
         $gid_hidden->setValue((string) $group_id);
         $form->addItem($gid_hidden);
 
-        $form->addCommandButton('saveGroupQuestions', 'Speichern');
-        $form->addCommandButton('show', 'Abbrechen');
+        $form->addCommandButton('saveGroupQuestions', $this->txt('btn_save'));
+        $form->addCommandButton('show', $this->txt('btn_cancel'));
 
         $this->tpl->setContent($form->getHTML());
     }
@@ -979,7 +987,7 @@ class ilExamGroupingGUI
             [$group_id, $obj_id]
         );
         if ($this->db->numRows($result) === 0) {
-            $this->tpl->setOnScreenMessage('failure', 'Gruppe nicht gefunden.');
+            $this->tpl->setOnScreenMessage('failure', $this->txt('err_group_not_found'));
             $this->proxyRedirect('show', ['ref_id' => $ref_id]);
             return;
         }
@@ -1004,7 +1012,7 @@ class ilExamGroupingGUI
             }
         }
 
-        $this->tpl->setOnScreenMessage('success', $count . ' Fragen der Gruppe zugeordnet.');
+        $this->tpl->setOnScreenMessage('success', sprintf($this->txt('msg_questions_assigned'), $count));
         $this->proxyRedirect('show', ['ref_id' => $ref_id]);
     }
 
@@ -1023,7 +1031,7 @@ class ilExamGroupingGUI
             [$group_id, $obj_id]
         );
         if ($this->db->numRows($result) === 0) {
-            $this->tpl->setOnScreenMessage('failure', 'Gruppe nicht gefunden.');
+            $this->tpl->setOnScreenMessage('failure', $this->txt('err_group_not_found'));
             $this->proxyRedirect('show', ['ref_id' => $ref_id]);
             return;
         }
@@ -1048,7 +1056,7 @@ class ilExamGroupingGUI
             }
         }
 
-        $this->tpl->setOnScreenMessage('success', $count . ' Pool(s) der Gruppe zugeordnet.');
+        $this->tpl->setOnScreenMessage('success', sprintf($this->txt('msg_pools_assigned'), $count));
         $this->proxyRedirect('show', ['ref_id' => $ref_id]);
     }
 
@@ -1062,24 +1070,22 @@ class ilExamGroupingGUI
 
         $html  = '<div style="margin-bottom:2rem;">';
         $html .= '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">';
-        $html .= '<h3 style="margin:0;">Fragengruppen</h3>';
-        $html .= '<a href="' . htmlspecialchars($add_link) . '" class="btn btn-primary">+ Neue Gruppe</a>';
+        $html .= '<h3 style="margin:0;">' . $this->txt('groups_heading') . '</h3>';
+        $html .= '<a href="' . htmlspecialchars($add_link) . '" class="btn btn-primary">' . $this->txt('btn_new_group') . '</a>';
         $html .= '</div>';
         $html .= '<p class="text-muted" style="margin-bottom:1rem;">'
-               . 'Zufallstest: Gruppen werden Fragenpools zugeordnet. '
-               . 'Die Max-Punkte variieren je Teilnehmer (abhängig von den gezogenen Fragen).'
+               . $this->txt('pool_intro')
                . '</p>';
 
         if (empty($groups)) {
-            $html .= '<p class="text-muted">Noch keine Gruppen definiert. '
-                   . 'Klicken Sie auf „Neue Gruppe", um eine Gruppe zu erstellen.</p>';
+            $html .= '<p class="text-muted">' . $this->txt('no_groups_hint') . '</p>';
         } else {
             $html .= '<table class="table table-striped" style="width:100%;">';
             $html .= '<thead><tr>'
-                   . '<th>Gruppe</th>'
-                   . '<th>Zugeordnete Pools</th>'
-                   . '<th>Bestandens-Schwelle</th>'
-                   . '<th>Aktionen</th>'
+                   . '<th>' . $this->txt('th_group') . '</th>'
+                   . '<th>' . $this->txt('th_assigned_pools') . '</th>'
+                   . '<th>' . $this->txt('th_threshold') . '</th>'
+                   . '<th>' . $this->txt('th_actions') . '</th>'
                    . '</tr></thead><tbody>';
 
             foreach ($groups as $group) {
@@ -1088,7 +1094,7 @@ class ilExamGroupingGUI
                 foreach ($assigned_pool_ids as $pid) {
                     if (isset($pools[$pid])) {
                         $pool_labels[] = htmlspecialchars($pools[$pid]['title'])
-                            . ' <small style="color:#666;">(' . $pools[$pid]['quest_amount'] . ' Fragen)</small>';
+                            . ' <small style="color:#666;">(' . $pools[$pid]['quest_amount'] . ' ' . $this->txt('unit_questions_short') . ')</small>';
                     }
                 }
 
@@ -1097,13 +1103,13 @@ class ilExamGroupingGUI
                 $delete_link   = $this->proxyLink('deleteGroup',       ['ref_id' => $ref_id, 'group_id' => $group['id']]);
 
                 $pool_display = empty($pool_labels)
-                    ? '<em style="color:#999;">Keine Pools zugeordnet</em>'
+                    ? '<em style="color:#999;">' . $this->txt('no_pools_assigned') . '</em>'
                     : implode('<br>', $pool_labels);
 
                 $ttype = $group['threshold_type']  ?? 'percent';
                 $tval  = $group['threshold_value'] ?? 50.0;
                 $threshold_display = $ttype === 'points'
-                    ? number_format((float) $tval, 2) . ' Pkt'
+                    ? number_format((float) $tval, 2) . ' ' . $this->txt('unit_pts')
                     : number_format((float) $tval, 0) . '%';
 
                 $html .= '<tr>';
@@ -1111,11 +1117,13 @@ class ilExamGroupingGUI
                 $html .= '<td>' . $pool_display . '</td>';
                 $html .= '<td>' . htmlspecialchars($threshold_display) . '</td>';
                 $html .= '<td style="white-space:nowrap;">';
-                $html .= '<a href="' . htmlspecialchars($settings_link) . '" class="btn btn-sm btn-default">Einstellungen</a> ';
-                $html .= '<a href="' . htmlspecialchars($edit_link) . '" class="btn btn-sm btn-default">Pools</a> ';
+                $confirm = htmlspecialchars(addslashes(sprintf($this->txt('confirm_delete'), $group['name'])), ENT_QUOTES);
+
+                $html .= '<a href="' . htmlspecialchars($settings_link) . '" class="btn btn-sm btn-default">' . $this->txt('btn_settings') . '</a> ';
+                $html .= '<a href="' . htmlspecialchars($edit_link) . '" class="btn btn-sm btn-default">' . $this->txt('btn_pools') . '</a> ';
                 $html .= '<a href="' . htmlspecialchars($delete_link) . '" class="btn btn-sm btn-danger" '
-                       . 'onclick="return confirm(\'Gruppe &quot;' . htmlspecialchars(addslashes($group['name'])) . '&quot; wirklich löschen?\');">'
-                       . 'Löschen</a>';
+                       . 'onclick="return confirm(\'' . $confirm . '\');">'
+                       . $this->txt('btn_delete') . '</a>';
                 $html .= '</td>';
                 $html .= '</tr>';
             }
@@ -1146,17 +1154,17 @@ class ilExamGroupingGUI
         }
 
         $html  = '<hr>';
-        $html .= '<h3>Ergebnisse nach Gruppen</h3>';
+        $html .= '<h3>' . $this->txt('results_heading') . '</h3>';
 
         if (empty($active_groups)) {
-            $html .= '<p class="text-muted">Ordnen Sie den Gruppen Pools zu, um Ergebnisse anzuzeigen.</p>';
+            $html .= '<p class="text-muted">' . $this->txt('assign_pools_hint') . '</p>';
             return $html;
         }
 
         $passes = $this->getSubmittedPassesRandom($obj_id);
 
         if (empty($passes)) {
-            $html .= '<p class="text-muted">Noch keine abgeschlossenen Testdurchläufe vorhanden.</p>';
+            $html .= '<p class="text-muted">' . $this->txt('no_passes') . '</p>';
             return $html;
         }
 
@@ -1172,22 +1180,22 @@ class ilExamGroupingGUI
         // Export-Button
         $export_link = $this->proxyLink('exportResults', ['ref_id' => $ref_id]);
         $html .= '<div style="text-align:right;margin-bottom:0.5rem;">'
-               . '<a href="' . htmlspecialchars($export_link) . '" class="btn btn-default btn-sm">&#11015; CSV exportieren</a>'
+               . '<a href="' . htmlspecialchars($export_link) . '" class="btn btn-default btn-sm">&#11015; ' . $this->txt('btn_export_csv') . '</a>'
                . '</div>';
 
         // Tabellenkopf
         $html .= '<div style="overflow-x:auto;">';
         $html .= '<table class="table table-sm table-bordered">';
         $html .= '<thead><tr>';
-        $html .= '<th>Teilnehmer</th>';
-        $html .= '<th style="white-space:nowrap;">Durchlauf</th>';
+        $html .= '<th>' . $this->txt('th_participant') . '</th>';
+        $html .= '<th style="white-space:nowrap;">' . $this->txt('th_pass') . '</th>';
 
         foreach ($active_groups as $ag) {
             $ttype = $ag['group']['threshold_type']  ?? 'percent';
             $tval  = (float) ($ag['group']['threshold_value'] ?? 50);
             $threshold_label = $ttype === 'points'
-                ? 'ab ' . number_format($tval, 2) . ' Pkt'
-                : 'ab ' . number_format($tval, 0) . '%';
+                ? $this->txt('lbl_from') . ' ' . number_format($tval, 2) . ' ' . $this->txt('unit_pts')
+                : $this->txt('lbl_from') . ' ' . number_format($tval, 0) . '%';
             $pool_names = [];
             foreach ($ag['pool_ids'] as $pid) {
                 if (isset($pools[$pid])) {
@@ -1203,10 +1211,10 @@ class ilExamGroupingGUI
 
         if ($has_ungrouped) {
             $html .= '<th style="white-space:nowrap;color:#856404;background:#fff3cd;">'
-                   . 'Nicht zugeordnet</th>';
+                   . $this->txt('ungrouped') . '</th>';
         }
 
-        $html .= '<th>Gesamt</th>';
+        $html .= '<th>' . $this->txt('th_total') . '</th>';
         $html .= '</tr></thead><tbody>';
 
         // Passes nach Teilnehmer gruppieren
@@ -1237,7 +1245,7 @@ class ilExamGroupingGUI
             $participant_passes = $participant['passes'];
             $pass_count_local   = count($participant_passes);
             $name  = trim(($participant['firstname'] ?? '') . ' ' . ($participant['lastname'] ?? ''));
-            $login = $participant['login'] ?? 'Anonym';
+            $login = $participant['login'] ?? $this->txt('anon');
 
             // Gesamtpunkte je Pass (für Trendpfeil) via alle Fragen des Teilnehmers
             $totals_per_pass = [];
@@ -1260,7 +1268,7 @@ class ilExamGroupingGUI
                            . '<br><small style="color:#999;">' . htmlspecialchars($login) . '</small>'
                            . ($pass_count_local > 1
                                ? '<br><small style="color:#6c757d;margin-top:4px;display:block;">'
-                                 . $pass_count_local . ' Durchläufe</small>'
+                                 . $pass_count_local . ' ' . $this->txt('unit_passes') . '</small>'
                                : '')
                            . '</td>';
                 }
@@ -1278,15 +1286,15 @@ class ilExamGroupingGUI
                     $prev = $totals_per_pass[$participant_passes[$idx - 1]['pass']]['reached'];
                     $curr = $totals_per_pass[$pass['pass']]['reached'];
                     if ($curr > $prev) {
-                        $trend = ' <span style="color:#28a745;font-weight:bold;" title="Besser als vorheriger Durchlauf">▲</span>';
+                        $trend = ' <span style="color:#28a745;font-weight:bold;" title="' . $this->txt('trend_better') . '">▲</span>';
                     } elseif ($curr < $prev) {
-                        $trend = ' <span style="color:#dc3545;font-weight:bold;" title="Schlechter als vorheriger Durchlauf">▼</span>';
+                        $trend = ' <span style="color:#dc3545;font-weight:bold;" title="' . $this->txt('trend_worse') . '">▼</span>';
                     } else {
-                        $trend = ' <span style="color:#6c757d;" title="Gleich">→</span>';
+                        $trend = ' <span style="color:#6c757d;" title="' . $this->txt('trend_equal_short') . '">→</span>';
                     }
                 }
                 $html .= '<td style="white-space:nowrap;color:#555;font-size:0.85em;vertical-align:top;">'
-                       . '<strong>Durchlauf ' . $pass_nr . '</strong>' . $trend
+                       . '<strong>' . $this->txt('lbl_pass') . ' ' . $pass_nr . '</strong>' . $trend
                        . ($date_str ? '<br><small>' . $date_str . '</small>' : '')
                        . '</td>';
 
@@ -1307,16 +1315,16 @@ class ilExamGroupingGUI
                     $tval   = (float) ($ag['group']['threshold_value'] ?? 50);
                     $passed = $ttype === 'points' ? $reached >= $tval : ($max > 0 && $pct >= $tval);
                     $bg     = $max > 0 ? ($passed ? '#d4edda' : '#f8d7da') : '#f8f9fa';
-                    $label  = $max > 0 ? ($passed ? '✓ Bestanden' : '✗ Nicht best.') : '–';
+                    $label  = $max > 0 ? ($passed ? '✓ ' . $this->txt('status_passed') : '✗ ' . $this->txt('status_failed')) : '–';
 
                     $html .= '<td style="background:' . $bg . ';white-space:nowrap;vertical-align:top;">';
                     if ($max > 0) {
-                        $html .= '<strong>' . number_format($reached, 2) . ' Pkt</strong>'
-                               . '<br><small>von ' . number_format($max, 2) . ' Pkt'
+                        $html .= '<strong>' . number_format($reached, 2) . ' ' . $this->txt('unit_pts') . '</strong>'
+                               . '<br><small>' . $this->txt('lbl_of') . ' ' . number_format($max, 2) . ' ' . $this->txt('unit_pts')
                                . ' (' . number_format($pct, 1) . '%)</small>'
                                . '<br><small>' . $label . '</small>';
                     } else {
-                        $html .= '<em style="color:#999;">Keine Fragen</em>';
+                        $html .= '<em style="color:#999;">' . $this->txt('no_questions_short') . '</em>';
                     }
                     $html .= '</td>';
                 }
@@ -1331,9 +1339,9 @@ class ilExamGroupingGUI
                     }
                     $ug_pct = $ug_res['max'] > 0 ? ($ug_res['reached'] / $ug_res['max']) * 100 : 0;
                     $html .= '<td style="background:#fff3cd;white-space:nowrap;vertical-align:top;">'
-                           . number_format($ug_res['reached'], 2) . ' Pkt'
+                           . number_format($ug_res['reached'], 2) . ' ' . $this->txt('unit_pts')
                            . ($ug_res['max'] > 0
-                               ? '<br><small>von ' . number_format($ug_res['max'], 2) . ' Pkt'
+                               ? '<br><small>' . $this->txt('lbl_of') . ' ' . number_format($ug_res['max'], 2) . ' ' . $this->txt('unit_pts')
                                  . ' (' . number_format($ug_pct, 1) . '%)</small>'
                                : '<br><small>—</small>')
                            . '</td>';
@@ -1347,9 +1355,9 @@ class ilExamGroupingGUI
                 }
                 $total_pct = $total['max'] > 0 ? ($total['reached'] / $total['max']) * 100 : 0;
                 $html .= '<td style="white-space:nowrap;font-weight:bold;vertical-align:top;">'
-                       . number_format($total['reached'], 2) . ' Pkt'
+                       . number_format($total['reached'], 2) . ' ' . $this->txt('unit_pts')
                        . ($total['max'] > 0
-                           ? '<br><small>von ' . number_format($total['max'], 2) . ' Pkt'
+                           ? '<br><small>' . $this->txt('lbl_of') . ' ' . number_format($total['max'], 2) . ' ' . $this->txt('unit_pts')
                              . ' (' . number_format($total_pct, 1) . '%)</small>'
                            : '')
                        . '</td>';
@@ -1366,8 +1374,8 @@ class ilExamGroupingGUI
         // Ø-Zeile
         if ($participant_count > 0) {
             $html .= '<tr style="background:#f8f9fa;font-style:italic;border-top:2px solid #adb5bd;">';
-            $html .= '<td colspan="2"><strong>Ø letzter Durchlauf</strong>'
-                   . '<br><small>(' . $participant_count . ' Teilnehmer)</small></td>';
+            $html .= '<td colspan="2"><strong>' . $this->txt('avg_last_pass') . '</strong>'
+                   . '<br><small>(' . $participant_count . ' ' . $this->txt('unit_participants') . ')</small></td>';
 
             foreach ($active_groups as $ag) {
                 $gid     = $ag['group']['id'];
@@ -1375,9 +1383,9 @@ class ilExamGroupingGUI
                 $avg_m   = $summary_max[$gid]     / $participant_count;
                 $avg_pct = $avg_m > 0 ? ($avg_r / $avg_m) * 100 : 0;
                 $html .= '<td style="white-space:nowrap;">'
-                       . number_format($avg_r, 2) . ' Pkt'
+                       . number_format($avg_r, 2) . ' ' . $this->txt('unit_pts')
                        . ($avg_m > 0
-                           ? '<br><small>von Ø ' . number_format($avg_m, 2) . ' Pkt'
+                           ? '<br><small>' . $this->txt('lbl_of_avg') . ' ' . number_format($avg_m, 2) . ' ' . $this->txt('unit_pts')
                              . ' (' . number_format($avg_pct, 1) . '%)</small>'
                            : '')
                        . '</td>';
@@ -1388,9 +1396,9 @@ class ilExamGroupingGUI
                 $ug_avg_m   = $summary_ungrouped_m / $participant_count;
                 $ug_avg_pct = $ug_avg_m > 0 ? ($ug_avg_r / $ug_avg_m) * 100 : 0;
                 $html .= '<td style="background:#fff3cd;white-space:nowrap;">'
-                       . number_format($ug_avg_r, 2) . ' Pkt'
+                       . number_format($ug_avg_r, 2) . ' ' . $this->txt('unit_pts')
                        . ($ug_avg_m > 0
-                           ? '<br><small>von Ø ' . number_format($ug_avg_m, 2) . ' Pkt'
+                           ? '<br><small>' . $this->txt('lbl_of_avg') . ' ' . number_format($ug_avg_m, 2) . ' ' . $this->txt('unit_pts')
                              . ' (' . number_format($ug_avg_pct, 1) . '%)</small>'
                            : '')
                        . '</td>';
@@ -1400,9 +1408,9 @@ class ilExamGroupingGUI
             $t_avg_m   = $summary_total_max     / $participant_count;
             $t_avg_pct = $t_avg_m > 0 ? ($t_avg_r / $t_avg_m) * 100 : 0;
             $html .= '<td style="white-space:nowrap;font-weight:bold;">'
-                   . number_format($t_avg_r, 2) . ' Pkt'
+                   . number_format($t_avg_r, 2) . ' ' . $this->txt('unit_pts')
                    . ($t_avg_m > 0
-                       ? '<br><small>von Ø ' . number_format($t_avg_m, 2) . ' Pkt'
+                       ? '<br><small>' . $this->txt('lbl_of_avg') . ' ' . number_format($t_avg_m, 2) . ' ' . $this->txt('unit_pts')
                          . ' (' . number_format($t_avg_pct, 1) . '%)</small>'
                        : '')
                    . '</td>';
@@ -1427,7 +1435,7 @@ class ilExamGroupingGUI
         }
 
         if (ilObject::_lookupType($obj_id) !== 'tst') {
-            $this->tpl->setOnScreenMessage('failure', 'Export nicht möglich.');
+            $this->tpl->setOnScreenMessage('failure', $this->txt('export_not_possible'));
             $this->proxyRedirect('show', ['ref_id' => $ref_id]);
             return;
         }
@@ -1485,7 +1493,7 @@ class ilExamGroupingGUI
         //   [Gruppe] F1: Titel (Pkt) | F1 Max | ... | Gruppe Gesamt | Max | % | Bestanden
         // Danach "Nicht zugeordnet" (falls vorhanden), dann Gesamt-Test-Spalten.
 
-        $header = ['Name', 'Login', 'Durchlauf', 'Datum'];
+        $header = [$this->txt('csv_name'), $this->txt('csv_login'), $this->txt('csv_pass'), $this->txt('csv_date')];
 
         foreach ($active_groups as $ag) {
             $gname = $ag['group']['name'];
@@ -1500,14 +1508,14 @@ class ilExamGroupingGUI
 
             foreach ($ag_questions as $qid => $q) {
                 $label    = 'F' . $q['sequence'] . ': ' . $q['title'];
-                $header[] = '[' . $gname . '] ' . $label . ' (Pkt)';
-                $header[] = '[' . $gname . '] ' . $label . ' (Max ' . number_format((float)$q['points'], 2, ',', '') . ')';
+                $header[] = '[' . $gname . '] ' . $label . ' (' . $this->txt('unit_pts') . ')';
+                $header[] = '[' . $gname . '] ' . $label . ' (' . $this->txt('csv_max_col') . ' ' . number_format((float)$q['points'], 2, ',', '') . ')';
             }
             // Gruppen-Summe
-            $header[] = '[' . $gname . '] Gesamt (Pkt)';
-            $header[] = '[' . $gname . '] Gesamt Max (' . number_format($group_max[$ag['group']['id']], 2, ',', '') . ')';
-            $header[] = '[' . $gname . '] Gesamt (%)';
-            $header[] = '[' . $gname . '] Bestanden';
+            $header[] = '[' . $gname . '] ' . $this->txt('csv_total_col') . ' (' . $this->txt('unit_pts') . ')';
+            $header[] = '[' . $gname . '] ' . $this->txt('csv_total_max_col') . ' (' . number_format($group_max[$ag['group']['id']], 2, ',', '') . ')';
+            $header[] = '[' . $gname . '] ' . $this->txt('csv_total_col') . ' (%)';
+            $header[] = '[' . $gname . '] ' . $this->txt('csv_passed_col');
         }
 
         if ($has_ungrouped) {
@@ -1521,17 +1529,17 @@ class ilExamGroupingGUI
 
             foreach ($ug_questions as $qid => $q) {
                 $label    = 'F' . $q['sequence'] . ': ' . $q['title'];
-                $header[] = '[Nicht zugeordnet] ' . $label . ' (Pkt)';
-                $header[] = '[Nicht zugeordnet] ' . $label . ' (Max ' . number_format((float)$q['points'], 2, ',', '') . ')';
+                $header[] = '[' . $this->txt('ungrouped') . '] ' . $label . ' (' . $this->txt('unit_pts') . ')';
+                $header[] = '[' . $this->txt('ungrouped') . '] ' . $label . ' (' . $this->txt('csv_max_col') . ' ' . number_format((float)$q['points'], 2, ',', '') . ')';
             }
-            $header[] = '[Nicht zugeordnet] Gesamt (Pkt)';
-            $header[] = '[Nicht zugeordnet] Gesamt Max (' . number_format($ungrouped_max, 2, ',', '') . ')';
-            $header[] = '[Nicht zugeordnet] Gesamt (%)';
+            $header[] = '[' . $this->txt('ungrouped') . '] ' . $this->txt('csv_total_col') . ' (' . $this->txt('unit_pts') . ')';
+            $header[] = '[' . $this->txt('ungrouped') . '] ' . $this->txt('csv_total_max_col') . ' (' . number_format($ungrouped_max, 2, ',', '') . ')';
+            $header[] = '[' . $this->txt('ungrouped') . '] ' . $this->txt('csv_total_col') . ' (%)';
         }
 
-        $header[] = 'Gesamt Test (Pkt)';
-        $header[] = 'Gesamt Test Max';
-        $header[] = 'Gesamt Test (%)';
+        $header[] = $this->txt('csv_total_test_pts');
+        $header[] = $this->txt('csv_total_test_max');
+        $header[] = $this->txt('csv_total_test_pct');
 
         // ── HTTP-Download-Header ─────────────────────────────────────────────
         $safe_title = preg_replace('/[^a-zA-Z0-9_-]/', '_', $test_title);
@@ -1591,7 +1599,7 @@ class ilExamGroupingGUI
                 $row[] = number_format($reached, 2, ',', '');
                 $row[] = number_format($max,     2, ',', '');
                 $row[] = number_format($pct,     1, ',', '');
-                $row[] = $passed ? 'Ja' : 'Nein';
+                $row[] = $passed ? $this->txt('csv_yes') : $this->txt('csv_no');
             }
 
             if ($has_ungrouped) {
@@ -1660,7 +1668,7 @@ class ilExamGroupingGUI
         $passes     = $this->getSubmittedPassesRandom($obj_id);
         $test_title = ilObject::_lookupTitle($obj_id);
 
-        $header = ['Name', 'Login', 'Durchlauf', 'Datum'];
+        $header = [$this->txt('csv_name'), $this->txt('csv_login'), $this->txt('csv_pass'), $this->txt('csv_date')];
         foreach ($active_groups as $ag) {
             $gname = $ag['group']['name'];
             $pool_names = [];
@@ -1669,20 +1677,20 @@ class ilExamGroupingGUI
                     $pool_names[] = $pools[$pid]['title'];
                 }
             }
-            $header[] = '[' . $gname . '] Pools: ' . implode(', ', $pool_names);
-            $header[] = '[' . $gname . '] Erreicht (Pkt)';
-            $header[] = '[' . $gname . '] Max (Pkt)';
+            $header[] = '[' . $gname . '] ' . $this->txt('csv_pools_col') . ': ' . implode(', ', $pool_names);
+            $header[] = '[' . $gname . '] ' . $this->txt('csv_reached_col') . ' (' . $this->txt('unit_pts') . ')';
+            $header[] = '[' . $gname . '] ' . $this->txt('csv_max_col') . ' (' . $this->txt('unit_pts') . ')';
             $header[] = '[' . $gname . '] (%)';
-            $header[] = '[' . $gname . '] Bestanden';
+            $header[] = '[' . $gname . '] ' . $this->txt('csv_passed_col');
         }
         if ($has_ungrouped) {
-            $header[] = '[Nicht zugeordnet] Erreicht (Pkt)';
-            $header[] = '[Nicht zugeordnet] Max (Pkt)';
-            $header[] = '[Nicht zugeordnet] (%)';
+            $header[] = '[' . $this->txt('ungrouped') . '] ' . $this->txt('csv_reached_col') . ' (' . $this->txt('unit_pts') . ')';
+            $header[] = '[' . $this->txt('ungrouped') . '] ' . $this->txt('csv_max_col') . ' (' . $this->txt('unit_pts') . ')';
+            $header[] = '[' . $this->txt('ungrouped') . '] (%)';
         }
-        $header[] = 'Gesamt (Pkt)';
-        $header[] = 'Gesamt Max (Pkt)';
-        $header[] = 'Gesamt (%)';
+        $header[] = $this->txt('csv_total_col') . ' (' . $this->txt('unit_pts') . ')';
+        $header[] = $this->txt('csv_total_max_col') . ' (' . $this->txt('unit_pts') . ')';
+        $header[] = $this->txt('csv_total_col') . ' (%)';
 
         $safe_title = preg_replace('/[^a-zA-Z0-9_-]/', '_', $test_title);
         $filename   = 'fragengruppierung_' . $safe_title . '_' . date('Ymd_His') . '.csv';
@@ -1725,7 +1733,7 @@ class ilExamGroupingGUI
                 $row[] = number_format($res['reached'], 2, ',', '');
                 $row[] = number_format($res['max'],     2, ',', '');
                 $row[] = number_format($pct,            1, ',', '');
-                $row[] = $passed ? 'Ja' : 'Nein';
+                $row[] = $passed ? $this->txt('csv_yes') : $this->txt('csv_no');
             }
 
             if ($has_ungrouped) {

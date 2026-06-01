@@ -1,7 +1,0 @@
-<!-- language file start -->
-title#:#Fragengruppierung
-description#:#Fragen zu Gruppen zusammenfassen und Gesamtpunktzahl je Gruppe auswerten.
-no_groups#:#Noch keine Gruppen definiert.
-groups_count#:#%d Gruppe(n) konfiguriert.
-intro#:#Fassen Sie Fragen dieses Tests zu benannten Gruppen zusammen und werten Sie die Gesamtpunktzahl je Gruppe aus.
-manage_btn#:#Gruppen verwalten / Ergebnisse anzeigen
