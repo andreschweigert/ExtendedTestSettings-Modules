@@ -13,9 +13,16 @@ class ilExamResourceSheetHandler implements ilExamModuleInterface
     private const ALLOWED_EXTENSIONS = ['pdf', 'html', 'htm'];
     private const TABLE = 'examressheet_settings';
 
+    private ilModuleLanguage $lng;
+
     public function __construct(string $plugin_path)
     {
         $this->plugin_path = $plugin_path;
+
+        // Modul-eigene Sprachdatei (lang/ilias_<lang>.lang in diesem Modulverzeichnis)
+        require_once $plugin_path . '/classes/Module/ilModuleLanguage.php';
+        $this->lng = new ilModuleLanguage(__DIR__);
+
         $this->ensureTableExists();
     }
 
@@ -306,20 +313,20 @@ class ilExamResourceSheetHandler implements ilExamModuleInterface
     {
         $row = $this->loadSettings($ref_id);
 
-        $cb = new ilCheckboxInputGUI('Hilfsmittelblatt aktivieren', 'examresourcesheet_enabled');
+        $cb = new ilCheckboxInputGUI($this->lng->txt('enable'), 'examresourcesheet_enabled');
         $cb->setChecked((bool) ($row['enabled'] ?? false));
-        $cb->setInfo('Stellt Studierenden ein Hilfsmittelblatt (PDF oder HTML) als Overlay im Test-Player bereit.');
+        $cb->setInfo($this->lng->txt('enable_info'));
 
-        $label_field = new ilTextInputGUI('Button-Beschriftung', 'examresourcesheet_label');
+        $label_field = new ilTextInputGUI($this->lng->txt('label_field'), 'examresourcesheet_label');
         $label_field->setValue($row['label'] ?? 'Hilfsmittel');
         $label_field->setMaxLength(100);
-        $label_field->setInfo('Beschriftung des Buttons im Test-Player, z.B. "Formelblatt", "Hilfsmittel", "Anhang".');
+        $label_field->setInfo($this->lng->txt('label_field_info'));
         $cb->addSubItem($label_field);
 
         // Aktuellen Dateinamen anzeigen wenn vorhanden
         if (!empty($row['filename'])) {
             $size_kb    = isset($row['filesize']) ? round((int) $row['filesize'] / 1024) : '?';
-            $info_field = new ilNonEditableValueGUI('Aktuelle Datei', '');
+            $info_field = new ilNonEditableValueGUI($this->lng->txt('current_file'), '');
             $info_field->setValue(htmlspecialchars($row['filename'], ENT_QUOTES) . ' (' . $size_kb . ' KB)');
             $cb->addSubItem($info_field);
         }
@@ -327,11 +334,11 @@ class ilExamResourceSheetHandler implements ilExamModuleInterface
         // Datei-Upload als eigenes top-level Item zurückgeben,
         // damit ilPropertyFormGUI enctype="multipart/form-data" setzt.
         $file_field = new ilFileInputGUI(
-            empty($row['filename']) ? 'Datei hochladen' : 'Datei ersetzen',
+            empty($row['filename']) ? $this->lng->txt('file_upload') : $this->lng->txt('file_replace'),
             'examresourcesheet_file'
         );
         $file_field->setSuffixes(['pdf', 'html', 'htm']);
-        $file_field->setInfo('PDF oder HTML — max. 10 MB.');
+        $file_field->setInfo($this->lng->txt('file_info'));
 
         return [$cb, $file_field];
     }
@@ -340,10 +347,10 @@ class ilExamResourceSheetHandler implements ilExamModuleInterface
     {
         return [
             'name'        => 'ExamResourceSheet',
-            'title'       => 'Hilfsmittelblatt',
+            'title'       => $this->lng->txt('title'),
             'icon'        => '',
-            'description' => 'Stellt Studierenden ein vom Dozenten hochgeladenes Hilfsmittelblatt (PDF/HTML) als Overlay im Test-Player bereit.',
-            'version'     => '1.1.0',
+            'description' => $this->lng->txt('description'),
+            'version'     => '1.2.0',
             'ilias_min'   => '9',
             'ilias_max'   => '9',
             'features'    => [

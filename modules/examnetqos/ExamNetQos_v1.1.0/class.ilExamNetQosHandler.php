@@ -19,9 +19,15 @@ class ilExamNetQosHandler implements ilExamModuleInterface
     private const DEFAULT_RTT_WARN = 500;
     private const DEFAULT_RTT_CRIT = 2000;
 
+    private ilModuleLanguage $lng;
+
     public function __construct(string $plugin_path)
     {
         $this->plugin_path = $plugin_path;
+
+        // Modul-eigene Sprachdatei (lang/ilias_<lang>.lang in diesem Modulverzeichnis)
+        require_once $plugin_path . '/classes/Module/ilModuleLanguage.php';
+        $this->lng = new ilModuleLanguage(__DIR__);
     }
 
     public function isEnabled(int $ref_id): bool
@@ -116,35 +122,39 @@ class ilExamNetQosHandler implements ilExamModuleInterface
     {
         $s = $this->getSettings($ref_id);
 
-        $cb = new ilCheckboxInputGUI('Netzwerk-Qualitätsmessung aktivieren', 'examnetqos_enabled');
+        $cb = new ilCheckboxInputGUI($this->lng->txt('enable'), 'examnetqos_enabled');
         $cb->setChecked((bool)$s['enabled']);
-        $cb->setInfo('Misst RTT (und optional Paketverlust) im Hintergrund. Speichert Netz-Ereignisse zur späteren Korrelation mit Beschwerden. Kein sichtbarer Eingriff in den Testplayer.');
+        $cb->setInfo($this->lng->txt('enable_info'));
 
-        $interval = new ilSelectInputGUI('Messintervall', 'examnetqos_interval');
-        $interval->setOptions([5 => '5 s (fein, mehr Last)', 10 => '10 s (Standard)', 30 => '30 s (sparsam)']);
+        $interval = new ilSelectInputGUI($this->lng->txt('interval_label'), 'examnetqos_interval');
+        $interval->setOptions([
+            5  => $this->lng->txt('interval_5'),
+            10 => $this->lng->txt('interval_10'),
+            30 => $this->lng->txt('interval_30'),
+        ]);
         $interval->setValue((int)$s['interval_seconds']);
 
-        $rtt_warn = new ilNumberInputGUI('RTT Warnschwelle (ms)', 'examnetqos_rtt_warn');
+        $rtt_warn = new ilNumberInputGUI($this->lng->txt('rtt_warn_label'), 'examnetqos_rtt_warn');
         $rtt_warn->setValue((int)$s['rtt_warn_ms']);
         $rtt_warn->setMinValue(100);
         $rtt_warn->setMaxValue(5000);
-        $rtt_warn->setInfo('Überschreitung → Ereignis "degraded" gespeichert.');
+        $rtt_warn->setInfo($this->lng->txt('rtt_warn_info'));
 
-        $rtt_crit = new ilNumberInputGUI('RTT Kritisch-Schwelle (ms)', 'examnetqos_rtt_crit');
+        $rtt_crit = new ilNumberInputGUI($this->lng->txt('rtt_crit_label'), 'examnetqos_rtt_crit');
         $rtt_crit->setValue((int)$s['rtt_crit_ms']);
         $rtt_crit->setMinValue(200);
         $rtt_crit->setMaxValue(10000);
-        $rtt_crit->setInfo('Überschreitung → Ereignis "critical" gespeichert.');
+        $rtt_crit->setInfo($this->lng->txt('rtt_crit_info'));
 
-        $loss_cb = new ilCheckboxInputGUI('Paketverlust-Messung aktivieren', 'examnetqos_loss_enabled');
+        $loss_cb = new ilCheckboxInputGUI($this->lng->txt('loss_enable'), 'examnetqos_loss_enabled');
         $loss_cb->setChecked((bool)$s['loss_enabled']);
-        $loss_cb->setInfo('Sendet N parallele HEAD-Requests, zählt Fehlschläge als simulierten Paketverlust.');
+        $loss_cb->setInfo($this->lng->txt('loss_enable_info'));
 
-        $loss_probes = new ilNumberInputGUI('Anzahl Parallel-Probes', 'examnetqos_loss_probes');
+        $loss_probes = new ilNumberInputGUI($this->lng->txt('loss_probes_label'), 'examnetqos_loss_probes');
         $loss_probes->setValue((int)$s['loss_probes']);
         $loss_probes->setMinValue(2);
         $loss_probes->setMaxValue(10);
-        $loss_probes->setInfo('2–10 parallele Probes. Jede Probe = 1 HEAD-Request.');
+        $loss_probes->setInfo($this->lng->txt('loss_probes_info'));
         $loss_cb->addSubItem($loss_probes);
 
         $cb->addSubItem($interval);
@@ -159,10 +169,10 @@ class ilExamNetQosHandler implements ilExamModuleInterface
     {
         return [
             'name'        => 'ExamNetQos',
-            'title'       => 'Netzwerk-Qualitätsmessung',
+            'title'       => $this->lng->txt('title'),
             'icon'        => '📶',
-            'description' => 'Clientseitige Latenz- und Paketverlust-Messung, korreliert Beschwerden mit echten Netz-Events',
-            'version'     => '1.0.0',
+            'description' => $this->lng->txt('description'),
+            'version'     => '1.1.0',
             'features'    => [
                 'Hintergrund-RTT-Messung via HEAD-Request auf probe.txt (kein Eingriff in Testplayer)',
                 'Optionaler Paketverlust via N parallele Probes (konfigurierbar pro Test)',

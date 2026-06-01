@@ -1,0 +1,11 @@
+<!-- language file start -->
+title#:#Resource sheet
+description#:#Provides students with a resource sheet (PDF/HTML) uploaded by the lecturer as an overlay in the test player.
+enable#:#Enable resource sheet
+enable_info#:#Provides students with a resource sheet (PDF or HTML) as an overlay in the test player.
+label_field#:#Button label
+label_field_info#:#Label of the button in the test player, e.g. "Formula sheet", "Resources", "Appendix".
+current_file#:#Current file
+file_upload#:#Upload file
+file_replace#:#Replace file
+file_info#:#PDF or HTML — max. 10 MB.

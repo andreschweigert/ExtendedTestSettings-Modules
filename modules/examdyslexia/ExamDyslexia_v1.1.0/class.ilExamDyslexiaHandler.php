@@ -12,9 +12,15 @@ class ilExamDyslexiaHandler implements ilExamModuleInterface
     private const ALLOWED_LINE_HEIGHTS = ['1.5', '1.8', '2.0', '2.5'];
     private const ALLOWED_LETTER_SPACINGS = ['0', '0.05em', '0.12em', '0.2em'];
 
+    private ilModuleLanguage $lng;
+
     public function __construct(string $plugin_path)
     {
         $this->plugin_path = $plugin_path;
+
+        // Modul-eigene Sprachdatei (lang/ilias_<lang>.lang in diesem Modulverzeichnis)
+        require_once $plugin_path . '/classes/Module/ilModuleLanguage.php';
+        $this->lng = new ilModuleLanguage(__DIR__);
     }
 
     /**
@@ -222,46 +228,46 @@ class ilExamDyslexiaHandler implements ilExamModuleInterface
     {
         $config = $this->getConfig($ref_id);
 
-        $cb = new ilCheckboxInputGUI('Legasthenie-Modus aktivieren', 'examdyslexia_enabled');
+        $cb = new ilCheckboxInputGUI($this->lng->txt('enable'), 'examdyslexia_enabled');
         $cb->setChecked($config['enabled']);
-        $cb->setInfo('Bietet einen barrierefreien Lesemodus mit OpenDyslexic-Schrift, erhöhtem Zeilen- und Buchstabenabstand sowie optionalem Pastell-Hintergrund.');
+        $cb->setInfo($this->lng->txt('enable_info'));
 
-        $allow = new ilCheckboxInputGUI('Student kann selbst ein-/ausschalten', 'examdyslexia_allow_toggle');
+        $allow = new ilCheckboxInputGUI($this->lng->txt('allow_toggle'), 'examdyslexia_allow_toggle');
         $allow->setChecked($config['allow_toggle']);
-        $allow->setInfo('Zeigt einen Toggle-Button im Testplayer. Wenn deaktiviert, wird der Modus für alle Teilnehmer erzwungen – ohne Abschaltmöglichkeit.');
+        $allow->setInfo($this->lng->txt('allow_toggle_info'));
         $cb->addSubItem($allow);
 
-        $font = new ilCheckboxInputGUI('OpenDyslexic Schrift verwenden', 'examdyslexia_use_font');
+        $font = new ilCheckboxInputGUI($this->lng->txt('use_font'), 'examdyslexia_use_font');
         $font->setChecked($config['use_font']);
-        $font->setInfo('Ersetzt die Standardschrift durch OpenDyslexic (SIL Open Font License, lokal gespeichert).');
+        $font->setInfo($this->lng->txt('use_font_info'));
         $cb->addSubItem($font);
 
-        $bg = new ilSelectInputGUI('Hintergrundfarbe', 'examdyslexia_bg_color');
+        $bg = new ilSelectInputGUI($this->lng->txt('bg_label'), 'examdyslexia_bg_color');
         $bg->setOptions([
-            'none'    => 'Keiner',
-            '#FEFAE0' => 'Cremefarben (#FEFAE0)',
-            '#FFFDE7' => 'Hellgelb (#FFFDE7)',
-            '#E3F2FD' => 'Hellblau (#E3F2FD)',
+            'none'    => $this->lng->txt('bg_none'),
+            '#FEFAE0' => $this->lng->txt('bg_cream'),
+            '#FFFDE7' => $this->lng->txt('bg_yellow'),
+            '#E3F2FD' => $this->lng->txt('bg_blue'),
         ]);
         $bg->setValue($config['bg_color']);
         $cb->addSubItem($bg);
 
-        $lh = new ilSelectInputGUI('Zeilenabstand', 'examdyslexia_line_height');
+        $lh = new ilSelectInputGUI($this->lng->txt('lh_label'), 'examdyslexia_line_height');
         $lh->setOptions([
             '1.5' => '1.5',
-            '1.8' => '1.8 (Standard)',
+            '1.8' => $this->lng->txt('lh_18'),
             '2.0' => '2.0',
             '2.5' => '2.5',
         ]);
         $lh->setValue($config['line_height']);
         $cb->addSubItem($lh);
 
-        $ls = new ilSelectInputGUI('Buchstabenabstand', 'examdyslexia_letter_spacing');
+        $ls = new ilSelectInputGUI($this->lng->txt('ls_label'), 'examdyslexia_letter_spacing');
         $ls->setOptions([
-            '0'      => 'Normal (0)',
-            '0.05em' => 'Leicht (0.05em, Standard)',
-            '0.12em' => 'Mittel (0.12em)',
-            '0.2em'  => 'Stark (0.2em)',
+            '0'      => $this->lng->txt('ls_normal'),
+            '0.05em' => $this->lng->txt('ls_light'),
+            '0.12em' => $this->lng->txt('ls_medium'),
+            '0.2em'  => $this->lng->txt('ls_strong'),
         ]);
         $ls->setValue($config['letter_spacing']);
         $cb->addSubItem($ls);
@@ -276,10 +282,10 @@ class ilExamDyslexiaHandler implements ilExamModuleInterface
     {
         return [
             'name'        => 'ExamDyslexia',
-            'title'       => 'Legasthenie-Modus',
+            'title'       => $this->lng->txt('title'),
             'icon'        => '👁',
-            'description' => 'Legasthenie-freundlicher Lesemodus mit OpenDyslexic-Schrift, angepasstem Zeilen- und Buchstabenabstand sowie optionalem Pastell-Hintergrund',
-            'version'     => '1.0.0',
+            'description' => $this->lng->txt('description'),
+            'version'     => '1.1.0',
             'features'    => [
                 'OpenDyslexic Schrift (lokal, kein CDN)',
                 'Konfigurierbarer Zeilen- und Buchstabenabstand',

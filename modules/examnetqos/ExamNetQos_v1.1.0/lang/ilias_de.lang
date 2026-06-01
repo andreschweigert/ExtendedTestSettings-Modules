@@ -1,0 +1,17 @@
+<!-- language file start -->
+title#:#Netzwerk-Qualitätsmessung
+description#:#Clientseitige Latenz- und Paketverlust-Messung, korreliert Beschwerden mit echten Netz-Events
+enable#:#Netzwerk-Qualitätsmessung aktivieren
+enable_info#:#Misst RTT (und optional Paketverlust) im Hintergrund. Speichert Netz-Ereignisse zur späteren Korrelation mit Beschwerden. Kein sichtbarer Eingriff in den Testplayer.
+interval_label#:#Messintervall
+interval_5#:#5 s (fein, mehr Last)
+interval_10#:#10 s (Standard)
+interval_30#:#30 s (sparsam)
+rtt_warn_label#:#RTT Warnschwelle (ms)
+rtt_warn_info#:#Überschreitung → Ereignis "degraded" gespeichert.
+rtt_crit_label#:#RTT Kritisch-Schwelle (ms)
+rtt_crit_info#:#Überschreitung → Ereignis "critical" gespeichert.
+loss_enable#:#Paketverlust-Messung aktivieren
+loss_enable_info#:#Sendet N parallele HEAD-Requests, zählt Fehlschläge als simulierten Paketverlust.
+loss_probes_label#:#Anzahl Parallel-Probes
+loss_probes_info#:#2–10 parallele Probes. Jede Probe = 1 HEAD-Request.

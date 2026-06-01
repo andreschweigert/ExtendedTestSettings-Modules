@@ -8,10 +8,15 @@
 class ilExamCheckerHandler implements ilExamModuleInterface
 {
     private string $plugin_path;
+    private ilModuleLanguage $lng;
 
     public function __construct(string $plugin_path)
     {
         $this->plugin_path = $plugin_path;
+
+        // Modul-eigene Sprachdatei (lang/ilias_<lang>.lang in diesem Modulverzeichnis)
+        require_once $plugin_path . '/classes/Module/ilModuleLanguage.php';
+        $this->lng = new ilModuleLanguage(__DIR__);
     }
 
     /**
@@ -36,7 +41,7 @@ class ilExamCheckerHandler implements ilExamModuleInterface
      */
     public function getFormItems(int $ref_id): array
     {
-        $item = new ilCustomInputGUI('Prüfungs-Einstellungen prüfen', '');
+        $item = new ilCustomInputGUI($this->lng->txt('check_title'), '');
         $item->setHTML($this->getSettingsHTML($ref_id));
         return [$item];
     }
@@ -46,20 +51,26 @@ class ilExamCheckerHandler implements ilExamModuleInterface
      */
     public function getSettingsHTML(int $ref_id): string
     {
+        $t_type      = $this->lng->txt('exam_type_label');
+        $t_praesenz  = $this->lng->txt('type_praesenz');
+        $t_fern      = $this->lng->txt('type_fern');
+        $t_start     = $this->lng->txt('start_check');
+        $t_checking  = $this->lng->txt('checking');
+
         $html = '<div class="mb-3">
-            <label for="exam_type" class="form-label fw-semibold">Prüfungstyp:</label>
+            <label for="exam_type" class="form-label fw-semibold">' . $t_type . ':</label>
             <select name="exam_type" id="exam_type" class="form-select" style="max-width: 250px;">
-                <option value="praesenz">Präsenzprüfung</option>
-                <option value="fern">Fernprüfung</option>
+                <option value="praesenz">' . $t_praesenz . '</option>
+                <option value="fern">' . $t_fern . '</option>
             </select>
         </div>
         <div class="mb-3">
             <button type="button" id="start-exam-check" class="btn btn-success">
-                Exam-Prüfungs-Check starten
+                ' . $t_start . '
             </button>
         </div>
         <div id="check-loading" class="d-none text-center py-4 text-muted">
-            Prüfungseinstellungen werden überprüft...
+            ' . $t_checking . '
         </div>
         <div id="check-results" class="d-none mt-3">
             <!-- Ergebnisse werden hier per AJAX eingefügt -->
@@ -75,6 +86,10 @@ class ilExamCheckerHandler implements ilExamModuleInterface
      */
     private function getJavaScriptCode(int $ref_id): string
     {
+        $t_checking_btn = addslashes($this->lng->txt('checking_btn'));
+        $t_start        = addslashes($this->lng->txt('start_check'));
+        $t_err          = addslashes($this->lng->txt('err_label'));
+
         return '
         <script>
         document.addEventListener("DOMContentLoaded", function() {
@@ -91,7 +106,7 @@ class ilExamCheckerHandler implements ilExamModuleInterface
 
                     // UI-Status
                     checkButton.disabled = true;
-                    checkButton.innerHTML = "<span>⏳</span><span>Wird geprüft...</span>";
+                    checkButton.innerHTML = "<span>⏳</span><span>' . $t_checking_btn . '</span>";
                     resultsDiv.style.display = "none";
                     loadingDiv.style.display = "block";
 
@@ -130,7 +145,7 @@ class ilExamCheckerHandler implements ilExamModuleInterface
 
                             // Button zurücksetzen
                             checkButton.disabled = false;
-                            checkButton.innerHTML = "<span>🔍</span><span>Exam-Prüfungs-Check starten</span>";
+                            checkButton.innerHTML = "<span>🔍</span><span>' . $t_start . '</span>";
 
                         } catch (parseError) {
                             console.error("[ExamChecker] JSON Parse Error:", parseError);
@@ -140,11 +155,11 @@ class ilExamCheckerHandler implements ilExamModuleInterface
                     .catch(error => {
                         console.error("[ExamChecker] Fetch Error:", error);
                         loadingDiv.style.display = "none";
-                        resultsDiv.innerHTML = "<div class=\"alert alert-danger\">❌ Fehler: " + error.message + "</div>";
+                        resultsDiv.innerHTML = "<div class=\"alert alert-danger\">❌ ' . $t_err . ' " + error.message + "</div>";
                         resultsDiv.style.display = "block";
 
                         checkButton.disabled = false;
-                        checkButton.innerHTML = "<span>🔍</span><span>Exam-Prüfungs-Check starten</span>";
+                        checkButton.innerHTML = "<span>🔍</span><span>' . $t_start . '</span>";
                     });
                 });
             } else {
@@ -211,7 +226,7 @@ class ilExamCheckerHandler implements ilExamModuleInterface
     {
         $test_data = $this->getTestDataFromDB($ref_id);
         if (!$test_data) {
-            throw new Exception('Test-Daten nicht gefunden');
+            throw new Exception($this->lng->txt('err_no_test_data'));
         }
 
         return array(
@@ -466,7 +481,7 @@ class ilExamCheckerHandler implements ilExamModuleInterface
 
             while ($row = $db->fetchAssoc($details_result)) {
                 $conditions[] = [
-                    'trigger_title' => $row['trigger_title'] ?? 'Unbekannt',
+                    'trigger_title' => $row['trigger_title'] ?? $this->lng->txt('cond_unknown'),
                     'trigger_type' => $row['trigger_type'] ?? '',
                     'operator' => $row['operator'] ?? '',
                     'value' => $row['value'] ?? '',
@@ -498,29 +513,29 @@ class ilExamCheckerHandler implements ilExamModuleInterface
     private function formatConditionDescription(array $condition): string
     {
         $type_names = [
-            'crs' => 'Kurs',
-            'tst' => 'Test',
-            'lm' => 'Lernmodul',
-            'file' => 'Datei',
-            'exc' => 'Übung',
-            'frm' => 'Forum',
-            'grp' => 'Gruppe',
-            'cat' => 'Kategorie'
+            'crs'  => $this->lng->txt('ctype_crs'),
+            'tst'  => $this->lng->txt('ctype_tst'),
+            'lm'   => $this->lng->txt('ctype_lm'),
+            'file' => $this->lng->txt('ctype_file'),
+            'exc'  => $this->lng->txt('ctype_exc'),
+            'frm'  => $this->lng->txt('ctype_frm'),
+            'grp'  => $this->lng->txt('ctype_grp'),
+            'cat'  => $this->lng->txt('ctype_cat'),
         ];
 
         $type = $type_names[$condition['trigger_type']] ?? ucfirst($condition['trigger_type']);
-        $title = $condition['trigger_title'] ?? 'Unbekannt';
+        $title = $condition['trigger_title'] ?? $this->lng->txt('cond_unknown');
         $operator = $condition['operator'];
         $value = $condition['value'];
 
         if ($operator === 'passed') {
-            return "$type \"$title\" muss bestanden werden";
+            return sprintf($this->lng->txt('cond_must_pass'), $type, $title);
         } elseif ($operator === 'finished') {
-            return "$type \"$title\" muss abgeschlossen werden";
+            return sprintf($this->lng->txt('cond_must_finish'), $type, $title);
         } elseif ($operator && $value) {
-            return "$type \"$title\" $operator $value";
+            return sprintf($this->lng->txt('cond_op_value'), $type, $title, $operator, $value);
         } else {
-            return "$type \"$title\" (Bedingung: $operator)";
+            return sprintf($this->lng->txt('cond_op_only'), $type, $title, $operator);
         }
     }
 
@@ -552,9 +567,9 @@ class ilExamCheckerHandler implements ilExamModuleInterface
 
         $manual_checks['start_und_ende'] = array(
             'status' => $times_properly_set,
-            'current_start' => $start_time > 0 ? date('d.m.Y H:i', $start_time) : 'Nicht gesetzt',
-            'current_end' => $end_time > 0 ? date('d.m.Y H:i', $end_time) : 'Nicht gesetzt',
-            'message' => 'Start- und Endzeiten müssen manuell auf Plausibilität geprüft werden.'
+            'current_start' => $start_time > 0 ? date('d.m.Y H:i', $start_time) : $this->lng->txt('mc_not_set'),
+            'current_end' => $end_time > 0 ? date('d.m.Y H:i', $end_time) : $this->lng->txt('mc_not_set'),
+            'message' => $this->lng->txt('mc_start_end_msg')
         );
 
         $processing_enabled = (int)$test_data['enable_processing_time'] === 1;
@@ -562,8 +577,8 @@ class ilExamCheckerHandler implements ilExamModuleInterface
 
         $manual_checks['bearbeitungsdauer'] = array(
             'status' => $processing_enabled && !empty($processing_time) && $processing_time > 0,
-            'current_time' => $processing_enabled ? ($processing_time . ' Minuten') : 'Nicht aktiviert',
-            'message' => 'Bearbeitungsdauer muss der tatsächlichen Prüfungszeit entsprechen.'
+            'current_time' => $processing_enabled ? ($processing_time . ' ' . $this->lng->txt('mc_minutes')) : $this->lng->txt('mc_not_active'),
+            'message' => $this->lng->txt('mc_duration_msg')
         );
 
         return $manual_checks;
@@ -596,11 +611,11 @@ class ilExamCheckerHandler implements ilExamModuleInterface
     <div style="background: #fff3cd; border: 1px solid #ffeeba; border-radius: 0.375rem; padding: 1rem; margin-bottom: 1rem;">
         <div style="color: #856404; display: flex; align-items: center; gap: 0.5rem;">
             <span>⚙️</span>
-            <strong>Keine Standards konfiguriert</strong>
+            <strong>' . $this->lng->txt('no_standards_title') . '</strong>
         </div>
         <p style="margin: 0.5rem 0 0 0; color: #856404; font-size: 0.9rem;">
-            Für diesen Prüfungstyp wurden noch keine Vorgaben in der Plugin-Konfiguration festgelegt.
-            <br><a href="ilias.php?baseClass=ilAdministrationGUI&cmdClass=ilobjcomponentsettingsgui&cmdNode=lg:mk&cmd=configure&pluginname=ExtendedTestSettings" style="color: #856404; text-decoration: underline;">→ Zur Plugin-Konfiguration</a>
+            ' . $this->lng->txt('no_standards_text') . '
+            <br><a href="ilias.php?baseClass=ilAdministrationGUI&cmdClass=ilobjcomponentsettingsgui&cmdNode=lg:mk&cmd=configure&pluginname=ExtendedTestSettings" style="color: #856404; text-decoration: underline;">' . $this->lng->txt('to_config') . '</a>
         </p>
     </div>';
 
@@ -611,9 +626,9 @@ class ilExamCheckerHandler implements ilExamModuleInterface
             // Zusammenfassung
             $html .= '<div style="background: ' . $summary_color . '15; border: 2px solid ' . $summary_color . '; border-radius: 0.5rem; padding: 1.5rem; margin-bottom: 2rem; text-align: center;">';
             $html .= '<div style="font-size: 3rem; margin-bottom: 0.5rem;">' . $summary_icon . '</div>';
-            $html .= '<h3 style="color: ' . $summary_color . '; margin: 0 0 0.5rem 0;">Check abgeschlossen: ' . $percentage . '%</h3>';
+            $html .= '<h3 style="color: ' . $summary_color . '; margin: 0 0 0.5rem 0;">' . $this->lng->txt('check_done') . ' ' . $percentage . '%</h3>';
             $html .= '<p style="margin: 0; color: #6c757d;">';
-            $html .= '<strong>' . $passed . '</strong> korrekt • <strong>' . $failed . '</strong> zu überprüfen • <strong>' . count($results['manuell_check']) . '</strong> manuell';
+            $html .= '<strong>' . $passed . '</strong> ' . $this->lng->txt('res_correct') . ' • <strong>' . $failed . '</strong> ' . $this->lng->txt('res_tocheck') . ' • <strong>' . count($results['manuell_check']) . '</strong> ' . $this->lng->txt('res_manual');
             $html .= '</p></div>';
 
             // Erfolgreich geprüfte Einstellungen
@@ -625,7 +640,7 @@ class ilExamCheckerHandler implements ilExamModuleInterface
             if (!empty($passed_items)) {
                 $html .= '<div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 0.375rem; padding: 1rem; margin-bottom: 1rem;">';
                 $html .= '<h4 style="color: #155724; margin: 0 0 0.75rem 0; display: flex; align-items: center; gap: 0.5rem;">';
-                $html .= '<span>✅</span> Korrekte Einstellungen (' . count($passed_items) . ')';
+                $html .= '<span>✅</span> ' . $this->lng->txt('correct_heading') . ' (' . count($passed_items) . ')';
                 $html .= '</h4>';
                 $html .= '<ul style="margin: 0; padding-left: 1.5rem; color: #155724;">';
                 foreach ($passed_items as $item) {
@@ -643,7 +658,7 @@ class ilExamCheckerHandler implements ilExamModuleInterface
             if (!empty($failed_items)) {
                 $html .= '<div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 0.375rem; padding: 1rem; margin-bottom: 1rem;">';
                 $html .= '<h4 style="color: #721c24; margin: 0 0 0.75rem 0; display: flex; align-items: center; gap: 0.5rem;">';
-                $html .= '<span>❌</span> Zu überprüfende Einstellungen (' . count($failed_items) . ')';
+                $html .= '<span>❌</span> ' . $this->lng->txt('failed_heading') . ' (' . count($failed_items) . ')';
                 $html .= '</h4>';
                 $html .= '<ul style="margin: 0; padding-left: 1.5rem; color: #721c24;">';
                 foreach ($failed_items as $item) {
@@ -671,19 +686,19 @@ class ilExamCheckerHandler implements ilExamModuleInterface
             $html .= '<div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">';
             $html .= '<div style="font-size: 2.5rem; animation: pulse 2s infinite; filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.1));">⚠️</div>';
             $html .= '<div>';
-            $html .= '<h3 style="color: #dc6545; margin: 0; font-size: 1.3rem; font-weight: 700;">VORBEDINGUNGEN GEFUNDEN!</h3>';
-            $html .= '<p style="color: #dc6545; margin: 0.25rem 0 0 0; font-weight: 500;">Dieser Test hat ' . $details['count'] . ' Vorbedingung(en) - das kann bei Prüfungen problematisch sein!</p>';
+            $html .= '<h3 style="color: #dc6545; margin: 0; font-size: 1.3rem; font-weight: 700;">' . $this->lng->txt('cond_found') . '</h3>';
+            $html .= '<p style="color: #dc6545; margin: 0.25rem 0 0 0; font-weight: 500;">' . sprintf($this->lng->txt('cond_count'), $details['count']) . '</p>';
             $html .= '</div></div>';
             $html .= '<div style="background: rgba(255,255,255,0.7); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">';
-            $html .= '<h4 style="color: #dc6545; margin: 0 0 0.75rem 0;">📋 Konfigurierte Vorbedingungen:</h4>';
+            $html .= '<h4 style="color: #dc6545; margin: 0 0 0.75rem 0;">📋 ' . $this->lng->txt('cond_list_heading') . '</h4>';
             $html .= '<ul style="margin: 0; padding-left: 1.5rem; color: #dc6545; font-weight: 500;">';
             foreach ($details['details'] as $condition) {
                 $html .= '<li style="margin-bottom: 0.5rem;">🔗 ' . htmlspecialchars($condition['description']) . '</li>';
             }
             $html .= '</ul></div>';
             $html .= '<div style="background: rgba(220,101,69,0.1); border-left: 4px solid #dc6545; padding: 1rem; border-radius: 0 0.375rem 0.375rem 0;">';
-            $html .= '<h4 style="color: #dc6545; margin: 0 0 0.5rem 0;">💡 ACHTUNG:</h4>';
-            $html .= '<p style="color: #dc6545; margin: 0; font-size: 0.9rem;">Entfernen Sie alle Vorbedingungen für Prüfungs-Tests, um sicherzustellen, dass alle Teilnehmer gleichzeitig Zugang haben.</p>';
+            $html .= '<h4 style="color: #dc6545; margin: 0 0 0.5rem 0;">💡 ' . $this->lng->txt('cond_attention') . '</h4>';
+            $html .= '<p style="color: #dc6545; margin: 0; font-size: 0.9rem;">' . $this->lng->txt('cond_advice') . '</p>';
             $html .= '</div>';
             $html .= '</div>';
             $html .= '<style>@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }</style>';
@@ -692,12 +707,12 @@ class ilExamCheckerHandler implements ilExamModuleInterface
         // Manuelle Checks
         if (!empty($results['manuell_check'])) {
             $html .= '<div style="background: #fff3cd; border: 1px solid #ffeeba; border-radius: 0.375rem; padding: 1rem; margin-bottom: 1rem;">';
-            $html .= '<h4 style="color: #856404; margin: 0 0 0.75rem 0; display: flex; align-items: center; gap: 0.5rem;"><span>⚠️</span> Manuelle Überprüfung erforderlich</h4>';
+            $html .= '<h4 style="color: #856404; margin: 0 0 0.75rem 0; display: flex; align-items: center; gap: 0.5rem;"><span>⚠️</span> ' . $this->lng->txt('manual_heading') . '</h4>';
 
             foreach ($results['manuell_check'] as $key => $data) {
                 $name = $settings_descriptions[$key] ?? $key;
                 $status_icon = $data['status'] ? '✅' : '⚠️';
-                $status_text = $data['status'] ? 'OK' : 'Zu prüfen';
+                $status_text = $data['status'] ? $this->lng->txt('status_ok') : $this->lng->txt('status_tocheck');
 
                 $html .= '<div style="margin-bottom: 0.75rem; padding: 0.5rem; background: white; border-radius: 0.25rem;">';
                 $html .= '<div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">';
@@ -719,29 +734,22 @@ class ilExamCheckerHandler implements ilExamModuleInterface
      */
     private function getSettingDescriptions(): array
     {
-        return array(
-            'fragenpools_verwenden' => 'Fragenpools verwenden',
-            'datenschutz' => 'Datenschutz (Testergebnisse mit Namen ausgeben)',
-            'online' => 'Test ist online geschaltet',
-            'passwort' => 'Testpasswort gesetzt',
-            'nur_ausgewaehlte_teilnehmer' => 'Nur ausgewählte Teilnehmer (deaktiviert)',
-            'testdurchlaeufe_begrenzen' => 'Anzahl Testdurchläufe auf 1 begrenzt',
-            'wartezeit_erzwingen' => 'Wartezeit zwischen Durchläufen (deaktiviert)',
-            'pruefungsansicht' => 'Prüfungsansicht (Kiosk-Modus) aktiviert',
-            'automatisches_speichern' => 'Automatisches Speichern alle 30 Sekunden',
-            'direkte_rueckmeldung' => 'Direkte Rückmeldung deaktiviert',
-            'fragen_markieren' => 'Fragen markieren aktiviert',
-            'eigenstaendigkeitserklaerung' => 'Eigenständigkeitserklärung (Fernprüfung)',
-            'bearbeitungsdauer' => 'Bearbeitungsdauer begrenzen aktiviert',
-            'weiterleitung' => 'Weiterleitung zu logout.php (nur bei Kiosk)',
-            'bewertungssystem' => 'Auch teilweise falsche Antworten erzielen Punkte',
-            'negative_punkte' => 'Negative Punkte pro Frage deaktiviert',
-            'besten_durchlauf_bewerten' => 'Besten Testdurchlauf bewerten aktiviert',
-            'start_und_ende' => 'Start- und Endzeiten korrekt gesetzt',
-            'keine_vorbedingungen' => 'Keine Vorbedingungen für Testzugang gesetzt',
-            'direkte_notenuebermittlung' => 'Direkte Notenübermittlung deaktiviert',
-            'zeitlich_begrenzte_verfuegbarkeit' => 'Zeitlich begrenzte Verfügbarkeit muss deaktiviert sein'
-        );
+        $keys = [
+            'fragenpools_verwenden', 'datenschutz', 'online', 'passwort',
+            'nur_ausgewaehlte_teilnehmer', 'testdurchlaeufe_begrenzen', 'wartezeit_erzwingen',
+            'pruefungsansicht', 'automatisches_speichern', 'direkte_rueckmeldung',
+            'fragen_markieren', 'eigenstaendigkeitserklaerung', 'bearbeitungsdauer',
+            'weiterleitung', 'bewertungssystem', 'negative_punkte', 'besten_durchlauf_bewerten',
+            'start_und_ende', 'keine_vorbedingungen', 'direkte_notenuebermittlung',
+            'zeitlich_begrenzte_verfuegbarkeit',
+        ];
+
+        $descriptions = array();
+        foreach ($keys as $key) {
+            $descriptions[$key] = $this->lng->txt('desc_' . $key);
+        }
+
+        return $descriptions;
     }
 
     /**
@@ -764,10 +772,10 @@ class ilExamCheckerHandler implements ilExamModuleInterface
     {
         return array(
             'name' => 'ExamChecker',
-            'title' => 'Prüfungs-Einstellungen Checker',
+            'title' => $this->lng->txt('title'),
             'icon' => '🔍',
-            'description' => 'Überprüft Test-Einstellungen gegen definierte Standards für Präsenz- und Fernprüfungen.',
-            'version' => '1.1.0',
+            'description' => $this->lng->txt('description'),
+            'version' => '1.2.0',
             'features' => array()
         );
     }

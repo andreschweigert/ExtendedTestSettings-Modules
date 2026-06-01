@@ -1,0 +1,11 @@
+<!-- language file start -->
+title#:#Hilfsmittelblatt
+description#:#Stellt Studierenden ein vom Dozenten hochgeladenes Hilfsmittelblatt (PDF/HTML) als Overlay im Test-Player bereit.
+enable#:#Hilfsmittelblatt aktivieren
+enable_info#:#Stellt Studierenden ein Hilfsmittelblatt (PDF oder HTML) als Overlay im Test-Player bereit.
+label_field#:#Button-Beschriftung
+label_field_info#:#Beschriftung des Buttons im Test-Player, z.B. "Formelblatt", "Hilfsmittel", "Anhang".
+current_file#:#Aktuelle Datei
+file_upload#:#Datei hochladen
+file_replace#:#Datei ersetzen
+file_info#:#PDF oder HTML — max. 10 MB.

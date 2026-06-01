@@ -2,7 +2,7 @@
     "id": "examnetqos",
     "label": "Netzwerk-Qualität",
     "description": "Misst Latenz und Paketverlust im Hintergrund während der Prüfung. Erkennt Netz-Ereignisse automatisch (RTT-Schwellwert-Überschreitungen) und speichert eine Zeitreihe zur späteren Korrelation mit Teilnehmer-Beschwerden.",
-    "version": "1.0.1",
+    "version": "1.1.0",
     "ilias_min": "9",
     "ilias_max": "9",
     "handler_class": "ilExamNetQosHandler",
