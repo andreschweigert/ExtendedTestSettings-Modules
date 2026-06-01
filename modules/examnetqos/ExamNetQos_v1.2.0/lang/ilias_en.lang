@@ -1,0 +1,72 @@
+<!-- language file start -->
+title#:#Network quality measurement
+description#:#Client-side latency and packet-loss measurement, correlates complaints with real network events
+enable#:#Enable network quality measurement
+enable_info#:#Measures RTT (and optionally packet loss) in the background. Stores network events for later correlation with complaints. No visible interference with the test player.
+interval_label#:#Measurement interval
+interval_5#:#5 s (fine-grained, more load)
+interval_10#:#10 s (default)
+interval_30#:#30 s (economical)
+rtt_warn_label#:#RTT warning threshold (ms)
+rtt_warn_info#:#Exceeded → event "degraded" stored.
+rtt_crit_label#:#RTT critical threshold (ms)
+rtt_crit_info#:#Exceeded → event "critical" stored.
+loss_enable#:#Enable packet-loss measurement
+loss_enable_info#:#Sends N parallel HEAD requests, counts failures as simulated packet loss.
+loss_probes_label#:#Number of parallel probes
+loss_probes_info#:#2–10 parallel probes. Each probe = 1 HEAD request.
+ev_measurement#:#Measurement
+ev_degraded#:#Elevated
+ev_critical#:#Critical
+ev_recovered#:#Recovered
+ev_reconnect#:#Reconnect (ConnGuard)
+access_denied#:#Access denied.
+no_data#:#No measurements for the selected filter.
+export_csv#:#Export as CSV
+events_in_sessions#:#<strong>%1$d</strong> events in <strong>%2$d</strong> sessions
+limit_hint#:#(limit 3000 — narrow the filter)
+th_user#:#User
+th_test#:#Test
+th_start#:#Start
+th_duration#:#Duration
+th_avg_rtt#:#avg RTT
+th_max_rtt#:#max RTT
+th_events#:#Events
+th_sparkline#:#Sparkline
+badge_meas#:#meas.
+btn_detail#:#Detail
+lbl_session#:#Session:
+lbl_ip#:#IP:
+lbl_thresholds#:#Thresholds: warn=%1$dms, crit=%2$dms
+raw_data#:#Raw data
+th_time#:#Time
+th_event#:#Event
+th_rtt#:#RTT (ms)
+th_loss#:#Loss (%)
+th_conn#:#Connection type
+timeout#:#Timeout
+back_overview#:#Back to overview
+only_events#:#Only events present, no measurements.
+legend_normal#:#RTT normal
+legend_elevated#:#RTT elevated
+legend_critical#:#RTT critical / timeout
+filter_test#:#Test:
+filter_all#:#— All —
+filter_user#:#User:
+filter_from#:#From:
+filter_to#:#To:
+filter_submit#:#Filter
+filter_reset#:#Reset
+csv_date#:#Date
+csv_time#:#Time
+csv_login#:#Login
+csv_firstname#:#First name
+csv_lastname#:#Last name
+csv_test#:#Test
+csv_refid#:#Ref ID
+csv_session#:#Session key
+csv_event#:#Event
+csv_rtt#:#RTT (ms)
+csv_loss#:#Loss (%)
+csv_conn#:#Connection type
+csv_ip#:#IP address

@@ -15,16 +15,27 @@ class ilExamNetQosViewGUI
     private string $chartCmd  = 'showChart';
     private string $exportCmd = 'exportCsv';
 
+    private ilModuleLanguage $lng;
+
+    public function __construct()
+    {
+        // Modul-eigene Sprachdatei (lang/ilias_<lang>.lang in diesem Modulverzeichnis)
+        require_once __DIR__ . '/../../classes/Module/ilModuleLanguage.php';
+        $this->lng = new ilModuleLanguage(__DIR__);
+    }
+
     public function setChartCmd(string $cmd): void  { $this->chartCmd  = $cmd; }
     public function setExportCmd(string $cmd): void { $this->exportCmd = $cmd; }
 
-    private const EVENT_LABELS = [
-        'measurement' => 'Messung',
-        'degraded'    => 'Erhöht',
-        'critical'    => 'Kritisch',
-        'recovered'   => 'Wiederhergestellt',
-        'reconnect'   => 'Reconnect (ConnGuard)',
-    ];
+    /**
+     * Übersetztes Label für einen Ereignistyp (statt der EVENT_LABELS-Konstante).
+     */
+    private function eventLabel(string $type): string
+    {
+        return $this->lng->txt('ev_' . $type, $type);
+    }
+
+    // Ereignis-Labels werden übersetzt über eventLabel() / Sprachschlüssel "ev_<typ>" aufgelöst.
 
     private const EVENT_COLORS = [
         'measurement' => '#888',
@@ -50,7 +61,7 @@ class ilExamNetQosViewGUI
 
         if ($ref_id > 0 && !$rbacsystem->checkAccess('write', $ref_id)) {
             global $DIC;
-            $DIC->ui()->mainTemplate()->setOnScreenMessage('failure', 'Zugriff verweigert.');
+            $DIC->ui()->mainTemplate()->setOnScreenMessage('failure', $this->lng->txt('access_denied'));
             $DIC->ui()->mainTemplate()->printToStdout();
             return;
         }
@@ -296,7 +307,7 @@ class ilExamNetQosViewGUI
             $filter_ref, $filter_user_id, $filter_from, $filter_to, $filter_session);
 
         if (empty($rows)) {
-            $html .= '<div class="alert alert-info">Keine Messwerte für den gewählten Filter.</div>';
+            $html .= '<div class="alert alert-info">' . $this->lng->txt('no_data') . '</div>';
             return $html;
         }
 
@@ -312,10 +323,10 @@ class ilExamNetQosViewGUI
             'cmd'              => $this->exportCmd,
         ]));
         $html .= '<p style="margin:10px 0 15px;">';
-        $html .= '<a href="' . htmlspecialchars($base . '&' . $exportQs) . '" class="btn btn-default btn-sm">Als CSV exportieren</a>';
-        $html .= '&nbsp;&nbsp;<strong>' . count($rows) . '</strong> Ereignisse in <strong>' . count($sessions) . '</strong> Sessions';
+        $html .= '<a href="' . htmlspecialchars($base . '&' . $exportQs) . '" class="btn btn-default btn-sm">' . $this->lng->txt('export_csv') . '</a>';
+        $html .= '&nbsp;&nbsp;' . sprintf($this->lng->txt('events_in_sessions'), count($rows), count($sessions));
         if (count($rows) >= 3000) {
-            $html .= ' <span class="text-muted">(Limit 3000 — Filter eingrenzen)</span>';
+            $html .= ' <span class="text-muted">' . $this->lng->txt('limit_hint') . '</span>';
         }
         $html .= '</p>';
 
@@ -369,14 +380,14 @@ class ilExamNetQosViewGUI
     ): string {
         $html = '<table class="table table-striped table-condensed table-hover" style="font-size:13px;">';
         $html .= '<thead><tr>'
-               . '<th>Nutzer</th>'
-               . '<th>Test</th>'
-               . '<th>Start</th>'
-               . '<th>Dauer</th>'
-               . '<th>Ø RTT</th>'
-               . '<th>Max RTT</th>'
-               . '<th>Ereignisse</th>'
-               . '<th>Sparkline</th>'
+               . '<th>' . $this->lng->txt('th_user') . '</th>'
+               . '<th>' . $this->lng->txt('th_test') . '</th>'
+               . '<th>' . $this->lng->txt('th_start') . '</th>'
+               . '<th>' . $this->lng->txt('th_duration') . '</th>'
+               . '<th>' . $this->lng->txt('th_avg_rtt') . '</th>'
+               . '<th>' . $this->lng->txt('th_max_rtt') . '</th>'
+               . '<th>' . $this->lng->txt('th_events') . '</th>'
+               . '<th>' . $this->lng->txt('th_sparkline') . '</th>'
                . '<th></th>'
                . '</tr></thead><tbody>';
 
@@ -398,7 +409,7 @@ class ilExamNetQosViewGUI
             $n_rec  = count(array_filter($events, fn($e) => $e['event_type'] === 'recovered'));
 
             $rtt_warn = 500; $rtt_crit = 2000;  // Defaults für Sparkline
-            $eventBadges = '<span class="badge" style="background:#888;">' . $n_meas . ' Mess.</span> ';
+            $eventBadges = '<span class="badge" style="background:#888;">' . $n_meas . ' ' . $this->lng->txt('badge_meas') . '</span> ';
             if ($n_deg)  $eventBadges .= '<span class="badge" style="background:#f9a825;">' . $n_deg . ' deg</span> ';
             if ($n_crit) $eventBadges .= '<span class="badge" style="background:#e53935;">' . $n_crit . ' crit</span> ';
             if ($n_rec)  $eventBadges .= '<span class="badge" style="background:#43a047;">' . $n_rec . ' rec</span>';
@@ -429,7 +440,7 @@ class ilExamNetQosViewGUI
                    . '<td>' . $this->rttBadge($max_rtt, $rtt_warn, $rtt_crit) . '</td>'
                    . '<td>' . $eventBadges . '</td>'
                    . '<td>' . $this->renderSparkline(array_values($measurements), $rtt_warn, $rtt_crit) . '</td>'
-                   . '<td><a href="' . htmlspecialchars($detailUrl) . '" class="btn btn-xs btn-default">Detail</a></td>'
+                   . '<td><a href="' . htmlspecialchars($detailUrl) . '" class="btn btn-xs btn-default">' . $this->lng->txt('btn_detail') . '</a></td>'
                    . '</tr>';
         }
 
@@ -461,11 +472,11 @@ class ilExamNetQosViewGUI
         $html .= '</h4>';
         $html .= '</div>';
         $html .= '<div class="panel-body" style="font-size:13px;color:#555;">';
-        $html .= 'Session: <code>' . htmlspecialchars($session['session_key']) . '</code>';
-        $html .= ' &nbsp;|&nbsp; IP: ' . htmlspecialchars($session['ip_addr']);
+        $html .= $this->lng->txt('lbl_session') . ' <code>' . htmlspecialchars($session['session_key']) . '</code>';
+        $html .= ' &nbsp;|&nbsp; ' . $this->lng->txt('lbl_ip') . ' ' . htmlspecialchars($session['ip_addr']);
         $html .= ' &nbsp;|&nbsp; ' . date('d.m.Y H:i:s', $start_ts) . ' – ' . date('H:i:s', $end_ts);
         $html .= ' &nbsp;(' . $this->formatDuration($end_ts - $start_ts) . ')';
-        $html .= ' &nbsp;|&nbsp; Schwellwerte: warn=' . $rtt_warn . 'ms, crit=' . $rtt_crit . 'ms';
+        $html .= ' &nbsp;|&nbsp; ' . sprintf($this->lng->txt('lbl_thresholds'), $rtt_warn, $rtt_crit);
         $html .= '</div>';
         $html .= '</div>';
 
@@ -473,13 +484,13 @@ class ilExamNetQosViewGUI
         $html .= $this->renderDetailChart($events, $rtt_warn, $rtt_crit);
 
         // Ereignis-Tabelle
-        $html .= '<h5 style="margin-top:24px;">Rohdaten</h5>';
+        $html .= '<h5 style="margin-top:24px;">' . $this->lng->txt('raw_data') . '</h5>';
         $html .= '<table class="table table-condensed" style="font-size:12px;">';
-        $html .= '<thead><tr><th>Zeit</th><th>Ereignis</th><th>RTT (ms)</th><th>Verlust (%)</th><th>Verbindungstyp</th></tr></thead><tbody>';
+        $html .= '<thead><tr><th>' . $this->lng->txt('th_time') . '</th><th>' . $this->lng->txt('th_event') . '</th><th>' . $this->lng->txt('th_rtt') . '</th><th>' . $this->lng->txt('th_loss') . '</th><th>' . $this->lng->txt('th_conn') . '</th></tr></thead><tbody>';
         foreach ($events as $ev) {
-            $label = self::EVENT_LABELS[$ev['event_type']] ?? $ev['event_type'];
+            $label = $this->eventLabel($ev['event_type']);
             $color = self::EVENT_COLORS[$ev['event_type']] ?? '#888';
-            $rtt   = (int)$ev['rtt_ms'] > 0 ? $ev['rtt_ms'] . ' ms' : '<span style="color:#e53935;">Timeout</span>';
+            $rtt   = (int)$ev['rtt_ms'] > 0 ? $ev['rtt_ms'] . ' ms' : '<span style="color:#e53935;">' . $this->lng->txt('timeout') . '</span>';
             $loss  = (int)$ev['loss_pct'] >= 0 ? $ev['loss_pct'] . '%' : '—';
             $conn  = $ev['conn_type'] !== '' ? htmlspecialchars($ev['conn_type']) : '—';
             $html .= '<tr>'
@@ -494,7 +505,7 @@ class ilExamNetQosViewGUI
 
         // Zurück-Link
         $backUrl = preg_replace('/&filter_session_key=[^&]*/', '', $_SERVER['REQUEST_URI'] ?? $base);
-        $html .= '<p><a href="' . htmlspecialchars($backUrl) . '" class="btn btn-default btn-sm">&larr; Zurück zur Übersicht</a></p>';
+        $html .= '<p><a href="' . htmlspecialchars($backUrl) . '" class="btn btn-default btn-sm">&larr; ' . $this->lng->txt('back_overview') . '</a></p>';
 
         return $html;
     }
@@ -544,7 +555,7 @@ class ilExamNetQosViewGUI
         $non_measurements = array_values(array_filter($events, fn($e) => $e['event_type'] !== 'measurement'));
 
         if (empty($measurements)) {
-            return '<div class="alert alert-warning">Nur Ereignisse vorhanden, keine Messwerte.</div>';
+            return '<div class="alert alert-warning">' . $this->lng->txt('only_events') . '</div>';
         }
 
         $W = 900; $H = 200;
@@ -633,7 +644,7 @@ class ilExamNetQosViewGUI
         foreach ($non_measurements as $ev) {
             $x   = round($xOf((int)$ev['tstamp']), 1);
             $col = self::EVENT_COLORS[$ev['event_type']] ?? '#666';
-            $lbl = self::EVENT_LABELS[$ev['event_type']] ?? $ev['event_type'];
+            $lbl = $this->eventLabel($ev['event_type']);
             $tip = htmlspecialchars(date('H:i:s', (int)$ev['tstamp']) . ' | ' . $lbl);
             $svg .= '<line x1="' . $x . '" y1="' . $mt . '" x2="' . $x . '" y2="' . $y_bottom . '"'
                   . ' stroke="' . $col . '" stroke-width="2" stroke-dasharray="6,3">'
@@ -648,13 +659,13 @@ class ilExamNetQosViewGUI
 
         // Legende
         $legend = '<div style="font-size:11px;color:#666;margin-bottom:8px;">';
-        $legend .= '<span style="margin-right:12px;"><span style="display:inline-block;width:20px;height:3px;background:#43a047;vertical-align:middle;margin-right:4px;"></span>RTT normal</span>';
-        $legend .= '<span style="margin-right:12px;"><span style="display:inline-block;width:20px;height:3px;background:#f9a825;vertical-align:middle;margin-right:4px;"></span>RTT erhöht</span>';
-        $legend .= '<span style="margin-right:12px;"><span style="display:inline-block;width:20px;height:3px;background:#e53935;vertical-align:middle;margin-right:4px;"></span>RTT kritisch / Timeout</span>';
+        $legend .= '<span style="margin-right:12px;"><span style="display:inline-block;width:20px;height:3px;background:#43a047;vertical-align:middle;margin-right:4px;"></span>' . $this->lng->txt('legend_normal') . '</span>';
+        $legend .= '<span style="margin-right:12px;"><span style="display:inline-block;width:20px;height:3px;background:#f9a825;vertical-align:middle;margin-right:4px;"></span>' . $this->lng->txt('legend_elevated') . '</span>';
+        $legend .= '<span style="margin-right:12px;"><span style="display:inline-block;width:20px;height:3px;background:#e53935;vertical-align:middle;margin-right:4px;"></span>' . $this->lng->txt('legend_critical') . '</span>';
         foreach (self::EVENT_COLORS as $type => $col) {
             if ($type === 'measurement') continue;
             $legend .= '<span style="margin-right:12px;"><span style="display:inline-block;width:2px;height:14px;background:' . $col . ';vertical-align:middle;margin-right:4px;"></span>'
-                     . htmlspecialchars(self::EVENT_LABELS[$type] ?? $type) . '</span>';
+                     . htmlspecialchars($this->eventLabel($type)) . '</span>';
         }
         $legend .= '</div>';
 
@@ -685,9 +696,9 @@ class ilExamNetQosViewGUI
 
         // Test
         if (!empty($testList)) {
-            $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">Test:</label>';
+            $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">' . $this->lng->txt('filter_test') . '</label>';
             $html .= '<select name="filter_ref_id" class="form-control input-sm" style="max-width:220px;margin-right:8px;">';
-            $html .= '<option value="">— Alle —</option>';
+            $html .= '<option value="">' . $this->lng->txt('filter_all') . '</option>';
             foreach ($testList as $refId => $title) {
                 $sel   = ($filter_ref === $refId) ? ' selected' : '';
                 $html .= '<option value="' . $refId . '"' . $sel . '>' . htmlspecialchars($title) . '</option>';
@@ -697,9 +708,9 @@ class ilExamNetQosViewGUI
 
         // Nutzer
         if (!empty($userList)) {
-            $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">Nutzer:</label>';
+            $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">' . $this->lng->txt('filter_user') . '</label>';
             $html .= '<select name="filter_user_id" class="form-control input-sm" style="max-width:200px;margin-right:8px;">';
-            $html .= '<option value="">— Alle —</option>';
+            $html .= '<option value="">' . $this->lng->txt('filter_all') . '</option>';
             foreach ($userList as $uid => $label) {
                 $sel   = ($filter_user_id === $uid) ? ' selected' : '';
                 $html .= '<option value="' . $uid . '"' . $sel . '>' . htmlspecialchars($label) . '</option>';
@@ -708,15 +719,15 @@ class ilExamNetQosViewGUI
         }
 
         // Datum
-        $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">Von:</label>';
+        $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">' . $this->lng->txt('filter_from') . '</label>';
         $html .= '<input type="date" name="filter_from" class="form-control input-sm" value="' . htmlspecialchars($filter_from) . '" style="margin-right:8px;">';
-        $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">Bis:</label>';
+        $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">' . $this->lng->txt('filter_to') . '</label>';
         $html .= '<input type="date" name="filter_to" class="form-control input-sm" value="' . htmlspecialchars($filter_to) . '" style="margin-right:8px;">';
 
-        $html .= '<button type="submit" class="btn btn-default btn-sm">Filtern</button>';
+        $html .= '<button type="submit" class="btn btn-default btn-sm">' . $this->lng->txt('filter_submit') . '</button>';
         if ($hasFilter) {
             $resetUrl = $action . '&cmd=showChart';
-            $html    .= '&nbsp;<a href="' . htmlspecialchars($resetUrl) . '" class="btn btn-link btn-sm">Zurücksetzen</a>';
+            $html    .= '&nbsp;<a href="' . htmlspecialchars($resetUrl) . '" class="btn btn-link btn-sm">' . $this->lng->txt('filter_reset') . '</a>';
         }
         $html .= '</form>';
         return $html;
@@ -757,10 +768,24 @@ class ilExamNetQosViewGUI
 
         $out = fopen('php://output', 'w');
         fprintf($out, chr(0xEF) . chr(0xBB) . chr(0xBF));
-        fputcsv($out, ['Datum','Uhrzeit','Login','Vorname','Nachname','Test','Ref-ID','Session-Key','Ereignis','RTT (ms)','Verlust (%)','Verbindungstyp','IP-Adresse'], ';');
+        fputcsv($out, [
+            $this->lng->txt('csv_date'),
+            $this->lng->txt('csv_time'),
+            $this->lng->txt('csv_login'),
+            $this->lng->txt('csv_firstname'),
+            $this->lng->txt('csv_lastname'),
+            $this->lng->txt('csv_test'),
+            $this->lng->txt('csv_refid'),
+            $this->lng->txt('csv_session'),
+            $this->lng->txt('csv_event'),
+            $this->lng->txt('csv_rtt'),
+            $this->lng->txt('csv_loss'),
+            $this->lng->txt('csv_conn'),
+            $this->lng->txt('csv_ip'),
+        ], ';');
 
         while ($row = $db->fetchAssoc($result)) {
-            $rtt  = (int)$row['rtt_ms'] > 0  ? (int)$row['rtt_ms']  : 'Timeout';
+            $rtt  = (int)$row['rtt_ms'] > 0  ? (int)$row['rtt_ms']  : $this->lng->txt('timeout');
             $loss = (int)$row['loss_pct'] >= 0 ? (int)$row['loss_pct'] : '';
             fputcsv($out, [
                 date('d.m.Y', (int)$row['tstamp']),
@@ -771,7 +796,7 @@ class ilExamNetQosViewGUI
                 $row['test_title'] ?? '',
                 $row['test_ref_id'],
                 $row['session_key'],
-                self::EVENT_LABELS[$row['event_type']] ?? $row['event_type'],
+                $this->eventLabel($row['event_type']),
                 $rtt,
                 $loss,
                 $row['conn_type'],

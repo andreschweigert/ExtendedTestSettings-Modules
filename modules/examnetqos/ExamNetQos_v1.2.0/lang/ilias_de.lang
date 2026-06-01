@@ -1,0 +1,72 @@
+<!-- language file start -->
+title#:#Netzwerk-Qualitätsmessung
+description#:#Clientseitige Latenz- und Paketverlust-Messung, korreliert Beschwerden mit echten Netz-Events
+enable#:#Netzwerk-Qualitätsmessung aktivieren
+enable_info#:#Misst RTT (und optional Paketverlust) im Hintergrund. Speichert Netz-Ereignisse zur späteren Korrelation mit Beschwerden. Kein sichtbarer Eingriff in den Testplayer.
+interval_label#:#Messintervall
+interval_5#:#5 s (fein, mehr Last)
+interval_10#:#10 s (Standard)
+interval_30#:#30 s (sparsam)
+rtt_warn_label#:#RTT Warnschwelle (ms)
+rtt_warn_info#:#Überschreitung → Ereignis "degraded" gespeichert.
+rtt_crit_label#:#RTT Kritisch-Schwelle (ms)
+rtt_crit_info#:#Überschreitung → Ereignis "critical" gespeichert.
+loss_enable#:#Paketverlust-Messung aktivieren
+loss_enable_info#:#Sendet N parallele HEAD-Requests, zählt Fehlschläge als simulierten Paketverlust.
+loss_probes_label#:#Anzahl Parallel-Probes
+loss_probes_info#:#2–10 parallele Probes. Jede Probe = 1 HEAD-Request.
+ev_measurement#:#Messung
+ev_degraded#:#Erhöht
+ev_critical#:#Kritisch
+ev_recovered#:#Wiederhergestellt
+ev_reconnect#:#Reconnect (ConnGuard)
+access_denied#:#Zugriff verweigert.
+no_data#:#Keine Messwerte für den gewählten Filter.
+export_csv#:#Als CSV exportieren
+events_in_sessions#:#<strong>%1$d</strong> Ereignisse in <strong>%2$d</strong> Sessions
+limit_hint#:#(Limit 3000 — Filter eingrenzen)
+th_user#:#Nutzer
+th_test#:#Test
+th_start#:#Start
+th_duration#:#Dauer
+th_avg_rtt#:#Ø RTT
+th_max_rtt#:#Max RTT
+th_events#:#Ereignisse
+th_sparkline#:#Sparkline
+badge_meas#:#Mess.
+btn_detail#:#Detail
+lbl_session#:#Session:
+lbl_ip#:#IP:
+lbl_thresholds#:#Schwellwerte: warn=%1$dms, crit=%2$dms
+raw_data#:#Rohdaten
+th_time#:#Zeit
+th_event#:#Ereignis
+th_rtt#:#RTT (ms)
+th_loss#:#Verlust (%)
+th_conn#:#Verbindungstyp
+timeout#:#Timeout
+back_overview#:#Zurück zur Übersicht
+only_events#:#Nur Ereignisse vorhanden, keine Messwerte.
+legend_normal#:#RTT normal
+legend_elevated#:#RTT erhöht
+legend_critical#:#RTT kritisch / Timeout
+filter_test#:#Test:
+filter_all#:#— Alle —
+filter_user#:#Nutzer:
+filter_from#:#Von:
+filter_to#:#Bis:
+filter_submit#:#Filtern
+filter_reset#:#Zurücksetzen
+csv_date#:#Datum
+csv_time#:#Uhrzeit
+csv_login#:#Login
+csv_firstname#:#Vorname
+csv_lastname#:#Nachname
+csv_test#:#Test
+csv_refid#:#Ref-ID
+csv_session#:#Session-Key
+csv_event#:#Ereignis
+csv_rtt#:#RTT (ms)
+csv_loss#:#Verlust (%)
+csv_conn#:#Verbindungstyp
+csv_ip#:#IP-Adresse
