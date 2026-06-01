@@ -1,0 +1,5 @@
+<!-- language file start -->
+title#:#Prüfungsschutz
+description#:#Blockiert Copy&Paste, Rechtsklick und kritische Tastenkombinationen während der Prüfung
+enable#:#Prüfungsschutz aktivieren
+enable_info#:#Blockiert Copy&Paste, Rechtsklick und kritische Tastenkombinationen während der Prüfung. Läuft unsichtbar im Hintergrund.

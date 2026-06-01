@@ -7,10 +7,15 @@
 class ilExamFullscreenHandler implements ilExamModuleInterface
 {
     private string $plugin_path;
+    private ilModuleLanguage $lng;
 
     public function __construct(string $plugin_path)
     {
         $this->plugin_path = $plugin_path;
+
+        // Modul-eigene Sprachdatei (lang/ilias_<lang>.lang in diesem Modulverzeichnis)
+        require_once $plugin_path . '/classes/Module/ilModuleLanguage.php';
+        $this->lng = new ilModuleLanguage(__DIR__);
     }
 
     public function isEnabled(int $ref_id): bool
@@ -151,10 +156,10 @@ class ilExamFullscreenHandler implements ilExamModuleInterface
     {
         return [
             'name'        => 'ExamFullscreen',
-            'title'       => 'Vollbild-Modus',
+            'title'       => $this->lng->txt('title'),
             'icon'        => '⛶',
-            'description' => 'Fordert Browser-Vollbild (F11) beim Teststart an und warnt oder sperrt bei Verlassen',
-            'version'     => '2.0.0',
+            'description' => $this->lng->txt('description'),
+            'version'     => '2.1.0',
             'features'    => [
                 'Browser-Fullscreen (F11) statt Fullscreen-API — überlebt Fragenwechsel',
                 'OS-Erkennung: zeigt F11 (Windows/Linux) oder Ctrl+Cmd+F (Mac)',
@@ -170,17 +175,17 @@ class ilExamFullscreenHandler implements ilExamModuleInterface
     {
         $config = $this->getConfig($ref_id);
 
-        $cb = new ilCheckboxInputGUI('Vollbild-Modus aktivieren', 'examfullscreen_enabled');
+        $cb = new ilCheckboxInputGUI($this->lng->txt('enable'), 'examfullscreen_enabled');
         $cb->setChecked($config['enabled']);
-        $cb->setInfo('Fordert Studierende beim Teststart automatisch zur Vollbild-Darstellung auf und reagiert, wenn der Vollbild-Modus verlassen wird.');
+        $cb->setInfo($this->lng->txt('enable_info'));
 
-        $sel = new ilSelectInputGUI('Verhalten beim Verlassen', 'examfullscreen_mode');
+        $sel = new ilSelectInputGUI($this->lng->txt('mode_label'), 'examfullscreen_mode');
         $sel->setOptions([
-            'warn'  => 'Warnen — Hinweis anzeigen, Test läuft weiter',
-            'force' => 'Sperren — Test wird bis zur Rückkehr blockiert',
+            'warn'  => $this->lng->txt('mode_warn'),
+            'force' => $this->lng->txt('mode_force'),
         ]);
         $sel->setValue($config['mode']);
-        $sel->setInfo('Im Sperr-Modus können Studierende keine Antworten eingeben, bis der Vollbild-Modus wiederhergestellt wird.');
+        $sel->setInfo($this->lng->txt('mode_info'));
 
         $cb->addSubItem($sel);
 

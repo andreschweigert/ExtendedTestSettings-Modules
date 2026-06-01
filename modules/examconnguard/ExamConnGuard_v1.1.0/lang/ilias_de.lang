@@ -1,0 +1,5 @@
+<!-- language file start -->
+title#:#Verbindungs-Schutz
+description#:#Fängt kurze Verbindungs-Aussetzer im Test-Player ab und verhindert Browser-Fehlerseiten
+enable#:#Verbindungs-Schutz aktivieren
+enable_info#:#Fängt kurze WLAN-Aussetzer im Test-Player ab. Zeigt ein Warte-Overlay statt der Chrome-Fehlerseite, queued Submits und Klicks während der Unterbrechung und holt sie nach dem Reconnect automatisch nach. Empfohlen für Hörsaal-WLAN und Chromebooks.

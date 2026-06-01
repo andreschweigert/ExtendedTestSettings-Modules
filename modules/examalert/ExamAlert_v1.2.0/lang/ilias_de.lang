@@ -1,0 +1,10 @@
+<!-- language file start -->
+title#:#Zeit-Warnung
+description#:#Zeigt zeitbasierte Warnungen mit benutzerdefinierten Nachrichten während des Tests an
+enable#:#Zeit-Warnung aktivieren
+enable_info#:#Zeigt eine Warnung zu einer bestimmten Zeit vor Testende an.
+time_label#:#Warnung anzeigen
+time_suffix#:#Sekunden vor Testende
+message_label#:#Nachricht
+message_placeholder#:#Nachricht...
+message_info#:#Diese Nachricht wird den Teilnehmern zur eingestellten Zeit angezeigt. HTML erlaubt: &lt;strong&gt;, &lt;u&gt;, &lt;br&gt;

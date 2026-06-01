@@ -1,0 +1,9 @@
+<!-- language file start -->
+title#:#Wissenschaftlicher Taschenrechner
+description#:#Taschenrechner für Prüfungen mit zwei Modi: Einfach (Grundrechenarten) und Wissenschaftlich
+enable#:#Taschenrechner aktivieren
+enable_info#:#Stellt einen Taschenrechner während der Prüfung zur Verfügung. Shortcut: Alt + R
+type_label#:#Taschenrechner-Typ
+mode_simple#:#Einfach (Grundrechenarten) – Standard
+mode_advanced#:#Wissenschaftlich (Work in Progress)
+type_info#:#Einfach: nur + − × ÷ (empfohlen). Wissenschaftlich: sin, cos, tan, √ usw. — noch in Entwicklung.

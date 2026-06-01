@@ -1,0 +1,5 @@
+<!-- language file start -->
+title#:#Connection guard
+description#:#Catches brief connection dropouts in the test player and prevents browser error pages
+enable#:#Enable connection guard
+enable_info#:#Catches brief Wi-Fi dropouts in the test player. Shows a waiting overlay instead of the Chrome error page, queues submits and clicks during the interruption and automatically replays them after reconnect. Recommended for lecture-hall Wi-Fi and Chromebooks.

@@ -1,0 +1,9 @@
+<!-- language file start -->
+title#:#Fullscreen mode
+description#:#Requests browser fullscreen (F11) at test start and warns or locks when leaving it
+enable#:#Enable fullscreen mode
+enable_info#:#Automatically prompts students for fullscreen display at test start and reacts when fullscreen mode is left.
+mode_label#:#Behaviour when leaving
+mode_warn#:#Warn — show a notice, test continues
+mode_force#:#Lock — test is blocked until return
+mode_info#:#In lock mode, students cannot enter answers until fullscreen mode is restored.

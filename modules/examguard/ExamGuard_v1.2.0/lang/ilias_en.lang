@@ -1,0 +1,5 @@
+<!-- language file start -->
+title#:#Exam protection
+description#:#Blocks copy & paste, right-click and critical key combinations during the exam
+enable#:#Enable exam protection
+enable_info#:#Blocks copy & paste, right-click and critical key combinations during the exam. Runs invisibly in the background.

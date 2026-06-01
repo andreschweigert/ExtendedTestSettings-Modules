@@ -7,6 +7,7 @@
 class ilExamAlertHandler implements ilExamModuleInterface
 {
     private string $plugin_path;
+    private ilModuleLanguage $lng;
 
     // Standardnachricht mit Formatierung
     private const DEFAULT_MESSAGE = 'Ihr Test endet in 30 Sekunden! Klicken Sie <strong>vor Ablauf der Zeit</strong> auf <strong>„Speichern und Test beenden"</strong> , um Ihre Abgabe zu autorisieren und abzugeben.
@@ -15,6 +16,10 @@ Your test will end in 30 seconds! Click on <strong>"Save Answers and Finish the 
     public function __construct(string $plugin_path)
     {
         $this->plugin_path = $plugin_path;
+
+        // Modul-eigene Sprachdatei (lang/ilias_<lang>.lang in diesem Modulverzeichnis)
+        require_once $plugin_path . '/classes/Module/ilModuleLanguage.php';
+        $this->lng = new ilModuleLanguage(__DIR__);
     }
 
     /**
@@ -238,21 +243,21 @@ Your test will end in 30 seconds! Click on <strong>"Save Answers and Finish the 
     {
         $config = $this->getAlertConfig($ref_id);
 
-        $cb = new ilCheckboxInputGUI('Zeit-Warnung aktivieren', 'examalert_enabled');
+        $cb = new ilCheckboxInputGUI($this->lng->txt('enable'), 'examalert_enabled');
         $cb->setChecked($config['enabled']);
-        $cb->setInfo('Zeigt eine Warnung zu einer bestimmten Zeit vor Testende an.');
+        $cb->setInfo($this->lng->txt('enable_info'));
 
-        $num = new ilNumberInputGUI('Warnung anzeigen', 'examalert_time');
+        $num = new ilNumberInputGUI($this->lng->txt('time_label'), 'examalert_time');
         $num->setValue((string) ($config['alert_time'] ?? 30));
         $num->setMinValue(5);
         $num->setMaxValue(3600);
-        $num->setSuffix('Sekunden vor Testende');
+        $num->setSuffix($this->lng->txt('time_suffix'));
         $cb->addSubItem($num);
 
-        $ta = new ilTextAreaInputGUI('Nachricht', 'examalert_message');
+        $ta = new ilTextAreaInputGUI($this->lng->txt('message_label'), 'examalert_message');
         $ta->setValue($config['alert_message'] ?? '');
         $ta->setRows(6);
-        $ta->setInfo('Diese Nachricht wird den Teilnehmern zur eingestellten Zeit angezeigt. HTML erlaubt: &lt;strong&gt;, &lt;u&gt;, &lt;br&gt;');
+        $ta->setInfo($this->lng->txt('message_info'));
         $cb->addSubItem($ta);
 
         return [$cb];
@@ -268,29 +273,36 @@ Your test will end in 30 seconds! Click on <strong>"Save Answers and Finish the 
         $alert_time = $config['alert_time'] ?? 30;
         $alert_message = htmlspecialchars($config['alert_message'] ?? self::DEFAULT_MESSAGE, ENT_QUOTES);
 
+        $t_enable      = $this->lng->txt('enable');
+        $t_enable_info = $this->lng->txt('enable_info');
+        $t_time        = $this->lng->txt('time_label');
+        $t_time_suffix = $this->lng->txt('time_suffix');
+        $t_message     = $this->lng->txt('message_label');
+        $t_placeholder = $this->lng->txt('message_placeholder');
+        $t_message_info = $this->lng->txt('message_info');
+
         return <<<EOT
 <div class="mb-3">
     <div class="form-check">
         <input class="form-check-input" type="checkbox" name="examalert_enabled" value="1" id="examalert_enabled" $enabled>
-        <label class="form-check-label fw-bold" for="examalert_enabled">Zeit-Warnung aktivieren</label>
+        <label class="form-check-label fw-bold" for="examalert_enabled">$t_enable</label>
     </div>
-    <div class="form-text">Zeigt eine Warnung zu einer bestimmten Zeit vor Testende an.</div>
+    <div class="form-text">$t_enable_info</div>
 </div>
 <div class="mb-3">
-    <label for="examalert_time" class="form-label fw-semibold">Warnung anzeigen:</label>
+    <label for="examalert_time" class="form-label fw-semibold">$t_time:</label>
     <div class="input-group" style="max-width: 300px;">
         <input type="number" class="form-control" name="examalert_time" id="examalert_time"
                value="$alert_time" min="5" max="3600">
-        <span class="input-group-text">Sekunden vor Testende</span>
+        <span class="input-group-text">$t_time_suffix</span>
     </div>
 </div>
 <div class="mb-3">
-    <label for="examalert_message" class="form-label fw-semibold">Nachricht:</label>
+    <label for="examalert_message" class="form-label fw-semibold">$t_message:</label>
     <textarea name="examalert_message" id="examalert_message" rows="6"
-              class="form-control font-monospace" placeholder="Nachricht...">$alert_message</textarea>
+              class="form-control font-monospace" placeholder="$t_placeholder">$alert_message</textarea>
     <div class="form-text">
-        Diese Nachricht wird den Teilnehmern zur eingestellten Zeit angezeigt.
-        HTML-Formatierung erlaubt: &lt;strong&gt;, &lt;u&gt;, &lt;br&gt;
+        $t_message_info
     </div>
 </div>
 EOT;
@@ -303,10 +315,10 @@ EOT;
     {
         return [
             'name' => 'ExamAlert',
-            'title' => 'Zeit-Warnung',
+            'title' => $this->lng->txt('title'),
             'icon' => '⏰',
-            'description' => 'Zeigt zeitbasierte Warnungen mit benutzerdefinierten Nachrichten während des Tests an',
-            'version' => '1.1.0',
+            'description' => $this->lng->txt('description'),
+            'version' => '1.2.0',
             'features' => [
                 'Konfigurierbare Auto-Aktivierung für neue Tests',
                 'Einstellbare Warnzeit (5 Sekunden bis 1 Stunde, Default: 30s)',

@@ -1,0 +1,10 @@
+<!-- language file start -->
+title#:#Time warning
+description#:#Shows time-based warnings with custom messages during the test
+enable#:#Enable time warning
+enable_info#:#Shows a warning at a defined time before the test ends.
+time_label#:#Show warning
+time_suffix#:#seconds before the end of the test
+message_label#:#Message
+message_placeholder#:#Message...
+message_info#:#This message is shown to participants at the configured time. Allowed HTML: &lt;strong&gt;, &lt;u&gt;, &lt;br&gt;

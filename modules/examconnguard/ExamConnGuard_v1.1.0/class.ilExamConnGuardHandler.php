@@ -16,9 +16,15 @@ class ilExamConnGuardHandler implements ilExamModuleInterface
     private const RECONNECT_INTERVAL_MS  = 2000;
     private const RECONNECT_GRACE_MS     = 800;
 
+    private ilModuleLanguage $lng;
+
     public function __construct(string $plugin_path)
     {
         $this->plugin_path = $plugin_path;
+
+        // Modul-eigene Sprachdatei (lang/ilias_<lang>.lang in diesem Modulverzeichnis)
+        require_once $plugin_path . '/classes/Module/ilModuleLanguage.php';
+        $this->lng = new ilModuleLanguage(__DIR__);
     }
 
     /**
@@ -144,9 +150,9 @@ class ilExamConnGuardHandler implements ilExamModuleInterface
      */
     public function getFormItems(int $ref_id): array
     {
-        $cb = new ilCheckboxInputGUI('Verbindungs-Schutz aktivieren', 'examconnguard_enabled');
+        $cb = new ilCheckboxInputGUI($this->lng->txt('enable'), 'examconnguard_enabled');
         $cb->setChecked($this->isEnabled($ref_id));
-        $cb->setInfo('Fängt kurze WLAN-Aussetzer im Test-Player ab. Zeigt ein Warte-Overlay statt der Chrome-Fehlerseite, queued Submits und Klicks während der Unterbrechung und holt sie nach dem Reconnect automatisch nach. Empfohlen für Hörsaal-WLAN und Chromebooks.');
+        $cb->setInfo($this->lng->txt('enable_info'));
 
         return [$cb];
     }
@@ -158,10 +164,10 @@ class ilExamConnGuardHandler implements ilExamModuleInterface
     {
         return [
             'name'        => 'ExamConnGuard',
-            'title'       => 'Verbindungs-Schutz',
+            'title'       => $this->lng->txt('title'),
             'icon'        => '📡',
-            'description' => 'Fängt kurze Verbindungs-Aussetzer im Test-Player ab und verhindert Browser-Fehlerseiten',
-            'version'     => '1.0.0',
+            'description' => $this->lng->txt('description'),
+            'version'     => '1.1.0',
             'features'    => [
                 'On-Demand-Probe bei Submit/Link-Klick (kein Hintergrund-Traffic)',
                 'Probe-Datei probe.txt im Plugin-Modul (kein Verlass auf Server-Defaults)',

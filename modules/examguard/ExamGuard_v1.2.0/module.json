@@ -2,7 +2,7 @@
     "id": "examguard",
     "label": "Prüfungsschutz",
     "description": "Verhindert das versehentliche Verlassen des Tests (Browser-Back, Tab schließen, etc.).",
-    "version": "1.1.1",
+    "version": "1.2.0",
     "ilias_min": "9",
     "ilias_max": "9",
     "handler_class": "ilExamGuardHandler",

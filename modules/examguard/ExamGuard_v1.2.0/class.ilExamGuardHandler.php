@@ -7,10 +7,15 @@
 class ilExamGuardHandler implements ilExamModuleInterface
 {
     private string $plugin_path;
+    private ilModuleLanguage $lng;
 
     public function __construct(string $plugin_path)
     {
         $this->plugin_path = $plugin_path;
+
+        // Modul-eigene Sprachdatei (lang/ilias_<lang>.lang in diesem Modulverzeichnis)
+        require_once $plugin_path . '/classes/Module/ilModuleLanguage.php';
+        $this->lng = new ilModuleLanguage(__DIR__);
     }
 
     /**
@@ -119,9 +124,9 @@ class ilExamGuardHandler implements ilExamModuleInterface
      */
     public function getFormItems(int $ref_id): array
     {
-        $cb = new ilCheckboxInputGUI('Prüfungsschutz aktivieren', 'examguard_enabled');
+        $cb = new ilCheckboxInputGUI($this->lng->txt('enable'), 'examguard_enabled');
         $cb->setChecked($this->isEnabled($ref_id));
-        $cb->setInfo('Blockiert Copy&Paste, Rechtsklick und kritische Tastenkombinationen während der Prüfung. Läuft unsichtbar im Hintergrund.');
+        $cb->setInfo($this->lng->txt('enable_info'));
 
         return [$cb];
     }
@@ -133,13 +138,16 @@ class ilExamGuardHandler implements ilExamModuleInterface
     {
         $enabled = $this->isEnabled($ref_id) ? 'checked' : '';
 
+        $t_enable      = $this->lng->txt('enable');
+        $t_enable_info = $this->lng->txt('enable_info');
+
         return <<<HTML
 <div class="mb-3">
     <div class="form-check">
         <input class="form-check-input" type="checkbox" name="examguard_enabled" value="1" id="examguard_enabled" $enabled>
-        <label class="form-check-label fw-bold" for="examguard_enabled">Prüfungsschutz aktivieren</label>
+        <label class="form-check-label fw-bold" for="examguard_enabled">$t_enable</label>
     </div>
-    <div class="form-text">Blockiert Copy&amp;Paste, Rechtsklick und kritische Tastenkombinationen während der Prüfung. <em>Läuft unsichtbar im Hintergrund.</em></div>
+    <div class="form-text">$t_enable_info</div>
 </div>
 HTML;
     }
@@ -151,10 +159,10 @@ HTML;
     {
         return [
             'name' => 'ExamGuard',
-            'title' => 'Prüfungsschutz',
+            'title' => $this->lng->txt('title'),
             'icon' => '🔒',
-            'description' => 'Blockiert Copy&Paste, Rechtsklick und kritische Tastenkombinationen während der Prüfung',
-            'version' => '1.1.0',
+            'description' => $this->lng->txt('description'),
+            'version' => '1.2.0',
             'features' => [
                 'Copy&Paste blockieren',
                 'Rechtsklick verhindern',

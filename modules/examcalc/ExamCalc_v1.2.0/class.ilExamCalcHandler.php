@@ -8,10 +8,15 @@
 class ilExamCalcHandler implements ilExamModuleInterface
 {
     private string $plugin_path;
+    private ilModuleLanguage $lng;
 
     public function __construct(string $plugin_path)
     {
         $this->plugin_path = $plugin_path;
+
+        // Modul-eigene Sprachdatei (lang/ilias_<lang>.lang in diesem Modulverzeichnis)
+        require_once $plugin_path . '/classes/Module/ilModuleLanguage.php';
+        $this->lng = new ilModuleLanguage(__DIR__);
     }
 
     /**
@@ -178,17 +183,17 @@ class ilExamCalcHandler implements ilExamModuleInterface
      */
     public function getFormItems(int $ref_id): array
     {
-        $cb = new ilCheckboxInputGUI('Taschenrechner aktivieren', 'examcalc_enabled');
+        $cb = new ilCheckboxInputGUI($this->lng->txt('enable'), 'examcalc_enabled');
         $cb->setChecked($this->isEnabled($ref_id));
-        $cb->setInfo('Stellt einen Taschenrechner während der Prüfung zur Verfügung. Shortcut: Alt + R');
+        $cb->setInfo($this->lng->txt('enable_info'));
 
-        $sel = new ilSelectInputGUI('Taschenrechner-Typ', 'examcalc_mode');
+        $sel = new ilSelectInputGUI($this->lng->txt('type_label'), 'examcalc_mode');
         $sel->setOptions([
-            'simple'   => 'Einfach (Grundrechenarten) – Standard',
-            'advanced' => 'Wissenschaftlich (Work in Progress)',
+            'simple'   => $this->lng->txt('mode_simple'),
+            'advanced' => $this->lng->txt('mode_advanced'),
         ]);
         $sel->setValue($this->getCalculatorMode($ref_id));
-        $sel->setInfo('Einfach: nur + − × ÷ (empfohlen). Wissenschaftlich: sin, cos, tan, √ usw. — noch in Entwicklung.');
+        $sel->setInfo($this->lng->txt('type_info'));
         $cb->addSubItem($sel);
 
         return [$cb];
@@ -205,25 +210,28 @@ class ilExamCalcHandler implements ilExamModuleInterface
         $simple_selected = ($current_mode === 'simple') ? 'selected' : '';
         $advanced_selected = ($current_mode === 'advanced') ? 'selected' : '';
 
+        $t_enable      = $this->lng->txt('enable');
+        $t_enable_info = $this->lng->txt('enable_info');
+        $t_type        = $this->lng->txt('type_label');
+        $t_simple      = $this->lng->txt('mode_simple');
+        $t_advanced    = $this->lng->txt('mode_advanced');
+        $t_type_info   = $this->lng->txt('type_info');
+
         return <<<HTML
 <div class="mb-3">
     <div class="form-check">
         <input class="form-check-input" type="checkbox" name="examcalc_enabled" value="1" id="examcalc_enabled" $enabled>
-        <label class="form-check-label fw-bold" for="examcalc_enabled">Taschenrechner aktivieren</label>
+        <label class="form-check-label fw-bold" for="examcalc_enabled">$t_enable</label>
     </div>
-    <div class="form-text">Stellt einen Taschenrechner während der Prüfung zur Verfügung. <em>Shortcut: Alt + R</em></div>
+    <div class="form-text">$t_enable_info</div>
 </div>
 <div class="mb-3">
-    <label for="examcalc_mode" class="form-label fw-semibold">Taschenrechner-Typ:</label>
+    <label for="examcalc_mode" class="form-label fw-semibold">$t_type:</label>
     <select name="examcalc_mode" id="examcalc_mode" class="form-select">
-        <option value="simple" $simple_selected>Einfach (Grundrechenarten) – Standard</option>
-        <option value="advanced" $advanced_selected>Wissenschaftlich (Work in Progress)</option>
+        <option value="simple" $simple_selected>$t_simple</option>
+        <option value="advanced" $advanced_selected>$t_advanced</option>
     </select>
-    <div class="form-text">
-        <strong>Einfach:</strong> Nur + − × ÷ (empfohlen)<br>
-        <strong>Wissenschaftlich:</strong> sin, cos, tan, √, ^ usw.
-        <span class="badge text-bg-warning">In Entwicklung – kann Fehler enthalten</span>
-    </div>
+    <div class="form-text">$t_type_info</div>
 </div>
 HTML;
     }
@@ -235,10 +243,10 @@ HTML;
     {
         return [
             'name' => 'ExamCalc',
-            'title' => 'Wissenschaftlicher Taschenrechner',
+            'title' => $this->lng->txt('title'),
             'icon' => '🧮',
-            'description' => 'Taschenrechner für Prüfungen mit zwei Modi: Einfach (Grundrechenarten) und Wissenschaftlich',
-            'version' => '1.1.0',
+            'description' => $this->lng->txt('description'),
+            'version' => '1.2.0',
             'features' => [
                 'Floating Button (Alt + R)',
                 'Einfacher Modus (Grundrechenarten)',

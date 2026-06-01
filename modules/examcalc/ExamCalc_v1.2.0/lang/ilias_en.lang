@@ -1,0 +1,9 @@
+<!-- language file start -->
+title#:#Scientific calculator
+description#:#Calculator for exams with two modes: simple (basic arithmetic) and scientific
+enable#:#Enable calculator
+enable_info#:#Provides a calculator during the exam. Shortcut: Alt + R
+type_label#:#Calculator type
+mode_simple#:#Simple (basic arithmetic) – default
+mode_advanced#:#Scientific (work in progress)
+type_info#:#Simple: only + − × ÷ (recommended). Scientific: sin, cos, tan, √ etc. — still in development.

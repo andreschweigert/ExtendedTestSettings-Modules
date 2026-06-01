@@ -22,13 +22,19 @@
     }
 
     /**
-     * Prüft ob der Browser im Vollbild ist (F11 / Browser-Fullscreen).
-     * Vergleicht Fenstergröße mit Bildschirmgröße. Toleranz von 5px
-     * für Betriebssystem-Unterschiede (Taskbar-Pixel, Scaling).
+     * Prüft ob der Browser im Vollbild ist.
+     * Zuerst Fullscreen-API (zuverlässig in Safari), dann Größenvergleich als
+     * Fallback für F11 / Ctrl+Cmd+F. Auf macOS zählt die Menüleiste (~25 px)
+     * zum screen.height, daher dort großzügigere Höhen-Toleranz (50 px).
      */
     function isFullscreen() {
+        if (document.fullscreenElement || document.webkitFullscreenElement) {
+            return true;
+        }
+        var isMac = /Mac/i.test(navigator.platform || navigator.userAgent || '');
+        var hTolerance = isMac ? 50 : 5;
         return (
-            window.innerHeight >= screen.height - 5
+            window.innerHeight >= screen.height - hTolerance
             && window.innerWidth >= screen.width - 5
         );
     }
@@ -65,7 +71,7 @@
         startOverlay.innerHTML = '<div id="examfullscreen-box">'
             + '<div id="examfullscreen-icon">&#x26F6;</div>'
             + '<h2 id="examfullscreen-title">Diese Prüfung muss im Vollbild-Modus durchgeführt werden.</h2>'
-            + '<p id="examfullscreen-msg">Dr\u00FCcken Sie <kbd id="examfullscreen-kbd">' + info.key + '</kbd> um den Vollbild-Modus zu aktivieren.</p>'
+            + '<p id="examfullscreen-msg">Drücken Sie <kbd id="examfullscreen-kbd">' + info.key + '</kbd> um den Vollbild-Modus zu aktivieren.</p>'
             + '</div>';
         document.body.appendChild(startOverlay);
     }
@@ -87,10 +93,6 @@
         var info = getShortcutInfo();
         var isForce = (getMode() === 'force');
 
-        var msg = isForce
-            ? 'Bitte kehren Sie in den Vollbild-Mod.'
-            : 'Bitte kehren Sie in den Vollbild-Modus zur\u00FCck.';
-
         var dismissBtn = isForce
             ? ''
             : '<button id="examfullscreen-dismiss" type="button">Trotzdem fortfahren</button>';
@@ -99,9 +101,8 @@
         overlay.id = 'examfullscreen-overlay';
         overlay.innerHTML = '<div id="examfullscreen-box">'
             + '<div id="examfullscreen-icon">&#x26F6;</div>'
-            + '<h2 id="examfullscreen-title">\u26A0 Diese Prüfung muss im Vollbild-Modus durchgeführt werden.</h2>'
-         //   + '<p id="examfullscreen-msg">' + msg + '</p>'
-            + '<p id="examfullscreen-msg">Dr\u00FCcken Sie <kbd id="examfullscreen-kbd">' + info.key + '</kbd> um den Vollbild-Modus wiederherzustellen.</p>'
+            + '<h2 id="examfullscreen-title">⚠ Diese Prüfung muss im Vollbild-Modus durchgeführt werden.</h2>'
+            + '<p id="examfullscreen-msg">Drücken Sie <kbd id="examfullscreen-kbd">' + info.key + '</kbd> um den Vollbild-Modus wiederherzustellen.</p>'
             + dismissBtn
             + '</div>';
         document.body.appendChild(overlay);

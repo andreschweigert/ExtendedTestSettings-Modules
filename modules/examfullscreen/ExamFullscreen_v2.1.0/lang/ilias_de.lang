@@ -1,0 +1,9 @@
+<!-- language file start -->
+title#:#Vollbild-Modus
+description#:#Fordert Browser-Vollbild (F11) beim Teststart an und warnt oder sperrt bei Verlassen
+enable#:#Vollbild-Modus aktivieren
+enable_info#:#Fordert Studierende beim Teststart automatisch zur Vollbild-Darstellung auf und reagiert, wenn der Vollbild-Modus verlassen wird.
+mode_label#:#Verhalten beim Verlassen
+mode_warn#:#Warnen — Hinweis anzeigen, Test läuft weiter
+mode_force#:#Sperren — Test wird bis zur Rückkehr blockiert
+mode_info#:#Im Sperr-Modus können Studierende keine Antworten eingeben, bis der Vollbild-Modus wiederhergestellt wird.
