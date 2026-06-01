@@ -17,19 +17,22 @@ class ilExamLoggerViewGUI
     public function setImportCmd(string $cmd): void { $this->import_cmd = $cmd; }
     public function setDefaultFilterRef(int $ref_id): void { $this->default_ref = $ref_id; }
 
-    private const EVENT_LABELS = [
-        'test_start'            => 'Test gestartet',
-        'time_extension'        => 'Zeitverlängerung',
-        'test_overview'         => 'Übersicht aufgerufen',
-        'test_submit'           => 'Test abgegeben',
-        'test_submit_confirmed' => 'Abgabe bestätigt',
-        'navigate_next'         => 'Navigation: Nächste Frage',
-        'navigate_prev'         => 'Navigation: Vorherige Frage',
-        'navigate_jump'         => 'Navigation: Sprung zu Frage',
-        'plugin_settings_saved' => 'Plugin-Einstellungen gespeichert',
-        'test_settings_saved'   => 'Test-Einstellungen gespeichert',
-        'test_settings_viewed'  => 'Test-Einstellungsseite aufgerufen',
-    ];
+    private ilModuleLanguage $lng;
+
+    public function __construct()
+    {
+        // Modul-eigene Sprachdatei (lang/ilias_<lang>.lang in diesem Modulverzeichnis)
+        require_once __DIR__ . '/../../classes/Module/ilModuleLanguage.php';
+        $this->lng = new ilModuleLanguage(__DIR__);
+    }
+
+    /**
+     * Übersetztes Label für einen Ereignistyp (Sprachschlüssel "ev_<typ>").
+     */
+    private function eventLabel(string $type): string
+    {
+        return $this->lng->txt('ev_' . $type, $type);
+    }
 
     public function executeCommand(): void
     {
@@ -192,31 +195,31 @@ class ilExamLoggerViewGUI
             $filter_event, $filter_ref, $filter_user_id, $filter_from, $filter_to, $filter_koffer);
 
         $html .= '<p style="margin:10px 0 15px;">';
-        $html .= '<a href="' . htmlspecialchars($base . '&' . $exportQs) . '" class="btn btn-default btn-sm">Als CSV exportieren</a>';
-        $html .= '&nbsp;&nbsp;<strong>' . count($rows) . '</strong> Einträge';
+        $html .= '<a href="' . htmlspecialchars($base . '&' . $exportQs) . '" class="btn btn-default btn-sm">' . $this->lng->txt('export_csv') . '</a>';
+        $html .= '&nbsp;&nbsp;' . sprintf($this->lng->txt('entries_count'), count($rows));
         if (count($rows) >= 1000) {
-            $html .= ' <span class="text-muted">(Limit: 1000 — Filter verwenden)</span>';
+            $html .= ' <span class="text-muted">' . $this->lng->txt('limit_hint') . '</span>';
         }
         $html .= '</p>';
 
         if (empty($rows)) {
-            $html .= '<div class="alert alert-info">Keine Einträge für den gewählten Filter.</div>';
+            $html .= '<div class="alert alert-info">' . $this->lng->txt('no_entries') . '</div>';
             return $html;
         }
 
         $html .= '<table class="table table-striped table-condensed" style="font-size:13px;">';
         $html .= '<thead><tr>'
-               . '<th>Datum / Zeit</th>'
-               . '<th>Nutzer</th>'
-               . '<th>Test</th>'
-               . '<th>Ereignis</th>'
-               . '<th>Details</th>'
-               . '<th>Frage</th>'
-               . '<th>Gerät</th>'
+               . '<th>' . $this->lng->txt('th_datetime') . '</th>'
+               . '<th>' . $this->lng->txt('th_user') . '</th>'
+               . '<th>' . $this->lng->txt('th_test') . '</th>'
+               . '<th>' . $this->lng->txt('th_event') . '</th>'
+               . '<th>' . $this->lng->txt('th_details') . '</th>'
+               . '<th>' . $this->lng->txt('th_question') . '</th>'
+               . '<th>' . $this->lng->txt('th_device') . '</th>'
                . '</tr></thead><tbody>';
 
         foreach ($rows as $row) {
-            $label    = self::EVENT_LABELS[$row['event_type']] ?? htmlspecialchars($row['event_type']);
+            $label    = htmlspecialchars($this->eventLabel($row['event_type']));
             $details  = $row['details'] ?? '';
             $koffer   = $row['koffer']    ?? '';
             $geraetNr = $row['geraet_nr'] ?? '';
@@ -273,9 +276,9 @@ class ilExamLoggerViewGUI
 
         // Test-Dropdown (nur in der globalen Ansicht, nicht bei fixem Ref-Filter)
         if ($this->default_ref === 0 && !empty($testList)) {
-            $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">Test:</label>';
+            $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">' . $this->lng->txt('filter_test') . '</label>';
             $html .= '<select name="filter_ref_id" class="form-control input-sm" style="max-width:220px;margin-right:8px;">';
-            $html .= '<option value="">— Alle —</option>';
+            $html .= '<option value="">' . $this->lng->txt('filter_all') . '</option>';
             foreach ($testList as $refId => $title) {
                 $selected = ($filter_ref === $refId) ? ' selected' : '';
                 $html .= '<option value="' . $refId . '"' . $selected . '>'
@@ -288,9 +291,9 @@ class ilExamLoggerViewGUI
 
         // Nutzer-Dropdown
         if (!empty($userList)) {
-            $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">Nutzer:</label>';
+            $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">' . $this->lng->txt('filter_user') . '</label>';
             $html .= '<select name="filter_user_id" class="form-control input-sm" style="max-width:200px;margin-right:8px;">';
-            $html .= '<option value="">— Alle —</option>';
+            $html .= '<option value="">' . $this->lng->txt('filter_all') . '</option>';
             foreach ($userList as $uid => $label) {
                 $selected = ($filter_user_id === $uid) ? ' selected' : '';
                 $html .= '<option value="' . $uid . '"' . $selected . '>'
@@ -300,11 +303,11 @@ class ilExamLoggerViewGUI
         }
 
         // Ereignis
-        $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">Ereignis:</label>';
+        $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">' . $this->lng->txt('filter_event') . '</label>';
         $html .= '<select name="filter_event" class="form-control input-sm" style="margin-right:8px;">';
-        $html .= '<option value="">— Alle —</option>';
+        $html .= '<option value="">' . $this->lng->txt('filter_all') . '</option>';
         foreach ($eventTypes as $type) {
-            $label    = self::EVENT_LABELS[$type] ?? $type;
+            $label    = $this->eventLabel($type);
             $selected = ($filter_event === $type) ? ' selected' : '';
             $html .= '<option value="' . htmlspecialchars($type) . '"' . $selected . '>'
                    . htmlspecialchars($label) . '</option>';
@@ -313,9 +316,9 @@ class ilExamLoggerViewGUI
 
         // Koffer (nur wenn Geräte importiert)
         if (!empty($kofferList)) {
-            $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">Koffer:</label>';
+            $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">' . $this->lng->txt('filter_koffer') . '</label>';
             $html .= '<select name="filter_koffer" class="form-control input-sm" style="margin-right:8px;">';
-            $html .= '<option value="">— Alle —</option>';
+            $html .= '<option value="">' . $this->lng->txt('filter_all') . '</option>';
             foreach ($kofferList as $k) {
                 $selected = ($filter_koffer === $k) ? ' selected' : '';
                 $html .= '<option value="' . htmlspecialchars($k) . '"' . $selected . '>'
@@ -325,15 +328,15 @@ class ilExamLoggerViewGUI
         }
 
         // Datum Von/Bis
-        $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">Von:</label>';
+        $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">' . $this->lng->txt('filter_from') . '</label>';
         $html .= '<input type="date" name="filter_from" class="form-control input-sm" value="' . htmlspecialchars($filter_from) . '" style="margin-right:8px;">';
-        $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">Bis:</label>';
+        $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">' . $this->lng->txt('filter_to') . '</label>';
         $html .= '<input type="date" name="filter_to" class="form-control input-sm" value="' . htmlspecialchars($filter_to) . '" style="margin-right:8px;">';
 
-        $html .= '<button type="submit" class="btn btn-default btn-sm">Filtern</button>';
+        $html .= '<button type="submit" class="btn btn-default btn-sm">' . $this->lng->txt('filter_submit') . '</button>';
         if ($hasFilter) {
             $resetUrl = $this->buildBaseUrl() . '&cmd=' . urlencode($this->form_cmd);
-            $html .= '&nbsp;<a href="' . htmlspecialchars($resetUrl) . '" class="btn btn-link btn-sm">Zurücksetzen</a>';
+            $html .= '&nbsp;<a href="' . htmlspecialchars($resetUrl) . '" class="btn btn-link btn-sm">' . $this->lng->txt('filter_reset') . '</a>';
         }
 
         $html .= '</form>';
@@ -351,10 +354,10 @@ class ilExamLoggerViewGUI
         $importUrl = $base . '&cmd=' . urlencode($this->import_cmd);
 
         $html  = '<div style="padding:15px;background:#f9f9f9;border:1px solid #ddd;border-radius:4px;margin-bottom:20px;">';
-        $html .= '<h4 style="margin-top:0;">CSV importieren</h4>';
+        $html .= '<h4 style="margin-top:0;">' . $this->lng->txt('import_title') . '</h4>';
         $html .= '<p style="color:#666;font-size:13px;margin-bottom:10px;">';
-        $html .= 'Format: <code>ip_addr;hostname;ili_nr;koffer;geraet_nr;import_note</code>';
-        $html .= ' &nbsp;(Semikolon-getrennt, UTF-8 mit oder ohne BOM)';
+        $html .= $this->lng->txt('import_format_label') . ' <code>ip_addr;hostname;ili_nr;koffer;geraet_nr;import_note</code>';
+        $html .= ' &nbsp;' . $this->lng->txt('import_format_hint');
         $html .= '</p>';
         $html .= '<form method="post" action="' . htmlspecialchars($importUrl) . '" enctype="multipart/form-data">';
         $filterKeys = ['cmd', 'filter_event', 'filter_ref_id', 'filter_user_id',
@@ -367,13 +370,13 @@ class ilExamLoggerViewGUI
         $html .= '<input type="hidden" name="cmd" value="' . htmlspecialchars($this->import_cmd) . '">';
         $html .= '<div style="display:flex;align-items:center;gap:12px;">';
         $html .= '<input type="file" name="geraete_csv" accept=".csv" class="form-control" style="max-width:420px;">';
-        $html .= '<button type="submit" class="btn btn-primary btn-sm">Importieren</button>';
+        $html .= '<button type="submit" class="btn btn-primary btn-sm">' . $this->lng->txt('btn_import') . '</button>';
         $html .= '</div>';
         $html .= '</form>';
         $html .= '</div>';
 
         if (!$db->tableExists(self::HOSTS_TABLE)) {
-            $html .= '<div class="alert alert-warning">Tabelle <code>examlogger_hosts</code> fehlt — Plugin bitte neu installieren.</div>';
+            $html .= '<div class="alert alert-warning">' . $this->lng->txt('hosts_table_missing') . '</div>';
             return $html;
         }
 
@@ -383,15 +386,15 @@ class ilExamLoggerViewGUI
             $devices[] = $row;
         }
 
-        $html .= '<p><strong>' . count($devices) . '</strong> Geräte gespeichert</p>';
+        $html .= '<p>' . sprintf($this->lng->txt('devices_count'), count($devices)) . '</p>';
 
         if (empty($devices)) {
-            $html .= '<div class="alert alert-info">Noch keine Geräte importiert. CSV oben hochladen.</div>';
+            $html .= '<div class="alert alert-info">' . $this->lng->txt('no_devices') . '</div>';
             return $html;
         }
 
         $html .= '<table class="table table-striped table-condensed" style="font-size:13px;">';
-        $html .= '<thead><tr><th>Koffer</th><th>Gerät-Nr</th><th>ILI-Nr</th><th>IP-Adresse</th><th>Hostname</th><th>Hinweis</th></tr></thead><tbody>';
+        $html .= '<thead><tr><th>' . $this->lng->txt('dev_th_koffer') . '</th><th>' . $this->lng->txt('dev_th_geraet') . '</th><th>' . $this->lng->txt('dev_th_ili') . '</th><th>' . $this->lng->txt('dev_th_ip') . '</th><th>' . $this->lng->txt('dev_th_hostname') . '</th><th>' . $this->lng->txt('dev_th_note') . '</th></tr></thead><tbody>';
         foreach ($devices as $dev) {
             $noteStyle = $dev['import_note'] !== '' ? 'color:#bbb;font-size:12px;' : '';
             $html .= '<tr>'
@@ -414,12 +417,12 @@ class ilExamLoggerViewGUI
 
         $errorCode = (int)($_FILES['geraete_csv']['error'] ?? -1);
         if (empty($_FILES['geraete_csv']['tmp_name']) || $errorCode !== UPLOAD_ERR_OK) {
-            return ['Keine Datei hochgeladen oder Fehler beim Upload (Code: ' . $errorCode . ').', 'failure'];
+            return [sprintf($this->lng->txt('import_no_file'), $errorCode), 'failure'];
         }
 
         $content = file_get_contents($_FILES['geraete_csv']['tmp_name']);
         if ($content === false || $content === '') {
-            return ['Datei ist leer oder konnte nicht gelesen werden.', 'failure'];
+            return [$this->lng->txt('import_empty'), 'failure'];
         }
         // UTF-8 BOM entfernen
         if (substr($content, 0, 3) === "\xEF\xBB\xBF") {
@@ -428,20 +431,20 @@ class ilExamLoggerViewGUI
 
         $lines = preg_split('/\r?\n/', trim($content));
         if (empty($lines)) {
-            return ['Leere Datei.', 'failure'];
+            return [$this->lng->txt('import_empty2'), 'failure'];
         }
 
         $header   = str_getcsv(array_shift($lines), ';');
         $expected = ['ip_addr', 'hostname', 'ili_nr', 'koffer', 'geraet_nr', 'import_note'];
         if (array_map('trim', array_slice($header, 0, 6)) !== $expected) {
-            return ['Ungültiges Format. Erwartete Kopfzeile: ' . implode(';', $expected), 'failure'];
+            return [sprintf($this->lng->txt('import_bad_format'), implode(';', $expected)), 'failure'];
         }
 
         $count   = 0;
         $skipped = 0;
 
         if (!$db->tableExists(self::HOSTS_TABLE)) {
-            return ['Tabelle examlogger_hosts existiert nicht. Plugin bitte neu installieren.', 'failure'];
+            return [$this->lng->txt('import_table_missing'), 'failure'];
         }
 
         foreach ($lines as $line) {
@@ -474,9 +477,9 @@ class ilExamLoggerViewGUI
             $count++;
         }
 
-        $msg = "$count Geräte erfolgreich importiert/aktualisiert.";
+        $msg = sprintf($this->lng->txt('import_done'), $count);
         if ($skipped > 0) {
-            $msg .= " $skipped Zeile(n) übersprungen (ungültige IP-Adresse).";
+            $msg .= sprintf($this->lng->txt('import_skipped'), $skipped);
         }
         return [$msg, 'success'];
     }
@@ -540,7 +543,23 @@ class ilExamLoggerViewGUI
 
         $out = fopen('php://output', 'w');
         fprintf($out, chr(0xEF) . chr(0xBB) . chr(0xBF));
-        fputcsv($out, ['Datum', 'Uhrzeit', 'Login', 'Vorname', 'Nachname', 'Test', 'Ref-ID', 'Ereignis', 'Details', 'Frage-ID', 'Fragenname', 'Koffer', 'Gerät-Nr', 'ILI-Nr', 'IP-Adresse'], ';');
+        fputcsv($out, [
+            $this->lng->txt('csv_date'),
+            $this->lng->txt('csv_time'),
+            $this->lng->txt('csv_login'),
+            $this->lng->txt('csv_firstname'),
+            $this->lng->txt('csv_lastname'),
+            $this->lng->txt('csv_test'),
+            $this->lng->txt('csv_refid'),
+            $this->lng->txt('csv_event'),
+            $this->lng->txt('csv_details'),
+            $this->lng->txt('csv_qid'),
+            $this->lng->txt('csv_qname'),
+            $this->lng->txt('csv_koffer'),
+            $this->lng->txt('csv_geraet'),
+            $this->lng->txt('csv_ili'),
+            $this->lng->txt('csv_ip'),
+        ], ';');
 
         while ($row = $db->fetchAssoc($result)) {
             fputcsv($out, [
@@ -551,7 +570,7 @@ class ilExamLoggerViewGUI
                 $row['lastname']   ?? '',
                 $row['test_title'] ?? '',
                 $row['test_ref_id'],
-                self::EVENT_LABELS[$row['event_type']] ?? $row['event_type'],
+                $this->eventLabel($row['event_type']),
                 $row['details']    ?? '',
                 $row['question_id'] > 0 ? $row['question_id'] : '',
                 $row['question_title'] ?? '',
