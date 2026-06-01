@@ -8,18 +8,23 @@
 class ilExamGroupingHandler implements ilExamModuleInterface
 {
     private string $plugin_path;
+    private ilModuleLanguage $lng;
 
     public function __construct(string $plugin_path)
     {
         $this->plugin_path = $plugin_path;
+
+        // Modul-eigene Sprachdatei (lang/ilias_<lang>.lang in diesem Modulverzeichnis)
+        require_once $plugin_path . '/classes/Module/ilModuleLanguage.php';
+        $this->lng = new ilModuleLanguage(__DIR__);
     }
 
     public function getInfo(): array
     {
         return [
-            'title'       => 'Fragengruppierung',
+            'title'       => $this->lng->txt('title'),
             'icon'        => '📊',
-            'description' => 'Fragen zu Gruppen zusammenfassen und Gesamtpunktzahl je Gruppe auswerten.',
+            'description' => $this->lng->txt('description'),
         ];
     }
 
@@ -59,14 +64,13 @@ class ilExamGroupingHandler implements ilExamModuleInterface
 
         $groups_count = $this->countGroupsForRef($ref_id);
         $count_text   = $groups_count === 0
-            ? 'Noch keine Gruppen definiert.'
-            : $groups_count . ' Gruppe(n) konfiguriert.';
+            ? $this->lng->txt('no_groups')
+            : sprintf($this->lng->txt('groups_count'), $groups_count);
 
         return '<p>' . htmlspecialchars($count_text) . ' '
-            . 'Fassen Sie Fragen dieses Tests zu benannten Gruppen zusammen '
-            . 'und werten Sie die Gesamtpunktzahl je Gruppe aus.</p>'
+            . $this->lng->txt('intro') . '</p>'
             . '<a href="' . htmlspecialchars($link) . '" class="btn btn-default">'
-            . 'Gruppen verwalten / Ergebnisse anzeigen'
+            . $this->lng->txt('manage_btn')
             . '</a>';
     }
 

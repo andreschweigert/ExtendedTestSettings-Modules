@@ -19,6 +19,8 @@ class ilExamLoggerViewGUI
 
     private const EVENT_LABELS = [
         'test_start'            => 'Test gestartet',
+        'time_extension'        => 'Zeitverlängerung',
+        'test_overview'         => 'Übersicht aufgerufen',
         'test_submit'           => 'Test abgegeben',
         'test_submit_confirmed' => 'Abgabe bestätigt',
         'navigate_next'         => 'Navigation: Nächste Frage',
@@ -45,25 +47,26 @@ class ilExamLoggerViewGUI
     {
         global $DIC;
 
-        $filter_event  = $this->sanitizeEventType((string)($_GET['filter_event']  ?? ''));
-        $filter_ref    = (int)($_GET['filter_ref_id'] ?? $this->default_ref);
-        $filter_from   = $this->sanitizeDate((string)($_GET['filter_from']   ?? ''));
-        $filter_to     = $this->sanitizeDate((string)($_GET['filter_to']     ?? ''));
-        $filter_user   = $this->sanitizeUserFilter((string)($_GET['filter_user']   ?? ''));
-        $filter_koffer = $this->sanitizeKoffer((string)($_GET['filter_koffer'] ?? ''));
+        $filter_event   = $this->sanitizeEventType((string)($_GET['filter_event']   ?? ''));
+        $filter_ref     = (int)($_GET['filter_ref_id']  ?? $this->default_ref);
+        $filter_user_id = (int)($_GET['filter_user_id'] ?? 0);
+        $filter_from    = $this->sanitizeDate((string)($_GET['filter_from']   ?? ''));
+        $filter_to      = $this->sanitizeDate((string)($_GET['filter_to']     ?? ''));
+        $filter_koffer  = $this->sanitizeKoffer((string)($_GET['filter_koffer'] ?? ''));
 
-        [$rows, $eventTypes, $kofferList] = $this->fetchRows(
-            $filter_event, $filter_ref, $filter_from, $filter_to, $filter_user, $filter_koffer, 1000
+        [$rows, $eventTypes, $kofferList, $testList, $userList] = $this->fetchRows(
+            $filter_event, $filter_ref, $filter_user_id, $filter_from, $filter_to, $filter_koffer, 1000
         );
 
         $DIC['tpl']->setContent(
-            $this->renderView($rows, $eventTypes, $kofferList, $filter_event, $filter_ref, $filter_from, $filter_to, $filter_user, $filter_koffer)
+            $this->renderView($rows, $eventTypes, $kofferList, $testList, $userList,
+                $filter_event, $filter_ref, $filter_user_id, $filter_from, $filter_to, $filter_koffer)
         );
     }
 
     private function fetchRows(
-        string $filter_event, int $filter_ref, string $filter_from, string $filter_to,
-        string $filter_user, string $filter_koffer, int $limit
+        string $filter_event, int $filter_ref, int $filter_user_id,
+        string $filter_from, string $filter_to, string $filter_koffer, int $limit
     ): array {
         global $DIC;
         $db = $DIC->database();
@@ -78,17 +81,14 @@ class ilExamLoggerViewGUI
         if ($filter_ref > 0) {
             $where[] = 'e.test_ref_id = %s'; $types[] = 'integer'; $values[] = $filter_ref;
         }
+        if ($filter_user_id > 0) {
+            $where[] = 'e.user_id = %s'; $types[] = 'integer'; $values[] = $filter_user_id;
+        }
         if ($filter_from !== '') {
             $where[] = 'e.tstamp >= %s'; $types[] = 'integer'; $values[] = strtotime($filter_from . ' 00:00:00');
         }
         if ($filter_to !== '') {
             $where[] = 'e.tstamp <= %s'; $types[] = 'integer'; $values[] = strtotime($filter_to . ' 23:59:59');
-        }
-        if ($filter_user !== '') {
-            $pattern = '%' . $filter_user . '%';
-            $where[] = '(u.login LIKE %s OR u.firstname LIKE %s OR u.lastname LIKE %s)';
-            $types[] = 'text'; $types[] = 'text'; $types[] = 'text';
-            $values[] = $pattern; $values[] = $pattern; $values[] = $pattern;
         }
         if ($filter_koffer !== '') {
             $where[] = 'h.koffer = %s'; $types[] = 'text'; $values[] = $filter_koffer;
@@ -107,7 +107,7 @@ class ilExamLoggerViewGUI
                 LEFT JOIN " . self::HOSTS_TABLE . " h ON h.ip_addr = e.ip_addr
                 LEFT JOIN qpl_questions q ON q.question_id = e.question_id
                 $whereStr
-                ORDER BY e.tstamp DESC
+                ORDER BY e.tstamp DESC, e.id DESC
                 LIMIT $limit";
 
         $rows = [];
@@ -130,26 +130,66 @@ class ilExamLoggerViewGUI
             }
         }
 
-        return [$rows, $eventTypes, $kofferList];
+        // Test-Liste für Dropdown (immer befüllen — wird im globalen View angezeigt)
+        $testList = [];
+        $testResult = $db->query(
+            "SELECT DISTINCT e.test_ref_id, o.title
+             FROM " . self::TABLE . " e
+             LEFT JOIN object_data o ON o.obj_id = e.test_obj_id
+             ORDER BY o.title, e.test_ref_id"
+        );
+        while ($r = $db->fetchAssoc($testResult)) {
+            $testList[(int)$r['test_ref_id']] = $r['title'] ?? ('ref_id ' . $r['test_ref_id']);
+        }
+
+        // Nutzer-Liste für Dropdown — wenn Test gefiltert, nur Nutzer dieses Tests
+        $userList = [];
+        if ($filter_ref > 0) {
+            $userResult = $db->queryF(
+                "SELECT DISTINCT e.user_id, u.login, u.lastname, u.firstname
+                 FROM " . self::TABLE . " e
+                 LEFT JOIN usr_data u ON u.usr_id = e.user_id
+                 WHERE e.test_ref_id = %s
+                 ORDER BY u.lastname, u.firstname, u.login",
+                ['integer'],
+                [$filter_ref]
+            );
+        } else {
+            $userResult = $db->query(
+                "SELECT DISTINCT e.user_id, u.login, u.lastname, u.firstname
+                 FROM " . self::TABLE . " e
+                 LEFT JOIN usr_data u ON u.usr_id = e.user_id
+                 ORDER BY u.lastname, u.firstname, u.login"
+            );
+        }
+        while ($r = $db->fetchAssoc($userResult)) {
+            $uid   = (int)$r['user_id'];
+            $label = trim(($r['lastname'] ?? '') . ', ' . ($r['firstname'] ?? ''));
+            $label = ($label !== ', ' ? $label . ' (' . $r['login'] . ')' : ($r['login'] ?? 'ID ' . $uid));
+            $userList[$uid] = $label;
+        }
+
+        return [$rows, $eventTypes, $kofferList, $testList, $userList];
     }
 
     private function renderView(
-        array $rows, array $eventTypes, array $kofferList,
-        string $filter_event, int $filter_ref, string $filter_from, string $filter_to,
-        string $filter_user, string $filter_koffer
+        array $rows, array $eventTypes, array $kofferList, array $testList, array $userList,
+        string $filter_event, int $filter_ref, int $filter_user_id,
+        string $filter_from, string $filter_to, string $filter_koffer
     ): string {
         $base     = $this->buildBaseUrl();
         $exportQs = http_build_query(array_filter([
-            'filter_event'  => $filter_event,
-            'filter_ref_id' => $filter_ref > 0 ? $filter_ref : '',
-            'filter_from'   => $filter_from,
-            'filter_to'     => $filter_to,
-            'filter_user'   => $filter_user,
-            'filter_koffer' => $filter_koffer,
-            'cmd'           => $this->export_cmd,
+            'filter_event'   => $filter_event,
+            'filter_ref_id'  => $filter_ref > 0 ? $filter_ref : '',
+            'filter_user_id' => $filter_user_id > 0 ? $filter_user_id : '',
+            'filter_from'    => $filter_from,
+            'filter_to'      => $filter_to,
+            'filter_koffer'  => $filter_koffer,
+            'cmd'            => $this->export_cmd,
         ]));
 
-        $html  = $this->renderFilterForm($eventTypes, $kofferList, $filter_event, $filter_ref, $filter_from, $filter_to, $filter_user, $filter_koffer);
+        $html  = $this->renderFilterForm($eventTypes, $kofferList, $testList, $userList,
+            $filter_event, $filter_ref, $filter_user_id, $filter_from, $filter_to, $filter_koffer);
 
         $html .= '<p style="margin:10px 0 15px;">';
         $html .= '<a href="' . htmlspecialchars($base . '&' . $exportQs) . '" class="btn btn-default btn-sm">Als CSV exportieren</a>';
@@ -210,25 +250,53 @@ class ilExamLoggerViewGUI
     }
 
     private function renderFilterForm(
-        array $eventTypes, array $kofferList,
-        string $filter_event, int $filter_ref, string $filter_from, string $filter_to,
-        string $filter_user, string $filter_koffer
+        array $eventTypes, array $kofferList, array $testList, array $userList,
+        string $filter_event, int $filter_ref, int $filter_user_id,
+        string $filter_from, string $filter_to, string $filter_koffer
     ): string {
         $action    = $this->buildBaseUrl();
         $hasFilter = $filter_event !== '' || $filter_from !== '' || $filter_to !== ''
-                  || $filter_user !== '' || $filter_koffer !== '';
+                  || $filter_user_id > 0 || $filter_koffer !== ''
+                  || ($filter_ref > 0 && $this->default_ref === 0);
 
         $html  = '<form method="get" action="' . htmlspecialchars($action) . '" class="form-inline"'
                . ' style="margin-bottom:10px;padding:12px;background:#f5f5f5;border-radius:4px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">';
         $html .= '<input type="hidden" name="cmd" value="' . htmlspecialchars($this->form_cmd) . '">';
 
-        foreach (['baseClass', 'cmdClass', 'cmdNode', 'module_id', 'ref_id'] as $key) {
-            if (isset($_GET[$key])) {
-                $html .= '<input type="hidden" name="' . htmlspecialchars($key) . '" value="' . htmlspecialchars($_GET[$key]) . '">';
+        $filterKeys = ['cmd', 'filter_event', 'filter_ref_id', 'filter_user_id',
+                       'filter_from', 'filter_to', 'filter_user', 'filter_koffer'];
+        foreach ($_GET as $key => $value) {
+            if (!in_array($key, $filterKeys, true)) {
+                $html .= '<input type="hidden" name="' . htmlspecialchars($key) . '" value="' . htmlspecialchars((string)$value) . '">';
             }
         }
-        if ($filter_ref > 0) {
+
+        // Test-Dropdown (nur in der globalen Ansicht, nicht bei fixem Ref-Filter)
+        if ($this->default_ref === 0 && !empty($testList)) {
+            $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">Test:</label>';
+            $html .= '<select name="filter_ref_id" class="form-control input-sm" style="max-width:220px;margin-right:8px;">';
+            $html .= '<option value="">— Alle —</option>';
+            foreach ($testList as $refId => $title) {
+                $selected = ($filter_ref === $refId) ? ' selected' : '';
+                $html .= '<option value="' . $refId . '"' . $selected . '>'
+                       . htmlspecialchars($title) . '</option>';
+            }
+            $html .= '</select>';
+        } elseif ($filter_ref > 0) {
             $html .= '<input type="hidden" name="filter_ref_id" value="' . (int)$filter_ref . '">';
+        }
+
+        // Nutzer-Dropdown
+        if (!empty($userList)) {
+            $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">Nutzer:</label>';
+            $html .= '<select name="filter_user_id" class="form-control input-sm" style="max-width:200px;margin-right:8px;">';
+            $html .= '<option value="">— Alle —</option>';
+            foreach ($userList as $uid => $label) {
+                $selected = ($filter_user_id === $uid) ? ' selected' : '';
+                $html .= '<option value="' . $uid . '"' . $selected . '>'
+                       . htmlspecialchars($label) . '</option>';
+            }
+            $html .= '</select>';
         }
 
         // Ereignis
@@ -242,12 +310,6 @@ class ilExamLoggerViewGUI
                    . htmlspecialchars($label) . '</option>';
         }
         $html .= '</select>';
-
-        // Nutzer
-        $html .= '<label style="margin-right:4px;font-weight:normal;white-space:nowrap;">Nutzer:</label>';
-        $html .= '<input type="text" name="filter_user" class="form-control input-sm"'
-               . ' value="' . htmlspecialchars($filter_user) . '" placeholder="Login / Name"'
-               . ' style="width:140px;margin-right:8px;">';
 
         // Koffer (nur wenn Geräte importiert)
         if (!empty($kofferList)) {
@@ -295,9 +357,11 @@ class ilExamLoggerViewGUI
         $html .= ' &nbsp;(Semikolon-getrennt, UTF-8 mit oder ohne BOM)';
         $html .= '</p>';
         $html .= '<form method="post" action="' . htmlspecialchars($importUrl) . '" enctype="multipart/form-data">';
-        foreach (['baseClass', 'cmdClass', 'cmdNode', 'module_id', 'ref_id'] as $key) {
-            if (isset($_GET[$key])) {
-                $html .= '<input type="hidden" name="' . htmlspecialchars($key) . '" value="' . htmlspecialchars($_GET[$key]) . '">';
+        $filterKeys = ['cmd', 'filter_event', 'filter_ref_id', 'filter_user_id',
+                       'filter_from', 'filter_to', 'filter_user', 'filter_koffer'];
+        foreach ($_GET as $key => $value) {
+            if (!in_array($key, $filterKeys, true)) {
+                $html .= '<input type="hidden" name="' . htmlspecialchars($key) . '" value="' . htmlspecialchars((string)$value) . '">';
             }
         }
         $html .= '<input type="hidden" name="cmd" value="' . htmlspecialchars($this->import_cmd) . '">';
@@ -424,12 +488,12 @@ class ilExamLoggerViewGUI
         global $DIC;
         $db = $DIC->database();
 
-        $filter_event  = $this->sanitizeEventType((string)($_GET['filter_event']  ?? ''));
-        $filter_ref    = (int)($_GET['filter_ref_id'] ?? $this->default_ref);
-        $filter_from   = $this->sanitizeDate((string)($_GET['filter_from']   ?? ''));
-        $filter_to     = $this->sanitizeDate((string)($_GET['filter_to']     ?? ''));
-        $filter_user   = $this->sanitizeUserFilter((string)($_GET['filter_user']   ?? ''));
-        $filter_koffer = $this->sanitizeKoffer((string)($_GET['filter_koffer'] ?? ''));
+        $filter_event   = $this->sanitizeEventType((string)($_GET['filter_event']   ?? ''));
+        $filter_ref     = (int)($_GET['filter_ref_id']  ?? $this->default_ref);
+        $filter_user_id = (int)($_GET['filter_user_id'] ?? 0);
+        $filter_from    = $this->sanitizeDate((string)($_GET['filter_from']   ?? ''));
+        $filter_to      = $this->sanitizeDate((string)($_GET['filter_to']     ?? ''));
+        $filter_koffer  = $this->sanitizeKoffer((string)($_GET['filter_koffer'] ?? ''));
 
         $where  = [];
         $types  = [];
@@ -441,17 +505,14 @@ class ilExamLoggerViewGUI
         if ($filter_ref > 0) {
             $where[] = 'e.test_ref_id = %s'; $types[] = 'integer'; $values[] = $filter_ref;
         }
+        if ($filter_user_id > 0) {
+            $where[] = 'e.user_id = %s'; $types[] = 'integer'; $values[] = $filter_user_id;
+        }
         if ($filter_from !== '') {
             $where[] = 'e.tstamp >= %s'; $types[] = 'integer'; $values[] = strtotime($filter_from . ' 00:00:00');
         }
         if ($filter_to !== '') {
             $where[] = 'e.tstamp <= %s'; $types[] = 'integer'; $values[] = strtotime($filter_to . ' 23:59:59');
-        }
-        if ($filter_user !== '') {
-            $pattern = '%' . $filter_user . '%';
-            $where[] = '(u.login LIKE %s OR u.firstname LIKE %s OR u.lastname LIKE %s)';
-            $types[] = 'text'; $types[] = 'text'; $types[] = 'text';
-            $values[] = $pattern; $values[] = $pattern; $values[] = $pattern;
         }
         if ($filter_koffer !== '') {
             $where[] = 'h.koffer = %s'; $types[] = 'text'; $values[] = $filter_koffer;
@@ -469,7 +530,7 @@ class ilExamLoggerViewGUI
                 LEFT JOIN " . self::HOSTS_TABLE . " h ON h.ip_addr = e.ip_addr
                 LEFT JOIN qpl_questions q ON q.question_id = e.question_id
                 $whereStr
-                ORDER BY e.tstamp DESC";
+                ORDER BY e.tstamp DESC, e.id DESC";
 
         $result = $types ? $db->queryF($sql, $types, $values) : $db->query($sql);
 
@@ -523,6 +584,8 @@ class ilExamLoggerViewGUI
     {
         $colorMap = [
             'test_start'            => 'success',
+            'time_extension'        => 'warning',
+            'test_overview'         => 'info',
             'test_submit'           => 'primary',
             'test_submit_confirmed' => 'danger',
             'navigate_next'         => 'default',
@@ -538,10 +601,12 @@ class ilExamLoggerViewGUI
 
     private function buildBaseUrl(): string
     {
+        $skip = ['cmd', 'filter_event', 'filter_ref_id', 'filter_user_id',
+                  'filter_from', 'filter_to', 'filter_user', 'filter_koffer'];
         $params = [];
-        foreach (['baseClass', 'cmdClass', 'cmdNode', 'module_id', 'ref_id'] as $key) {
-            if (isset($_GET[$key])) {
-                $params[$key] = $_GET[$key];
+        foreach ($_GET as $key => $value) {
+            if (!in_array($key, $skip, true)) {
+                $params[$key] = $value;
             }
         }
         return 'ilias.php?' . http_build_query($params);
@@ -555,12 +620,6 @@ class ilExamLoggerViewGUI
     private function sanitizeDate(string $value): string
     {
         return preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) ? $value : '';
-    }
-
-    private function sanitizeUserFilter(string $value): string
-    {
-        $value = trim($value);
-        return (strlen($value) > 0 && strlen($value) <= 100) ? $value : '';
     }
 
     private function sanitizeKoffer(string $value): string

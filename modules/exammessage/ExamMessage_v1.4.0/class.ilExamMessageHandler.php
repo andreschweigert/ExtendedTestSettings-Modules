@@ -18,10 +18,16 @@ class ilExamMessageHandler implements ilExamModuleInterface
         2 => 'Dringend (rot)',
     ];
     private static bool $tables_checked = false;
+    private ilModuleLanguage $lng;
 
     public function __construct(string $plugin_path)
     {
         $this->plugin_path = $plugin_path;
+
+        // Modul-eigene Sprachdatei (lang/ilias_<lang>.lang in diesem Modulverzeichnis)
+        require_once $plugin_path . '/classes/Module/ilModuleLanguage.php';
+        $this->lng = new ilModuleLanguage(__DIR__);
+
         $this->ensureTables();
     }
 
@@ -172,33 +178,29 @@ class ilExamMessageHandler implements ilExamModuleInterface
 
         $items = [];
 
-        $status = new ilCustomInputGUI('Aktueller Status', '');
+        $status = new ilCustomInputGUI($this->lng->txt('status_title'), '');
         $status->setHtml($this->buildStatusHtml($cfg));
         $items[] = $status;
 
-        $ta = new ilTextAreaInputGUI('Nachricht senden', 'exammessage_text');
+        $ta = new ilTextAreaInputGUI($this->lng->txt('message_label'), 'exammessage_text');
         $ta->setValue($cfg ? $cfg['message_text'] : '');
         $ta->setRows(4);
-        $ta->setInfo(
-            'Nachricht eingeben und speichern → wird sofort per Polling für alle aktiven Teilnehmer sichtbar. ' .
-            'Feld leeren und speichern → aktive Nachricht zurückziehen. ' .
-            'Erlaubte HTML-Tags: &lt;strong&gt;, &lt;b&gt;, &lt;i&gt;, &lt;u&gt;, &lt;br&gt;'
-        );
+        $ta->setInfo($this->lng->txt('message_info'));
         $items[] = $ta;
 
-        $type_sel = new ilSelectInputGUI('Nachrichtentyp', 'exammessage_type');
+        $type_sel = new ilSelectInputGUI($this->lng->txt('type_label'), 'exammessage_type');
         $type_sel->setOptions([
-            '0' => 'Info (blau)',
-            '1' => 'Warnung (orange)',
-            '2' => 'Dringend (rot)',
+            '0' => $this->lng->txt('type_0'),
+            '1' => $this->lng->txt('type_1'),
+            '2' => $this->lng->txt('type_2'),
         ]);
         $type_sel->setValue((string) ($cfg ? ($cfg['type'] ?? 0) : 0));
         $items[] = $type_sel;
 
-        $dur_sel = new ilSelectInputGUI('Anzeigedauer', 'exammessage_duration');
+        $dur_sel = new ilSelectInputGUI($this->lng->txt('duration_label'), 'exammessage_duration');
         $dur_opts = [];
-        foreach (self::DURATION_OPTIONS as $sec => $label) {
-            $dur_opts[(string) $sec] = $label;
+        foreach (array_keys(self::DURATION_OPTIONS) as $sec) {
+            $dur_opts[(string) $sec] = $this->lng->txt('dur_' . $sec);
         }
         $dur_sel->setOptions($dur_opts);
         $dur_sel->setValue((string) ($cfg ? $cfg['duration'] : 60));
@@ -207,15 +209,15 @@ class ilExamMessageHandler implements ilExamModuleInterface
         $send_btn = new ilCustomInputGUI('', '');
         $send_btn->setHtml(
             '<button type="submit" name="exammessage_send_now" value="1" class="btn btn-default btn-sm">'
-            . '&#x1F4E4;&nbsp;Nachricht jetzt senden</button>'
+            . '&#x1F4E4;&nbsp;' . $this->lng->txt('send_now_btn') . '</button>'
             . '<span style="margin-left:10px;font-size:0.85em;color:#6c757d;">'
-            . 'Speichert und sendet sofort — auch wenn sich der Text nicht ge&auml;ndert hat.</span>'
+            . $this->lng->txt('send_now_info') . '</span>'
         );
         $items[] = $send_btn;
 
         $log_html = $this->buildLogHtml($test_id);
         if ($log_html !== '') {
-            $log = new ilCustomInputGUI('Protokoll', '');
+            $log = new ilCustomInputGUI($this->lng->txt('log_title'), '');
             $log->setHtml($log_html);
             $items[] = $log;
         }
@@ -227,10 +229,10 @@ class ilExamMessageHandler implements ilExamModuleInterface
     {
         return [
             'name'        => 'ExamMessage',
-            'title'       => 'Prüfungs-Nachricht',
+            'title'       => $this->lng->txt('title'),
             'icon'        => '📢',
-            'description' => 'Sendet eine Nachricht an alle Teilnehmer mit AJAX-Polling (15 s) für Echtzeit-Zustellung.',
-            'version'     => '1.2.0',
+            'description' => $this->lng->txt('description'),
+            'version'     => '1.4.0',
         ];
     }
 
@@ -274,7 +276,7 @@ class ilExamMessageHandler implements ilExamModuleInterface
     private function buildStatusHtml(?array $cfg): string
     {
         if (!$cfg || trim($cfg['message_text']) === '' || $cfg['sent_at'] <= 0) {
-            return '<div style="padding:8px 12px;background:#f8f9fa;border-radius:6px;color:#6c757d;font-size:0.9em;">Keine aktive Nachricht.</div>';
+            return '<div style="padding:8px 12px;background:#f8f9fa;border-radius:6px;color:#6c757d;font-size:0.9em;">' . $this->lng->txt('status_none') . '</div>';
         }
 
         $expiry    = $cfg['sent_at'] + $cfg['duration'];
@@ -287,7 +289,7 @@ class ilExamMessageHandler implements ilExamModuleInterface
         if ($remaining <= 0) {
             $sent_str = date('d.m.Y H:i', $cfg['sent_at']);
             return '<div style="padding:8px 12px;background:#f8f9fa;border-radius:6px;color:#6c757d;font-size:0.9em;">'
-                 . 'Letzte Nachricht abgelaufen — gesendet am ' . $sent_str . ' Uhr.<br>'
+                 . sprintf($this->lng->txt('status_expired'), $sent_str) . '<br>'
                  . '<em>' . $preview . '</em></div>';
         }
 
@@ -295,18 +297,18 @@ class ilExamMessageHandler implements ilExamModuleInterface
         $colors     = [0 => '#1a6fac', 1 => '#e8890c', 2 => '#c0392b'];
         $bg_colors  = [0 => '#e8f4fd', 1 => '#fff3e0', 2 => '#fde8e8'];
         $bdr_colors = [0 => '#bee3f8', 1 => '#ffcc80', 2 => '#f5a3a3'];
-        $type_label = self::TYPE_OPTIONS[$type] ?? 'Info';
+        $type_label = $this->lng->txt('type_' . $type);
         $color      = $colors[$type]     ?? $colors[0];
         $bg         = $bg_colors[$type]  ?? $bg_colors[0];
         $border     = $bdr_colors[$type] ?? $bdr_colors[0];
 
         $remaining_str = $remaining >= 60
-            ? floor($remaining / 60) . ' Min ' . ($remaining % 60) . ' Sek'
-            : $remaining . ' Sekunden';
+            ? floor($remaining / 60) . ' ' . $this->lng->txt('rem_min') . ' ' . ($remaining % 60) . ' ' . $this->lng->txt('rem_sec')
+            : $remaining . ' ' . $this->lng->txt('rem_seconds');
 
         return '<div style="padding:10px 14px;background:' . $bg . ';border:1px solid ' . $border . ';border-radius:6px;font-size:0.9em;">'
-             . '<strong style="color:' . $color . ';">&#x1F4E2; Aktiv (' . htmlspecialchars($type_label) . ')</strong>'
-             . ' — läuft noch <strong>' . $remaining_str . '</strong><br>'
+             . '<strong style="color:' . $color . ';">&#x1F4E2; ' . sprintf($this->lng->txt('status_active'), htmlspecialchars($type_label)) . '</strong>'
+             . ' — ' . $this->lng->txt('status_running') . ' <strong>' . $remaining_str . '</strong><br>'
              . '<span style="color:#555;">' . $preview . '</span>'
              . '</div>';
     }
@@ -337,11 +339,11 @@ class ilExamMessageHandler implements ilExamModuleInterface
 
             $html = '<table style="width:100%;border-collapse:collapse;font-size:0.85rem;margin-top:4px;">'
                   . '<thead><tr style="background:#f1f3f5;">'
-                  . '<th style="text-align:left;padding:5px 8px;border-bottom:1px solid #dee2e6;">Typ</th>'
-                  . '<th style="text-align:left;padding:5px 8px;border-bottom:1px solid #dee2e6;">Nachricht</th>'
-                  . '<th style="text-align:left;padding:5px 8px;border-bottom:1px solid #dee2e6;white-space:nowrap;">Gesendet</th>'
-                  . '<th style="text-align:left;padding:5px 8px;border-bottom:1px solid #dee2e6;">Dauer</th>'
-                  . '<th style="text-align:left;padding:5px 8px;border-bottom:1px solid #dee2e6;">Von</th>'
+                  . '<th style="text-align:left;padding:5px 8px;border-bottom:1px solid #dee2e6;">' . $this->lng->txt('log_th_type') . '</th>'
+                  . '<th style="text-align:left;padding:5px 8px;border-bottom:1px solid #dee2e6;">' . $this->lng->txt('log_th_message') . '</th>'
+                  . '<th style="text-align:left;padding:5px 8px;border-bottom:1px solid #dee2e6;white-space:nowrap;">' . $this->lng->txt('log_th_sent') . '</th>'
+                  . '<th style="text-align:left;padding:5px 8px;border-bottom:1px solid #dee2e6;">' . $this->lng->txt('log_th_duration') . '</th>'
+                  . '<th style="text-align:left;padding:5px 8px;border-bottom:1px solid #dee2e6;">' . $this->lng->txt('log_th_by') . '</th>'
                   . '</tr></thead><tbody>';
 
             foreach ($rows as $row) {

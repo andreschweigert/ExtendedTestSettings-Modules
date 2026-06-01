@@ -1,16 +1,27 @@
 <?php
 
 require_once __DIR__ . '/../../classes/Contracts/ilExamModuleInterface.php';
+require_once __DIR__ . '/../../classes/Module/ilModuleLanguage.php';
 
 class ilExamLoggerHandler implements ilExamModuleInterface
 {
     private const TABLE = 'examlogger_events';
 
+    private ilModuleLanguage $lng;
+
+    public function __construct()
+    {
+        // Modul-eigene Sprachdatei (lang/ilias_<lang>.lang in diesem Modulverzeichnis)
+        $this->lng = new ilModuleLanguage(__DIR__);
+    }
+
     // Testplayer-Commands → Event-Typ
     private const CMD_EVENT_MAP = [
         'startPlayer'      => 'test_start',
         'resumePlayer'     => 'test_start',
-        'nextQuestion'     => 'navigate_next',
+        'startTest'           => 'test_start',   // zweiter+ Durchlauf
+        'outQuestionSummary'  => 'test_overview',
+        'nextQuestion'        => 'navigate_next',
         'previousQuestion' => 'navigate_prev',
         'showQuestion'     => 'navigate_jump',
         'submitTest'       => 'test_submit',
@@ -35,10 +46,10 @@ class ilExamLoggerHandler implements ilExamModuleInterface
     {
         return [
             'name'        => 'ExamLogger',
-            'title'       => 'Prüfungs-Protokoll',
+            'title'       => $this->lng->txt('title'),
             'icon'        => '',
-            'description' => 'Protokolliert Test-Ereignisse (Start, Navigation, Abgabe) in einer eigenen Tabelle.',
-            'version'     => '1.0.0',
+            'description' => $this->lng->txt('description'),
+            'version'     => '1.1.0',
         ];
     }
 
@@ -87,15 +98,27 @@ class ilExamLoggerHandler implements ilExamModuleInterface
                 $event = 'test_submit_confirmed';
             }
 
-            if ($event === 'test_submit' || $event === 'test_submit_confirmed') {
+            if ($event === 'test_submit') {
                 $details = $this->buildAllAnswersSummary($ref_id);
+            } elseif ($event === 'test_submit_confirmed') {
+                $details = null; // Antworten bereits in test_submit geloggt
             } elseif ($sequence > 0 && in_array($event, ['navigate_next', 'navigate_prev'], true)) {
                 $details = $this->buildAnswerDetails($ref_id, $sequence);
+            } elseif ($event === 'navigate_jump' && $sequence > 0) {
+                $details = $this->buildJumpDetails($ref_id, $sequence);
             } else {
                 $details = null;
             }
 
             $this->writeLog($ref_id, $event, $sequence, $details);
+            return;
+        }
+
+        // Zeitverlängerung: ILIAS macht POST→Redirect, modifyGUI feuert erst beim folgenden GET.
+        // Deshalb change-detection auf tst_addtime beim nächsten GET auf einer Supervisor-Seite.
+        if (str_contains($cmdClass, 'iltestparticipants')
+            && $_SERVER['REQUEST_METHOD'] === 'GET') {
+            $this->detectAndLogTimeExtensions($ref_id);
             return;
         }
 
@@ -205,7 +228,33 @@ class ilExamLoggerHandler implements ilExamModuleInterface
             }
             $question_fi = (int)$row['question_fi'];
 
-            return $this->fetchFormattedAnswer($question_fi, $ctx['active_id'], $ctx['pass'], $db);
+            $answer = $this->fetchFormattedAnswer($question_fi, $ctx['active_id'], $ctx['pass'], $db);
+            return $answer !== null ? 'Studentische Eingabe: ' . $answer : null;
+        } catch (Exception $e) {
+            return null;
+        }
+    }
+
+    private function buildJumpDetails(int $ref_id, int $sequence): ?string
+    {
+        global $DIC;
+        $db = $DIC->database();
+
+        try {
+            $ctx = $this->getTestIdAndActiveId($ref_id);
+            if (!$ctx) {
+                return null;
+            }
+
+            $res = $db->queryF(
+                "SELECT q.title FROM tst_test_question tq
+                 JOIN qpl_questions q ON q.question_id = tq.question_fi
+                 WHERE tq.test_fi = %s AND tq.sequence = %s",
+                ['integer', 'integer'],
+                [$ctx['test_id'], $sequence]
+            );
+            $row = $db->fetchAssoc($res);
+            return $row ? 'Ziel: ' . $row['title'] : null;
         } catch (Exception $e) {
             return null;
         }
@@ -386,6 +435,69 @@ class ilExamLoggerHandler implements ilExamModuleInterface
             return implode(' | ', $parts);
         } catch (Exception $e) {
             return null;
+        }
+    }
+
+    private function detectAndLogTimeExtensions(int $ref_id): void
+    {
+        global $DIC;
+        $db = $DIC->database();
+
+        try {
+            $obj_id = (int)ilObject::_lookupObjectId($ref_id);
+            if ($obj_id <= 0) return;
+
+            $res = $db->queryF("SELECT test_id FROM tst_tests WHERE obj_fi = %s", ['integer'], [$obj_id]);
+            $row = $db->fetchAssoc($res);
+            if (!$row) return;
+            $test_id = (int)$row['test_id'];
+
+            // Alle aktuellen Zeitverlängerungen für diesen Test
+            $res = $db->queryF(
+                "SELECT a.active_fi, a.additionaltime, ta.user_fi,
+                        u.login, u.firstname, u.lastname
+                 FROM tst_addtime a
+                 JOIN tst_active ta ON ta.active_id = a.active_fi
+                 JOIN usr_data u ON u.usr_id = ta.user_fi
+                 WHERE ta.test_fi = %s AND a.additionaltime > 0",
+                ['integer'],
+                [$test_id]
+            );
+
+            while ($entry = $db->fetchAssoc($res)) {
+                $student_id = (int)$entry['user_fi'];
+                $total      = (int)$entry['additionaltime'];
+
+                // Letzten geloggten Gesamtwert für diesen Teilnehmer lesen
+                $last = $db->queryF(
+                    "SELECT details FROM " . self::TABLE . "
+                     WHERE test_obj_id = %s AND user_id = %s AND event_type = %s
+                     ORDER BY tstamp DESC, id DESC LIMIT 1",
+                    ['integer', 'integer', 'text'],
+                    [$obj_id, $student_id, 'time_extension']
+                );
+                $lastRow    = $db->fetchAssoc($last);
+                $lastTotal  = 0;
+                if ($lastRow && preg_match('/Gesamt: (\d+) Min\./', $lastRow['details'], $m)) {
+                    $lastTotal = (int)$m[1];
+                }
+
+                if ($total === $lastTotal) {
+                    continue; // keine Änderung
+                }
+
+                $diff = $total - $lastTotal;
+                $name = trim($entry['firstname'] . ' ' . $entry['lastname'])
+                      . ' (' . $entry['login'] . ')';
+                $details = 'Teilnehmer: ' . $name
+                         . ' | Gesamt: ' . $total . ' Min.'
+                         . ' | Änderung: ' . ($diff > 0 ? '+' : '') . $diff . ' Min.';
+
+                // Als aktueller Supervisor-User loggen
+                $this->writeLog($ref_id, 'time_extension', 0, $details);
+            }
+        } catch (Exception $e) {
+            error_log('[ExamLogger] detectAndLogTimeExtensions Fehler: ' . $e->getMessage());
         }
     }
 
