@@ -46,11 +46,15 @@ Eigene Tabelle: `examressheet_settings`
 - Auslieferung über PHP-Endpoint mit Zugriffsschutz (aktive Test-Session oder Schreibrecht)
 - Dateiname auf dem Server ist obfuskiert (32-Zeichen SHA-256-Token)
 - MIME-Type wird serverseitig mit `finfo` geprüft (Whitelist: PDF + HTML)
+- Hochgeladenes HTML wird in einem **`sandbox`-iframe** angezeigt — JavaScript im
+  Dokument wird nicht ausgeführt (verhindert Same-Origin-Skriptausführung, ab 1.2.1)
 
 ## Versionen
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
+| 1.2.1 | `ExamResourceSheet_v1.2.1.zip` | 9 | Sicherheitsfix: HTML-Hilfsmittelblätter werden in einem `sandbox`-iframe geladen (keine JS-Ausführung in der Nutzer-Session) |
+| 1.2.0 | `ExamResourceSheet_v1.2.0.zip` | 9 | Sprachdateien DE/EN (i18n), Texte über `ilModuleLanguage` |
 | 1.1.0 | `ExamResourceSheet_v1.1.0.zip` | 9 | PDF.js-Rendering, Text-Layer (Markieren/Kopieren), linker Edge-Tab, Push-Modus, Drag-Resize + Buttons, SessionStorage-State |
 | 1.0.0 | `ExamResourceSheet_v1.0.0.zip` | 9 | Initiale Version: floating Button, iframe-Overlay |
 

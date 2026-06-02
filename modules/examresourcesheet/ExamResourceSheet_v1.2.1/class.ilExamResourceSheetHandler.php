@@ -350,7 +350,7 @@ class ilExamResourceSheetHandler implements ilExamModuleInterface
             'title'       => $this->lng->txt('title'),
             'icon'        => '',
             'description' => $this->lng->txt('description'),
-            'version'     => '1.2.0',
+            'version'     => '1.2.1',
             'ilias_min'   => '9',
             'ilias_max'   => '9',
             'features'    => [
@@ -359,6 +359,7 @@ class ilExamResourceSheetHandler implements ilExamModuleInterface
                 'Konfigurierbarer Button-Label',
                 'Sichere Dateiablage außerhalb des Web-Roots',
                 'Zugriffsschutz via Token-URL (nur aktive Test-Sessions)',
+                'HTML-Anzeige in sandboxed iframe (keine JS-Ausführung)',
                 'Alte Datei wird beim Ersetzen automatisch gelöscht',
             ],
         ];

@@ -318,6 +318,11 @@
                     } else {
                         htmlIframe = document.createElement('iframe');
                         htmlIframe.title = label;
+                        // Sicherheit: Das Hilfsmittelblatt ist ein statisches Dokument.
+                        // Eine blob:-URL erbt die ILIAS-Origin — ohne sandbox würde
+                        // <script> im hochgeladenen HTML in der Nutzer-Session laufen.
+                        // sandbox="" (kein allow-scripts) unterbindet jegliche JS-Ausführung.
+                        htmlIframe.setAttribute('sandbox', '');
                         htmlIframe.src   = blobUrl;
                         scrollArea.appendChild(htmlIframe);
                     }

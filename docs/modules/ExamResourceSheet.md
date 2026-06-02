@@ -2,9 +2,9 @@
 
 **Modul-ID:** `examresourcesheet`  
 **Speicherort:** `modules/examresourcesheet/` (externes Modul, nicht im Git-Repo)  
-**Referenz-ZIP:** `modules-zip/modules/examresourcesheet/ExamResourceSheet_v1.1.0.zip`  
+**Referenz-ZIP:** `modules-zip/modules/examresourcesheet/ExamResourceSheet_v1.2.1.zip`  
 **ILIAS-Kompatibilität:** 9  
-**Zuletzt aktualisiert:** 2026-05-12
+**Zuletzt aktualisiert:** 2026-06-02
 
 ---
 
@@ -28,8 +28,10 @@ ausgeliefert. Zugriffsschutz über Token-URL.
 - Nur ILIAS 9 kompatibel.
 - Upload-Limit: 10 MB; erlaubte Typen: PDF und HTML/HTM (serverseitig via `finfo` geprüft).
 - Die Datei wird per `fetch()` als Blob geladen (`URL.createObjectURL`). PDFs werden an
-  `pdfjsLib.getDocument()` übergeben; HTML-Dateien als `blob:`-URL in ein `<iframe>` gesetzt
-  (umgeht Browser-seitige `X-Frame-Options`-Blockierungen).
+  `pdfjsLib.getDocument()` übergeben; HTML-Dateien als `blob:`-URL in ein
+  **`sandbox`-`<iframe>`** gesetzt. Das `sandbox`-Attribut (ohne `allow-scripts`) ist
+  sicherheitskritisch: eine `blob:`-URL erbt die ILIAS-Origin, ohne Sandbox würde
+  `<script>` im hochgeladenen HTML in der Session des Betrachters ausgeführt (seit 1.2.1).
 - Dateiauslieferung geht über `ilExtendedTestSettingsModuleProxyGUI::serveResourceFile()`
   (bereits in ilCtrl registrierte Klasse) — kein Reload der Control-Structure erforderlich.
 - Tabellennamen-Limit: ILIAS erlaubt max. 22 Zeichen → `examressheet_settings` (21 Zeichen).
@@ -71,7 +73,7 @@ classes/class.ilExtendedTestSettingsModuleProxyGUI.php
     "id": "examresourcesheet",
     "label": "Hilfsmittelblatt",
     "description": "Stellt Studierenden ein vom Dozenten hochgeladenes Hilfsmittelblatt (PDF/HTML) als Overlay im Test-Player bereit.",
-    "version": "1.1.0",
+    "version": "1.2.1",
     "ilias_min": "9",
     "ilias_max": "9",
     "handler_class": "ilExamResourceSheetHandler",
@@ -208,7 +210,7 @@ Resize-Drag             → mousedown/mousemove/mouseup auf resizeHandle
                           ers-resizing-Klasse verhindert CSS-Transition während Drag
 loadFile()              → fetch(fileUrl) → blob → URL.createObjectURL
                           PDF: pdfjsLib.getDocument() → rerenderPdf()
-                          HTML: iframe.src = blobUrl
+                          HTML: sandbox-iframe (setAttribute('sandbox','')) → iframe.src = blobUrl
 SessionStorage          → saveState(open, width) / loadState() via 'examresourcesheet_state'
 Escape-Key-Handler      → Panel schließen, Fokus zurück auf Tab
 ```
@@ -254,6 +256,12 @@ exit;
 *(Der `ob_end_clean()`-Loop ist defensiv — in der Praxis lädt das JS die Datei ohnehin
 per `fetch()` als Blob, sodass X-Frame-Options irrelevant ist.)*
 
+> **Sicherheitshinweis:** Da die Datei same-origin per Blob geladen wird, schützt **nicht**
+> der Auslieferungs-Header, sondern das clientseitige `sandbox`-Attribut des iframes vor
+> JS-Ausführung aus hochgeladenem HTML (siehe `examresourcesheet.js`, `loadFile()`, ab 1.2.1).
+> Wird der Endpoint künftig für direkte Einbettung (ohne Blob/Sandbox) genutzt, muss hier
+> eine restriktive `Content-Security-Policy` statt des `header_remove()` gesetzt werden.
+
 ---
 
 ## Installation / Update
@@ -285,6 +293,7 @@ Gleiche Dateien ersetzen. Die DB-Tabelle `examressheet_settings` bleibt unverän
 | `getFormItems()` gibt FileInput als Top-Level-Item zurück | `ilPropertyFormGUI` setzt `enctype="multipart/form-data"` nur für Top-Level-`ilFileInputGUI` |
 | Dateiauslieferung über `ilExtendedTestSettingsModuleProxyGUI` | Eigene GUI-Klasse wäre erst nach Reload der Control-Structure erreichbar; Proxy ist bereits registriert |
 | `fetch()` + Blob-URL statt direktem `iframe.src` | Umgeht `X-Frame-Options`/CSP-Blockierung durch Browser |
+| HTML-iframe mit `sandbox=""` (kein `allow-scripts`) | `blob:`-URL erbt die ILIAS-Origin → ohne Sandbox würde JS im hochgeladenen HTML in der Nutzer-Session laufen (Sicherheitsfix 1.2.1) |
 | Token im URL statt Dateiname | Verhindert Enumeration; Token ist 32-char SHA-256-Anteil, gebunden an `test_id` |
 | `ensureTableExists()` im Konstruktor | ZIP-Installer läuft nur bei Install-via-GUI — bei manueller Ablage sonst keine Tabelle |
 | PDF.js statt nativem Browser-PDF-Viewer | Kein Download-Button, kein Print-Dialog; Text-Layer ermöglicht Markieren/Kopieren |
@@ -296,5 +305,7 @@ Gleiche Dateien ersetzen. Die DB-Tabelle `examressheet_settings` bleibt unverän
 
 | Datum | Version | Was |
 |---|---|---|
+| 2026-06-02 | 1.2.1 | **Sicherheitsfix:** HTML-Hilfsmittelblätter werden in einem `sandbox`-iframe (kein `allow-scripts`) geladen — verhindert Same-Origin-JS-Ausführung aus hochgeladenem HTML in der Nutzer-Session |
+| 2026-06-01 | 1.2.0 | Sprachdateien DE/EN (i18n) über `ilModuleLanguage`; Texte in getFormItems/getInfo übersetzt |
 | 2026-05-12 | 1.1.0 | PDF.js-Rendering (kein nativer Viewer), Text-Layer (Markieren/Kopieren), linker Edge-Tab, Push-Modus (body margin-left), Drag-Resize + [−]/[+]-Buttons, SessionStorage-State, ILIAS 9-only |
 | 2026-05-12 | 1.0.0 | Initiale Version: PDF/HTML-Upload, Token-URL, Overlay-Panel, Blob-Fetch-Workaround |

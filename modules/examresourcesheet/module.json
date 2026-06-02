@@ -2,7 +2,7 @@
     "id": "examresourcesheet",
     "label": "Hilfsmittelblatt",
     "description": "Stellt Studierenden ein vom Dozenten hochgeladenes Hilfsmittelblatt (PDF/HTML) als Overlay im Test-Player bereit.",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "ilias_min": "9",
     "ilias_max": "9",
     "handler_class": "ilExamResourceSheetHandler",
