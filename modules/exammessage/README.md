@@ -49,7 +49,7 @@ Leerer Nachrichtentext löscht die aktive Nachricht beim Speichern.
 | Datei | Beschreibung |
 |---|---|
 | `css/exammessage.css` | Styles für das Banner (Info/Warnung/Dringend, Countdown, High-Contrast) |
-| `js/exammessage.js` | tryStart-Retry, AJAX-Polling alle 15 s, Banner mit Countdown |
+| `js/exammessage.js` | tryStart-Retry, AJAX-Polling alle 15 s, Banner mit Countdown, Wegklick-Persistenz via `localStorage` (Key `exammsg_dismissed_<ref_id>_<user_id>`) |
 
 ## Poll-Endpoint
 
@@ -59,16 +59,21 @@ ilias.php?baseClass=ilUIPluginRouterGUI
         &cmd=poll&module_id=exammessage&ref_id=<ref_id>
 ```
 
-Zugangsbedingung: eingeloggt + Lesezugriff auf den Test (`read`-RBAC).  
+Zugangsbedingung (Auth): eingeloggt + Lesezugriff auf den Test (`read`-RBAC, im Kern-Proxy).  
+Zustell-Bedingung (seit 1.5.0): Eine Nachricht wird nur zurückgegeben, wenn der abrufende
+Nutzer einen **offenen, nicht abgegebenen Testlauf** hat (`tst_active.submitted = 0`). Diese
+Prüfung läuft nur, wenn überhaupt eine gültige Nachricht ansteht — sonst kein zusätzlicher Query.  
 Response: `{"sent_at": <ts>, "expiry": <ts>, "message": "...", "type": 0}` oder `{"sent_at": 0}`.
 
 ## Versionen
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
-| 1.3.0 | `ExamMessage_v1.3.0.zip` | 9 | „Nachricht jetzt senden"-Button; Poll-Auth auf RBAC-read umgestellt |
-| 1.2.0 | `ExamMessage_v1.2.0.zip` | 9 | AJAX-Polling (15 s), Nachrichtentypen, Versand-Log, tryStart-Retry-Fix |
-| 1.0.0 | `ExamMessage_v1.0.0.zip` | 9 | Initiale Version — statisches Info-Banner |
+| 1.5.0 | `ExamMessage_v1.5.0.zip` | 9 | Wegklick-Persistenz (`localStorage`, pro Test+Konto, überlebt Reload); Zustellung nur an Teilnehmer mit offenem Testlauf (`tst_active.submitted=0`, nur bei aktiver Nachricht); GUI-Klasse `ilExamMessageProxyGUI` → `ilExamMessageGUI` umbenannt |
+| 1.4.0 | `archive/ExamMessage_v1.4.0.zip` | 9 | i18n (DE/EN) — Sprachstrings nach `lang/` ausgelagert, `ilModuleLanguage` |
+| 1.3.0 | `archive/ExamMessage_v1.3.0.zip` | 9 | „Nachricht jetzt senden"-Button; Poll-Auth auf RBAC-read umgestellt |
+| 1.2.0 | `archive/ExamMessage_v1.2.0.zip` | 9 | AJAX-Polling (15 s), Nachrichtentypen, Versand-Log, tryStart-Retry-Fix |
+| 1.0.0 | `archive/ExamMessage_v1.0.0.zip` | 9 | Initiale Version — statisches Info-Banner |
 
 ## Installation
 

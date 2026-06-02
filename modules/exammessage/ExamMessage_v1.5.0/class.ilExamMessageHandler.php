@@ -48,12 +48,17 @@ class ilExamMessageHandler implements ilExamModuleInterface
             return;
         }
 
+        require_once __DIR__ . '/class.ilExamMessageGUI.php';
+
         $tpl->addCss($this->plugin_path . '/modules/exammessage/css/exammessage.css');
         $tpl->addJavaScript($this->plugin_path . '/modules/exammessage/js/exammessage.js');
 
         $poll_url = ILIAS_HTTP_PATH . '/ilias.php?baseClass=ilUIPluginRouterGUI'
                   . '&cmdClass=ilextendedtestsettingsmoduleproxygui'
                   . '&cmd=poll&module_id=exammessage&ref_id=' . $ref_id;
+
+        global $DIC;
+        $user_id = (int) $DIC->user()->getId();
 
         $cfg        = $this->getCurrentConfig($ref_id);
         $now        = time();
@@ -64,7 +69,11 @@ class ilExamMessageHandler implements ilExamModuleInterface
 
         if ($cfg && (int) $cfg['sent_at'] > 0) {
             $exp = $cfg['sent_at'] + $cfg['duration'];
-            if ($exp > $now && trim($cfg['message_text']) !== '') {
+            // Nachricht nur einbetten, wenn sie gültig ist UND der Nutzer ein
+            // Teilnehmer mit offenem Testlauf ist. Die Teilnehmer-Prüfung läuft
+            // nur, wenn überhaupt eine aktive Nachricht vorliegt.
+            if ($exp > $now && trim($cfg['message_text']) !== ''
+                && ilExamMessageGUI::userHasActivePass($user_id, (int) ilObject::_lookupObjectId($ref_id))) {
                 $sent_at = $cfg['sent_at'];
                 $expiry  = $exp;
                 $message = $cfg['message_text'];
@@ -76,6 +85,8 @@ class ilExamMessageHandler implements ilExamModuleInterface
             'window.ExamMessage = window.ExamMessage || {};' .
             'window.ExamMessage.config = ' . json_encode([
                 'poll_url' => $poll_url,
+                'ref_id'   => $ref_id,
+                'user_id'  => $user_id,
                 'sent_at'  => $sent_at,
                 'expiry'   => $expiry,
                 'message'  => $message,
@@ -232,7 +243,7 @@ class ilExamMessageHandler implements ilExamModuleInterface
             'title'       => $this->lng->txt('title'),
             'icon'        => '📢',
             'description' => $this->lng->txt('description'),
-            'version'     => '1.4.0',
+            'version'     => '1.5.0',
         ];
     }
 

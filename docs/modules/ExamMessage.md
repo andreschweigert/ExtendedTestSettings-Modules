@@ -2,9 +2,9 @@
 
 **Modul-ID:** `exammessage`  
 **Speicherort:** `modules/exammessage/` (externes Modul)  
-**Referenz-ZIP:** `modules-zip/modules/exammessage/ExamMessage_v1.3.0.zip`  
+**Referenz-ZIP:** `modules-zip/modules/exammessage/ExamMessage_v1.5.0.zip`  
 **ILIAS-Kompatibilität:** 9  
-**Zuletzt aktualisiert:** 2026-05-26
+**Zuletzt aktualisiert:** 2026-06-02
 
 ---
 
@@ -36,7 +36,9 @@ ExtendedTestSettings-Plugin. Wesentliche Unterschiede zur Vorlage:
 - Drei Nachrichtentypen (Info / Warnung / Dringend) mit eigenem Styling
 - Versand-Log in separater DB-Tabelle
 - Direkt-Senden-Button ohne allgemeinen Formular-Save
-- Auth über RBAC-`read` statt `tst_active`-Check
+- Auth über RBAC-`read` (Kern-Proxy); zusätzlich seit 1.5.0 ein Zustell-Gate auf
+  `tst_active.submitted = 0` (nur an Teilnehmer mit offenem Testlauf)
+- Wegklick-Persistenz clientseitig via `localStorage` (kein Server-State, seit 1.5.0)
 
 ---
 
@@ -46,7 +48,10 @@ ExtendedTestSettings-Plugin. Wesentliche Unterschiede zur Vorlage:
 modules/exammessage/
 ├── module.json                      ← Modul-Metadaten, allow_student_access: true
 ├── class.ilExamMessageHandler.php   ← Handler (implements ilExamModuleInterface)
-├── class.ilExamMessageProxyGUI.php  ← Poll-Endpoint (JSON, no HTML output)
+├── class.ilExamMessageGUI.php       ← Poll-Endpoint (JSON, no HTML output) + userHasActivePass()
+├── lang/
+│   ├── ilias_de.lang                ← deutsche Strings (seit 1.4.0)
+│   └── ilias_en.lang                ← englische Strings (seit 1.4.0)
 ├── css/
 │   └── exammessage.css              ← Banner-Styles (3 Typen, Countdown, High-Contrast)
 ├── js/
@@ -71,14 +76,14 @@ classes/class.ilExtendedTestSettingsModuleProxyGUI.php
 {
     "id": "exammessage",
     "label": "Prüfungs-Nachricht",
-    "description": "Sendet eine Nachricht an alle Teilnehmer mit AJAX-Polling (15 s) für Echtzeit-Zustellung ohne Seitenneuladen.",
-    "version": "1.3.0",
+    "description": "Sendet eine Nachricht an alle Teilnehmer, die für eine konfigurierbare Dauer im Test-Player erscheint. AJAX-Polling alle 15 Sekunden für Echtzeit-Zustellung.",
+    "version": "1.5.0",
     "ilias_min": "9",
     "ilias_max": "9",
     "handler_class": "ilExamMessageHandler",
     "handler_file": "class.ilExamMessageHandler.php",
-    "gui_file": "class.ilExamMessageProxyGUI.php",
-    "gui_class": "ilExamMessageProxyGUI",
+    "gui_file": "class.ilExamMessageGUI.php",
+    "gui_class": "ilExamMessageGUI",
     "allow_student_access": true,
     "require_files": [],
     "tables": [
@@ -130,7 +135,15 @@ Versand-Protokoll. Jeder Send-Vorgang erzeugt einen neuen Eintrag.
 | Tabelle | Wozu |
 |---|---|
 | *(via `ilObject::_lookupObjectId()`)* | `ref_id` → `obj_id` |
-| `tst_active` | Nur in `serveResourceFile()` anderer Module — **nicht** für ExamMessage |
+| `tst_active` ⋈ `tst_tests` | **Seit 1.5.0:** `userHasActivePass()` prüft `tst_active.submitted = 0` (offener Testlauf) als Zustell-Gate. Join `tst_active.test_fi = tst_tests.test_id`, Filter `tst_tests.obj_fi = <obj_id>`. |
+
+**Warum `submitted` und nicht `last_finished_pass`?** `submitted` startet beim Testeinstieg
+auf 0 und wird ausschließlich durch `ilTestPassFinishTasks` (Finish-Button / Auswertung /
+Cron für verwaiste Pässe) auf 1 gesetzt — und nie zurück. Während der laufenden Bearbeitung
+also zuverlässig `0`. `last_finished_pass` wäre dagegen unzuverlässig (kann bei mehreren
+Durchgängen ≠ NULL sein, obwohl der Student im Player sitzt). **Restkante:** Bei Tests mit
+mehreren erlaubten Durchgängen kann `submitted` nach Abschluss eines Pass auf 1 stehen —
+für Klausuren (Einzeldurchgang) irrelevant.
 
 ---
 
@@ -145,7 +158,9 @@ isEnabled(ref_id)          → gibt immer true zurück — JS muss immer geladen
 injectAssets(tpl, ref_id)  → nur wenn isTestPlayerContext();
                              exammessage.css + exammessage.js injiziert;
                              window.ExamMessage.config als JSON via addOnLoadCode gesetzt
-                             (enthält poll_url, sent_at, expiry, message, type)
+                             (enthält poll_url, ref_id, user_id, sent_at, expiry, message, type);
+                             die initiale Nachricht wird nur eingebettet, wenn eine aktive
+                             vorliegt UND ilExamMessageGUI::userHasActivePass() true ist
 
 saveSettings(ref_id, post) → liest exammessage_send_now, exammessage_text,
                              exammessage_duration, exammessage_type aus $post_data;
@@ -198,7 +213,9 @@ $tpl->addOnLoadCode(
     'window.ExamMessage = window.ExamMessage || {};' .
     'window.ExamMessage.config = ' . json_encode([
         'poll_url' => $poll_url,   // ilias.php?...&cmd=poll&ref_id=X
-        'sent_at'  => $sent_at,    // aktuell aktive Nachricht (0 wenn keine)
+        'ref_id'   => $ref_id,     // localStorage-Key für Wegklick-Persistenz
+        'user_id'  => $user_id,    // localStorage-Key (trennt Nutzer auf geteilten Laptops)
+        'sent_at'  => $sent_at,    // aktuell aktive Nachricht (0 wenn keine / kein Teilnehmer)
         'expiry'   => $expiry,
         'message'  => $message,
         'type'     => $type,
@@ -223,7 +240,12 @@ Sowie `$_SERVER['REQUEST_URI']` auf:
 
 ---
 
-## ilExamMessageProxyGUI
+## ilExamMessageGUI
+
+> Hieß bis 1.4.0 `ilExamMessageProxyGUI`. Umbenannt in 1.5.0 zur Konsistenz mit den
+> übrigen Modul-GUIs (`ilExamGroupingGUI`, `ilExamLoggerViewGUI`, …) — „Proxy" war
+> irreführend, der eigentliche Proxy ist `ilExtendedTestSettingsModuleProxyGUI` im
+> Kern-Plugin. Diese Klasse ist nur der Endpunkt dahinter.
 
 Wird via `module.json` als `gui_class` registriert und durch
 `ilExtendedTestSettingsModuleProxyGUI::executeCommand()` aufgerufen.
@@ -232,9 +254,16 @@ Wird via `module.json` als `gui_class` registriert und durch
 executeCommand()   → dispatcht auf poll()
 poll()             → liest exammessage_settings für den Test;
                      prüft sent_at > 0 && expiry > time();
+                     ERST DANN userHasActivePass($uid, $obj_id) (Zustell-Gate);
                      gibt JSON zurück: {sent_at, expiry, message, type} oder {sent_at: 0}
+userHasActivePass(user_id, obj_id) → static; true, wenn ein offener Testlauf existiert
+                     (tst_active.submitted = 0). Wird auch vom Handler genutzt.
 jsonExit(data, status) → ob_end_clean(), Content-Type: application/json, exit
 ```
+
+**Performance:** Das Zustell-Gate (`userHasActivePass`) läuft im `poll()` erst, nachdem
+feststeht, dass eine gültige Nachricht ansteht. Im Normalfall „keine Nachricht aktiv"
+macht `poll()` weiterhin **genau eine** Query (`exammessage_settings`) — kein Extra-Query.
 
 ### Poll-Endpoint
 
@@ -265,8 +294,15 @@ allow_student_access: true (module.json) → checkAccess('write') ODER checkAcce
 ```
 
 `checkAccess('read', $ref_id)` — Studierende, die den Test sehen dürfen, können pollen.
-Kein `tst_active`-Check: dieser wäre unzuverlässig (je nach Durchgangsnummer/Status
-kann `last_finished_pass` ≠ NULL sein, obwohl der Student im Player sitzt).
+
+**Zwei Schichten (seit 1.5.0):**
+
+1. **Auth (Endpoint erreichbar?)** — RBAC-`read` im Kern-Proxy, unverändert. Bewusst
+   *kein* `last_finished_pass`-Check, da dieser unzuverlässig ist.
+2. **Zustell-Gate (bekommt der Nutzer die Nachricht?)** — `userHasActivePass()` prüft
+   `tst_active.submitted = 0`. Das `submitted`-Flag ist im Gegensatz zu `last_finished_pass`
+   während der laufenden Bearbeitung zuverlässig 0 (s. DB-Abschnitt). So bleibt der Zugang
+   großzügig (read), die Nachricht selbst geht aber nur an aktive Teilnehmer.
 
 ---
 
@@ -306,9 +342,10 @@ function poll() {
     fetch(cfg.poll_url, { credentials: 'same-origin' })
         .then(r => r.json())
         .then(data => {
-            if (data.sent_at > lastSentAt && data.expiry > now && data.message) {
+            if (data.sent_at > lastSentAt && data.expiry > now && data.message
+                    && data.sent_at > getDismissed()) {   // seit 1.5.0
                 lastSentAt = data.sent_at;
-                showBanner(data.message, data.type || 0, data.expiry);
+                showBanner(data.message, data.type || 0, data.expiry, data.sent_at);
             }
         }).catch(() => {});
 }
@@ -317,14 +354,37 @@ function poll() {
 Deduplizierung via `lastSentAt` (Timestamp-Vergleich) — bereits gezeigte Nachrichten
 werden nicht erneut angezeigt.
 
+### Wegklick-Persistenz via localStorage (seit 1.5.0)
+
+Ein bewusst weggeklicktes Banner bleibt weg — auch nach einem Reload —, getrennt pro
+Test **und** Konto (wichtig für geteilte Prüfungslaptops). Rein clientseitig, **keine
+Server-Last, kein Endpoint**.
+
+```js
+function dismissKey()    { return 'exammsg_dismissed_' + refId + '_' + userId; }
+function getDismissed()  { try { return parseInt(localStorage.getItem(dismissKey()),10)||0; } catch(e){ return 0; } }
+function setDismissed(s) { try { localStorage.setItem(dismissKey(), String(s)); } catch(e){} }
+```
+
+- `refId`/`userId` kommen aus `window.ExamMessage.config`.
+- Beim Anzeigen wird nur gezeigt, wenn `sent_at > getDismissed()` → eine **neuere**
+  Nachricht (größeres `sent_at`) überschreibt die Dismissal automatisch.
+- Nur das **aktive Wegklicken** persistiert (`setDismissed`), nicht der Countdown-Ablauf.
+- `try/catch`: im privaten Modus fällt es sauber auf das alte In-Memory-Verhalten zurück.
+
+Warum das auf geteilten Laptops genügt: Damit User A's Dismissal User B unterdrücken könnte,
+müssten beide **dieselbe** Nachricht (gleiches `sent_at`) **innerhalb ihres Aktiv-Fensters**
+nacheinander am selben Gerät bearbeiten — auf einem Einzelgerät praktisch ausgeschlossen.
+Der `user_id`-Anteil im Key schließt selbst diesen konstruierten Fall aus.
+
 ### showBanner()
 
 ```
-showBanner(message, type, expiry)
+showBanner(message, type, expiry, sentAt)
   → bestehendes Banner entfernen
   → <div id="exam-message-banner"> mit Typ-Klasse (type-warning / type-danger) prependen
   → Countdown-Ticker (setInterval 1 s): m:ss-Format → js-Format → Dismiss
-  → Klick auf Banner → dismiss() → CSS-Klasse exam-message-hiding → animationend → remove()
+  → Klick auf Banner → setDismissed(sentAt) → dismiss() → exam-message-hiding → remove()
 ```
 
 ### sanitize(html)
@@ -362,7 +422,8 @@ Barrierefreiheit:
 | Entscheidung | Begründung |
 |---|---|
 | `isEnabled()` immer `true` | Polling-JS muss auf der Seite sein, bevor eine Nachricht gesendet wird — sonst verpassen Studenten Nachrichten die nach ihrem Einstieg verschickt werden |
-| `allow_student_access: true` + RBAC-`read`-Check | `tst_active`-Check ist unzuverlässig (bei mehreren Durchgängen ist `last_finished_pass` ≠ NULL); `read`-Recht ist für eingeschriebene Studierende immer vorhanden |
+| **Auth** via RBAC-`read`, **Zustellung** via `tst_active.submitted=0` (seit 1.5.0) | Zugang großzügig (read-Recht haben alle Eingeschriebenen), Nachricht selbst aber nur an aktive Teilnehmer. `submitted` ist zuverlässig 0 während der Bearbeitung — im Gegensatz zu `last_finished_pass`, das bei mehreren Durchgängen ≠ NULL sein kann |
+| Wegklick-Persistenz clientseitig (`localStorage`), nicht server-seitig (seit 1.5.0) | Kein Endpoint, keine Tabelle, keine Server-Last. Reicht praktisch aus, weil eine Kollision auf geteilten Laptops zeitliche Überlappung im selben Aktiv-Fenster erfordern würde; `ref_id+user_id`-Key schließt auch das aus |
 | Submit-Button statt AJAX für „Jetzt senden" | Keine CSRF-Problematik, kein separater Endpoint; POST geht über den bestehenden ILIAS-Formular-Flow mit automatischem `rtoken` |
 | `tryStart()`-Retry (50 ms × 40) | ILIAS führt `addJavaScript` vor `addOnLoadCode` aus — `window.ExamMessage.config` ist beim JS-Init noch nicht gesetzt |
 | `lastSentAt`-Deduplizierung | Verhindert, dass beim nächsten Poll-Intervall dieselbe Nachricht nochmals als neu gilt |
@@ -397,6 +458,8 @@ angelegt (inkl. Migration der `type`-Spalte für v1.2.0+).
 
 | Datum | Version | Was |
 |---|---|---|
-| 2026-05-26 | **1.3.0** | „Nachricht jetzt senden"-Submit-Button (`exammessage_send_now`); Poll-Auth auf RBAC-`read` umgestellt (fix 403 für Studierende) |
+| 2026-06-02 | **1.5.0** | Wegklick-Persistenz via `localStorage` (Key `exammsg_dismissed_<ref_id>_<user_id>`, überlebt Reload, trennt Nutzer); Zustell-Gate `tst_active.submitted=0` (Nachricht nur an Teilnehmer mit offenem Lauf, nur bei aktiver Nachricht → kein Extra-Query im Normalfall); GUI-Klasse `ilExamMessageProxyGUI` → `ilExamMessageGUI` umbenannt; Config um `ref_id`/`user_id` erweitert |
+| 2026-06-01 | 1.4.0 | i18n (DE/EN): Sprachstrings nach `lang/ilias_de.lang` / `lang/ilias_en.lang` ausgelagert, `ilModuleLanguage` |
+| 2026-05-26 | 1.3.0 | „Nachricht jetzt senden"-Submit-Button (`exammessage_send_now`); Poll-Auth auf RBAC-`read` umgestellt (fix 403 für Studierende) |
 | 2026-05-26 | 1.2.0 | AJAX-Polling (15 s), Nachrichtentypen (Info/Warnung/Dringend), Versand-Log (`exammessage_log`), Countdown-Banner, tryStart-Retry-Fix für ILIAS-Timing, Student-Auth via ProxyGUI |
 | 2026-05-26 | 1.0.0 | Initiale Version — statisches Info-Banner, einmal pro Seitenaufruf angezeigt |
