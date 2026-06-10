@@ -1,0 +1,14 @@
+<!-- language file start -->
+title#:#Virtuelles Tastatur-Layout
+description#:#Clientseitiges Tastatur-Layout DE/EN für Kiosk-Geräte, umschaltbar per Button im Testplayer
+enable#:#Virtuelles Tastatur-Layout aktivieren
+enable_info#:#Zeigt im Testplayer einen kleinen Umschalt-Button (OS → DE → EN). Bei gewähltem Layout werden Tastendrücke unabhängig vom OS-Tastaturlayout umgeschrieben — gedacht für ChromeOS-Geräte im Kioskmodus, bei denen die Eingabesprache nicht umgestellt werden kann.
+default_label#:#Standard-Layout beim ersten Laden
+default_off#:#Aus (OS-Layout, kein Umschreiben)
+default_de#:#Deutsch (QWERTZ)
+default_en#:#Englisch (QWERTY, EN-US)
+default_info#:#Layout, das beim ersten Aufruf des Tests vorausgewählt ist. Studierende können jederzeit per Button durch OS → DE → EN wechseln; die Wahl bleibt pro Browser-Tab erhalten.
+btn_tooltip#:#Tastatur-Layout umschalten (OS → DE → EN)
+btn_os#:#OS
+btn_de#:#DE
+btn_en#:#EN

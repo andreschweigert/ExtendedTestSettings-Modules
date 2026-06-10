@@ -1,0 +1,33 @@
+/* ExamKeymap — Umschalt-Button (klein, dezent, fixiert unten rechts) */
+
+#examkeymap-btn {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 999990; /* über dem Testplayer, unter Modul-Overlays (999999) */
+    padding: 6px 14px;
+    border: 1px solid #ccc;
+    border-radius: 999px;
+    background: #fff;
+    color: #555;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    line-height: 1.4;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    opacity: 0.85;
+}
+
+#examkeymap-btn:hover,
+#examkeymap-btn:focus {
+    opacity: 1;
+}
+
+/* Aktives Umschreiben sichtbar machen (DE/EN), OS-Zustand bleibt neutral */
+#examkeymap-btn[data-layout="de"],
+#examkeymap-btn[data-layout="en"] {
+    border-color: #2980b9;
+    color: #2980b9;
+}
