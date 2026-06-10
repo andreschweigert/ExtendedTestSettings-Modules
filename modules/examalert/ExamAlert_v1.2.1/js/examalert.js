@@ -189,7 +189,8 @@
             const now = Date.now();
             const timeRemaining = this.testEndTime - now;
             const secondsRemaining = Math.floor(timeRemaining / 1000);
-            const messageHtml = this.config.alert_message || 'Achtung: Der Test endet bald!';
+            // XSS-Schutz: Meldung escapen, erlaubte Format-Tags bleiben erhalten
+            const messageHtml = this.escapeHtml(this.config.alert_message || 'Achtung: Der Test endet bald!');
 
             const toastHTML = `
                 <div id="exam-alert-toast" style="

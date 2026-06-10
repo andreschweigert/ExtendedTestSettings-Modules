@@ -211,6 +211,8 @@ Gleiches Vorgehen wie Erstinstallation — `sql/install.php` läuft erneut
 
 | Datum | Was |
 |---|---|
+| 2026-06-10 | **v1.2.1:** Sicherheitsfix XSS — `alert_message` wird in `showAlert()` jetzt über die (bereits vorhandene, zuvor ungenutzte) `escapeHtml()`-Funktion escaped, bevor sie per `insertAdjacentHTML` ins DOM kommt. Whitelist-Tags `<strong> <b> <i> <u> <br>` bleiben funktional |
+| 2026-06-01 | **v1.2.0:** Modul-eigene Sprachdateien `lang/ilias_de\|en.lang`, Formular-Texte über ilModuleLanguage |
 | 2026-05-12 | **v1.1.1:** ILIAS-Kompatibilität auf 9 beschränkt; Standardnachricht überarbeitet |
 | 2026-04-10 | Initiale Version: konfig. Warnzeit, zweisprachige Standardnachricht, Popup mit Countdown |
 | 2026-04-10 | Auto-Aktivierungs-Logik: neuer Test erhält automatisch Default-Eintrag |
