@@ -1,0 +1,34 @@
+<!-- language file start -->
+title#:#Virtual keyboard layout
+description#:#Client-side keyboard layout DE/EN for kiosk devices, switchable in the test player; with global translation table
+enable#:#Enable virtual keyboard layout
+enable_info#:#Shows a small toggle button in the test player (OS → DE → EN). With a layout selected, keystrokes are rewritten independently of the OS keyboard layout — intended for ChromeOS devices in kiosk mode where the input language cannot be changed.
+default_label#:#Default layout on first load
+default_off#:#Off (OS layout, no rewriting)
+default_de#:#German (QWERTZ)
+default_en#:#English (QWERTY, EN-US)
+default_info#:#Layout preselected when the test is first opened. Students can switch through OS → DE → EN via the button at any time; the choice persists per browser tab.
+search_caps#:#Search key as Caps Lock
+search_caps_info#:#On ChromeOS devices the Search key sits on the Caps Lock position. With this option enabled, a short tap on the Search key acts as a virtual Caps Lock — only while layout DE/EN is active, not in OS mode. The button then shows ⇪.
+btn_tooltip#:#Switch keyboard layout (OS → DE → EN)
+btn_os#:#OS
+btn_de#:#DE
+btn_en#:#EN
+adm_intro#:#Global translation table: Override individual keys of the built-in layouts DE (QWERTZ) and EN-US (QWERTY). Changes apply to all tests with the module enabled. Click a key, adjust its mapping, then save below. Yellow = customized key, red = disabled key (all levels empty).
+adm_layout_de#:#German (QWERTZ)
+adm_layout_en#:#English (QWERTY)
+adm_base#:#Base
+adm_shift#:#Shift
+adm_altgr#:#AltGr
+adm_apply#:#Apply
+adm_remove#:#Reset to default
+adm_save#:#Save
+adm_saved#:#Translation table saved (%s customized keys).
+adm_error_json#:#The submitted data could not be read (invalid format).
+adm_error_save#:#Error while saving the translation table.
+adm_select_hint#:#Click a key to edit its mapping.
+adm_override#:#Customized
+adm_key_disabled#:#Disabled
+adm_empty_hint#:#Empty field = level not assigned (keystroke is passed through unchanged).
+adm_caps_hint#:#ChromeOS Search key — usable as Caps Lock (per-test setting in the extended test settings)
+adm_dirty_hint#:#Unsaved changes — click "Save" below.

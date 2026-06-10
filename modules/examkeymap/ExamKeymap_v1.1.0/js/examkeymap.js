@@ -9,6 +9,13 @@
  *
  * Ein fixierter Button unten rechts rotiert durch: OS → DE → EN → OS.
  * Zustand "OS" = Pass-through (kein Eingriff).
+ *
+ * Optional (pro Test): Die ChromeOS-Lupe-/Suchtaste (physisch auf der
+ * CapsLock-Position, code "MetaLeft") wirkt als virtuelle Feststelltaste.
+ *
+ * Die eingebauten Tabellen werden als window.ExamKeymap.tables exponiert —
+ * der Keyboard-Editor in der Administration (examkeymap_admin.js) nutzt sie.
+ * Die Player-Logik läuft nur, wenn config.player gesetzt ist (injectAssets).
  */
 (function () {
     'use strict';
@@ -142,11 +149,19 @@
     var LAYOUTS = { de: DE, en: EN };
     var CYCLE = ['os', 'de', 'en'];
 
+    // Eingebaute Tabellen für den Admin-Keyboard-Editor exponieren
+    window.ExamKeymap = window.ExamKeymap || {};
+    window.ExamKeymap.tables = LAYOUTS;
+
     // ─── Layout-Zustand (sessionStorage, überlebt Fragennavigation) ─────────
 
     function storageKey() {
         // ref_id live aus der Config — NIE pro Pageload neu würfeln
         return 'examkeymap_' + (cfg().ref_id || 'active');
+    }
+
+    function capsStorageKey() {
+        return 'examkeymap_caps_' + (cfg().ref_id || 'active');
     }
 
     function currentLayout() {
@@ -176,6 +191,34 @@
         setLayout(CYCLE[(idx + 1) % CYCLE.length]);
     }
 
+    // ─── Virtuelle Feststelltaste (Lupe-/Suchtaste, code "MetaLeft") ────────
+    // Tap-Erkennung wie bei echten Modifiern: Toggle nur, wenn zwischen
+    // keydown und keyup der Lupe-Taste KEINE andere Taste gedrückt wurde
+    // (sonst würden OS-Shortcuts wie Lupe+L die Feststellung mit-toggeln).
+
+    var virtualCaps = false;
+    var metaTapPending = false;
+
+    function loadVirtualCaps() {
+        try {
+            virtualCaps = sessionStorage.getItem(capsStorageKey()) === '1';
+        } catch (e) { /* ignorieren */ }
+    }
+
+    function toggleVirtualCaps() {
+        virtualCaps = !virtualCaps;
+        try {
+            sessionStorage.setItem(capsStorageKey(), virtualCaps ? '1' : '0');
+        } catch (e) { /* ignorieren */ }
+        renderButton();
+        console.log('[ExamKeymap] Virtuelle Feststelltaste: ' + (virtualCaps ? 'an' : 'aus'));
+    }
+
+    function searchCapsActive() {
+        var layout = currentLayout();
+        return !!cfg().search_caps && (layout === 'de' || layout === 'en');
+    }
+
     // ─── Modifier: AltGr-Erkennung ───────────────────────────────────────────
     // Auf einem EN-OS-Layout meldet die rechte Alt-Taste KEIN "AltGraph" —
     // deshalb wird AltRight zusätzlich manuell über keydown/keyup verfolgt.
@@ -194,21 +237,37 @@
         return ch.length === 1 && ch.toLowerCase() !== ch.toUpperCase();
     }
 
+    function lookupEntry(layout, code) {
+        // Globale Übersetzungstabelle (Administration) hat Vorrang vor der
+        // eingebauten Tabelle; leere Felder im Override = Taste nicht belegt
+        var custom = cfg().custom || {};
+        if (custom[layout] && custom[layout][code]) {
+            return custom[layout][code];
+        }
+        return LAYOUTS[layout][code];
+    }
+
     function resolveChar(entry, e) {
+        var ch;
+
         if (isAltGr(e)) {
-            // AltGr ohne Belegung: nichts einfügen, Event trotzdem schlucken
-            // wäre falsch → null = Pass-through
-            return entry.g || null;
+            ch = entry.g;
+        } else {
+            var shift = e.shiftKey;
+
+            // CapsLock invertiert Shift nur bei Buchstaben (inkl. Umlauten).
+            // XOR aus echter CapsLock und virtueller Feststelltaste (Lupe).
+            var realCaps = !!(e.getModifierState && e.getModifierState('CapsLock'));
+            var caps = realCaps !== (searchCapsActive() && virtualCaps);
+            if (entry.b && isLetter(entry.b) && caps) {
+                shift = !shift;
+            }
+
+            ch = shift ? entry.s : entry.b;
         }
 
-        var shift = e.shiftKey;
-
-        // CapsLock invertiert Shift nur bei Buchstaben (inkl. Umlauten)
-        if (isLetter(entry.b) && e.getModifierState && e.getModifierState('CapsLock')) {
-            shift = !shift;
-        }
-
-        return shift ? entry.s : entry.b;
+        // null/undefined/leer = nicht belegt → Pass-through
+        return (ch === null || ch === undefined || ch === '') ? null : ch;
     }
 
     // ─── Ziel-Erkennung & Einfügen ───────────────────────────────────────────
@@ -276,10 +335,26 @@
     // ─── Keydown-Handler ─────────────────────────────────────────────────────
 
     function onKeydown(e) {
+        if (!cfg().player) {
+            return; // nicht im Testplayer geladen (z.B. Admin-Editor)
+        }
+
         // AltRight-Status immer verfolgen, auch im OS-Modus
         if (e.code === 'AltRight') {
             altRightDown = true;
             return;
+        }
+
+        // Lupe-/Suchtaste: Tap-Erkennung für virtuelle Feststelltaste
+        if (e.code === 'MetaLeft') {
+            if (searchCapsActive() && !e.repeat) {
+                metaTapPending = true;
+            }
+            return;
+        }
+        if (e.metaKey) {
+            // andere Taste während Lupe gehalten → kein Tap (OS-Shortcut)
+            metaTapPending = false;
         }
 
         var layout = currentLayout();
@@ -300,7 +375,7 @@
 
         // Nur Tasten mit Mapping-Eintrag — F-Tasten, Pfeile, Home/End,
         // Backspace, Delete, Tab, Enter, Escape usw. fallen automatisch durch
-        var entry = LAYOUTS[layout][e.code];
+        var entry = lookupEntry(layout, e.code);
         if (!entry) {
             return;
         }
@@ -311,7 +386,7 @@
         }
 
         var ch = resolveChar(entry, e);
-        if (ch === null || ch === undefined) {
+        if (ch === null) {
             return;
         }
 
@@ -330,10 +405,17 @@
         if (e.code === 'AltRight') {
             altRightDown = false;
         }
+        if (e.code === 'MetaLeft' && metaTapPending) {
+            metaTapPending = false;
+            if (searchCapsActive()) {
+                toggleVirtualCaps();
+            }
+        }
     }
 
     function onWindowBlur() {
         altRightDown = false;
+        metaTapPending = false;
     }
 
     // ─── Listener-Registrierung (Hauptdokument + TinyMCE-iframes) ───────────
@@ -376,9 +458,10 @@
     var button = null;
 
     function ensureButton() {
-        if (button || !document.body) {
+        if (button || !document.body || !cfg().player) {
             return;
         }
+        loadVirtualCaps();
         button = document.createElement('button');
         button.id = 'examkeymap-btn';
         button.type = 'button';
@@ -397,7 +480,8 @@
             de: txt('de', 'DE'),
             en: txt('en', 'EN')
         };
-        button.textContent = '⌨ ' + labels[layout];
+        var caps = (searchCapsActive() && virtualCaps) ? ' ⇪' : '';
+        button.textContent = '⌨ ' + labels[layout] + caps;
         button.title = txt('tooltip', 'Tastatur-Layout umschalten (OS → DE → EN)');
         button.setAttribute('data-layout', layout);
     }
@@ -411,7 +495,9 @@
     function tick() {
         ensureButton();
         renderButton();
-        hookIframes();
+        if (cfg().player) {
+            hookIframes();
+        }
         setTimeout(tick, 1000);
     }
 

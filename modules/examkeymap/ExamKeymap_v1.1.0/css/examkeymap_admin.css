@@ -1,0 +1,167 @@
+/* ExamKeymap Admin — virtueller Keyboard-Editor */
+
+.examkeymap-admin {
+    max-width: 980px;
+}
+
+.examkeymap-adm-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.examkeymap-adm-layoutbtn.active {
+    background: #2980b9;
+    border-color: #2980b9;
+    color: #fff;
+}
+
+.examkeymap-adm-dirty {
+    margin-left: auto;
+    color: #c0392b;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+/* ─── Keyboard ─── */
+
+.examkeymap-adm-keyboard {
+    background: #e8e8e8;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 10px;
+    user-select: none;
+}
+
+.examkeymap-adm-row {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 5px;
+}
+
+.examkeymap-adm-row:last-child {
+    margin-bottom: 0;
+}
+
+.examkeymap-adm-key {
+    position: relative;
+    flex: 1 0 0;
+    height: 52px;
+    background: #fff;
+    border: 1px solid #bbb;
+    border-bottom-width: 3px;
+    border-radius: 5px;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.examkeymap-adm-key:hover {
+    border-color: #2980b9;
+}
+
+.examkeymap-adm-key.selected {
+    border-color: #2980b9;
+    box-shadow: 0 0 0 2px rgba(41, 128, 185, 0.35);
+}
+
+.examkeymap-adm-key.override {
+    background: #fff7e0;
+    border-color: #e6a817;
+}
+
+.examkeymap-adm-key.disabled {
+    background: #f5d6d1;
+    border-color: #c0392b;
+}
+
+.examkeymap-adm-key.dead {
+    background: #d8d8d8;
+    border-color: #c0c0c0;
+    cursor: default;
+    color: #777;
+    font-size: 0.78rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.examkeymap-adm-shift {
+    position: absolute;
+    top: 3px;
+    left: 6px;
+    font-size: 0.72rem;
+    color: #888;
+}
+
+.examkeymap-adm-base {
+    position: absolute;
+    bottom: 3px;
+    left: 6px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #222;
+}
+
+.examkeymap-adm-altgr {
+    position: absolute;
+    bottom: 3px;
+    right: 6px;
+    font-size: 0.72rem;
+    color: #2980b9;
+}
+
+/* ─── Editor-Panel ─── */
+
+.examkeymap-adm-editor {
+    margin-top: 14px;
+    padding: 12px 14px;
+    background: #f7f7f7;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+}
+
+.examkeymap-adm-editor h4 {
+    margin: 0 0 10px;
+}
+
+.examkeymap-adm-fields {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 8px;
+}
+
+.examkeymap-adm-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-weight: 400;
+}
+
+.examkeymap-adm-field span {
+    font-size: 0.8rem;
+    color: #555;
+}
+
+.examkeymap-adm-field input {
+    width: 80px;
+    padding: 4px 8px;
+    font-size: 1rem;
+    text-align: center;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.examkeymap-adm-hint {
+    font-size: 0.82rem;
+    color: #777;
+    margin: 6px 0 10px;
+}
+
+.examkeymap-adm-remove {
+    margin-left: 8px;
+}
+
+#examkeymap-admin-form {
+    margin-top: 14px;
+}

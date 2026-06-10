@@ -1,0 +1,34 @@
+<!-- language file start -->
+title#:#Virtuelles Tastatur-Layout
+description#:#Clientseitiges Tastatur-Layout DE/EN für Kiosk-Geräte, umschaltbar im Testplayer; mit globaler Übersetzungstabelle
+enable#:#Virtuelles Tastatur-Layout aktivieren
+enable_info#:#Zeigt im Testplayer einen kleinen Umschalt-Button (OS → DE → EN). Bei gewähltem Layout werden Tastendrücke unabhängig vom OS-Tastaturlayout umgeschrieben — gedacht für ChromeOS-Geräte im Kioskmodus, bei denen die Eingabesprache nicht umgestellt werden kann.
+default_label#:#Standard-Layout beim ersten Laden
+default_off#:#Aus (OS-Layout, kein Umschreiben)
+default_de#:#Deutsch (QWERTZ)
+default_en#:#Englisch (QWERTY, EN-US)
+default_info#:#Layout, das beim ersten Aufruf des Tests vorausgewählt ist. Studierende können jederzeit per Button durch OS → DE → EN wechseln; die Wahl bleibt pro Browser-Tab erhalten.
+search_caps#:#Lupe-/Suchtaste als Feststelltaste
+search_caps_info#:#Auf ChromeOS-Geräten sitzt die Lupe-Taste auf der CapsLock-Position. Ist diese Option aktiv, wirkt ein kurzer Druck auf die Lupe als virtuelle Feststelltaste — nur bei aktivem Layout DE/EN, nicht im OS-Modus. Der Button zeigt dann ⇪ an.
+btn_tooltip#:#Tastatur-Layout umschalten (OS → DE → EN)
+btn_os#:#OS
+btn_de#:#DE
+btn_en#:#EN
+adm_intro#:#Globale Übersetzungstabelle: Hier können einzelne Tasten der eingebauten Layouts DE (QWERTZ) und EN-US (QWERTY) überschrieben werden. Die Änderungen gelten für alle Tests mit aktiviertem Modul. Taste anklicken, Belegung anpassen, dann unten speichern. Gelb = angepasste Taste, Rot = deaktivierte Taste (alle Ebenen leer).
+adm_layout_de#:#Deutsch (QWERTZ)
+adm_layout_en#:#Englisch (QWERTY)
+adm_base#:#Basis
+adm_shift#:#Shift
+adm_altgr#:#AltGr
+adm_apply#:#Übernehmen
+adm_remove#:#Auf Standard zurücksetzen
+adm_save#:#Speichern
+adm_saved#:#Übersetzungstabelle gespeichert (%s angepasste Tasten).
+adm_error_json#:#Die Daten konnten nicht gelesen werden (ungültiges Format).
+adm_error_save#:#Fehler beim Speichern der Übersetzungstabelle.
+adm_select_hint#:#Taste anklicken, um die Belegung zu bearbeiten.
+adm_override#:#Angepasst
+adm_key_disabled#:#Deaktiviert
+adm_empty_hint#:#Leeres Feld = Ebene nicht belegt (Tastendruck wird unverändert durchgereicht).
+adm_caps_hint#:#ChromeOS-Lupe — als Feststelltaste nutzbar (Einstellung pro Test in den Erweiterten Test-Einstellungen)
+adm_dirty_hint#:#Ungespeicherte Änderungen — unten „Speichern" klicken.

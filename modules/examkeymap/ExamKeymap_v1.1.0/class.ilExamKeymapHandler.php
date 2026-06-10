@@ -57,12 +57,12 @@ class ilExamKeymapHandler implements ilExamModuleInterface
         global $DIC;
         $db = $DIC->database();
 
-        $defaults = ['enabled' => false, 'default_layout' => 'off'];
+        $defaults = ['enabled' => false, 'default_layout' => 'off', 'search_caps' => false];
 
         try {
             $test_id = ilObject::_lookupObjectId($ref_id);
             $result = $db->queryF(
-                'SELECT enabled, default_layout FROM examkeymap_settings WHERE test_id = %s',
+                'SELECT enabled, default_layout, search_caps FROM examkeymap_settings WHERE test_id = %s',
                 ['integer'],
                 [$test_id]
             );
@@ -73,6 +73,7 @@ class ilExamKeymapHandler implements ilExamModuleInterface
                     'default_layout' => in_array($row['default_layout'], ['de', 'en', 'off'], true)
                         ? $row['default_layout']
                         : 'off',
+                    'search_caps'    => (bool) $row['search_caps'],
                 ];
             }
         } catch (Exception $e) {
@@ -80,6 +81,40 @@ class ilExamKeymapHandler implements ilExamModuleInterface
         }
 
         return $defaults;
+    }
+
+    /**
+     * Lädt die globale Übersetzungstabelle (Overrides aus der Administration).
+     * Rückgabe: ['de' => [keycode => ['b'=>…, 's'=>…, 'g'=>…]], 'en' => […]]
+     */
+    public function getCustomMap(): array
+    {
+        global $DIC;
+        $db = $DIC->database();
+
+        $custom = ['de' => [], 'en' => []];
+
+        try {
+            $result = $db->query(
+                'SELECT layout, keycode, base_char, shift_char, altgr_char FROM examkeymap_custom'
+            );
+            while ($row = $db->fetchAssoc($result)) {
+                $layout = $row['layout'];
+                if (!isset($custom[$layout])) {
+                    continue;
+                }
+                $custom[$layout][$row['keycode']] = [
+                    'b' => (string) ($row['base_char'] ?? ''),
+                    's' => (string) ($row['shift_char'] ?? ''),
+                    'g' => (string) ($row['altgr_char'] ?? ''),
+                ];
+            }
+        } catch (Exception $e) {
+            // Tabelle könnte fehlen (Update noch nicht eingespielt) → keine Overrides
+            error_log('[ExamKeymap] Fehler beim Laden der Übersetzungstabelle: ' . $e->getMessage());
+        }
+
+        return $custom;
     }
 
     /**
@@ -119,6 +154,8 @@ class ilExamKeymapHandler implements ilExamModuleInterface
 
         $config = $this->getConfig($ref_id);
         $config['ref_id'] = $ref_id;
+        $config['player'] = true;
+        $config['custom'] = $this->getCustomMap();
 
         // Sichtbare Button-Texte aus den Modul-Sprachdateien mitgeben —
         // das JS hat keinen Zugriff auf den Plugin-Übersetzer.
@@ -149,9 +186,10 @@ class ilExamKeymapHandler implements ilExamModuleInterface
         $db = $DIC->database();
 
         try {
-            $obj_id  = ilObject::_lookupObjectId($ref_id);
-            $enabled = isset($post_data['examkeymap_enabled']) ? 1 : 0;
-            $default = $post_data['examkeymap_default'] ?? 'off';
+            $obj_id      = ilObject::_lookupObjectId($ref_id);
+            $enabled     = isset($post_data['examkeymap_enabled']) ? 1 : 0;
+            $search_caps = isset($post_data['examkeymap_search_caps']) ? 1 : 0;
+            $default     = $post_data['examkeymap_default'] ?? 'off';
 
             if (!in_array($default, ['de', 'en', 'off'], true)) {
                 $default = 'off';
@@ -175,6 +213,7 @@ class ilExamKeymapHandler implements ilExamModuleInterface
                 [
                     'enabled'        => ['integer',   $enabled],
                     'default_layout' => ['text',      $default],
+                    'search_caps'    => ['integer',   $search_caps],
                     'created_at'     => ['timestamp', $created],
                     'updated_at'     => ['timestamp', $now],
                 ]
@@ -207,7 +246,12 @@ class ilExamKeymapHandler implements ilExamModuleInterface
         $sel->setValue($config['default_layout']);
         $sel->setInfo($this->lng->txt('default_info'));
 
+        $caps = new ilCheckboxInputGUI($this->lng->txt('search_caps'), 'examkeymap_search_caps');
+        $caps->setChecked($config['search_caps']);
+        $caps->setInfo($this->lng->txt('search_caps_info'));
+
         $cb->addSubItem($sel);
+        $cb->addSubItem($caps);
 
         return [$cb];
     }
@@ -222,7 +266,7 @@ class ilExamKeymapHandler implements ilExamModuleInterface
             'title'       => $this->lng->txt('title'),
             'icon'        => '⌨',
             'description' => $this->lng->txt('description'),
-            'version'     => '1.0.0',
+            'version'     => '1.1.0',
             'features'    => [
                 'Virtuelles Tastatur-Layout DE (QWERTZ) / EN-US (QWERTY), unabhängig vom OS-Layout',
                 'Umschalt-Button im Testplayer: OS → DE → EN → OS',
@@ -230,6 +274,8 @@ class ilExamKeymapHandler implements ilExamModuleInterface
                 'AltGr-Belegung DE: @ € { } [ ] \\ ~ | µ ² ³, Umlaute ä ö ü ß',
                 'Funktioniert in input, textarea und TinyMCE (Freitextfragen)',
                 'Layout-Wahl überlebt Fragennavigation (sessionStorage pro Test)',
+                'Lupe-/Suchtaste (ChromeOS) als Feststelltaste nutzbar (pro Test)',
+                'Globale Übersetzungstabelle mit virtuellem Keyboard-Editor in der Administration',
             ],
         ];
     }
