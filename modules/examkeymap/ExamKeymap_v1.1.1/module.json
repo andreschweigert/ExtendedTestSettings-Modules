@@ -1,8 +1,8 @@
 {
     "id": "examkeymap",
     "label": "Virtuelles Tastatur-Layout",
-    "description": "Clientseitiges Tastatur-Layout DE/EN für Kiosk-Geräte: schreibt Tastendrücke layoutunabhängig um (KeyboardEvent.code), umschaltbar per Button im Testplayer. Mit globaler Übersetzungstabelle und Lupe-als-Feststelltaste-Option.",
-    "version": "1.1.0",
+    "description": "Clientseitiges Tastatur-Layout DE/EN für Kiosk-Geräte: schreibt Tastendrücke layoutunabhängig um (KeyboardEvent.code), umschaltbar per Button im Testplayer. Mit globaler Übersetzungstabelle und virtueller Feststelltaste.",
+    "version": "1.1.1",
     "ilias_min": "9",
     "ilias_max": "9",
     "handler_class": "ilExamKeymapHandler",

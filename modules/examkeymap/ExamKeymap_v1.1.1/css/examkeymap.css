@@ -1,9 +1,9 @@
-/* ExamKeymap — Umschalt-Button (klein, dezent, fixiert unten rechts) */
+/* ExamKeymap — Umschalt-Button + ⇪-Button (klein, dezent, fixiert unten rechts) */
 
-#examkeymap-btn {
+#examkeymap-btn,
+#examkeymap-caps-btn {
     position: fixed;
     right: 16px;
-    bottom: 16px;
     z-index: 999990; /* über dem Testplayer, unter Modul-Overlays (999999) */
     padding: 6px 14px;
     border: 1px solid #ccc;
@@ -20,8 +20,18 @@
     opacity: 0.85;
 }
 
+#examkeymap-btn {
+    bottom: 16px;
+}
+
+#examkeymap-caps-btn {
+    bottom: 58px;
+}
+
 #examkeymap-btn:hover,
-#examkeymap-btn:focus {
+#examkeymap-btn:focus,
+#examkeymap-caps-btn:hover,
+#examkeymap-caps-btn:focus {
     opacity: 1;
 }
 
@@ -30,4 +40,11 @@
 #examkeymap-btn[data-layout="en"] {
     border-color: #2980b9;
     color: #2980b9;
+}
+
+/* Feststelltaste aktiv → invertiert */
+#examkeymap-caps-btn[data-active="1"] {
+    background: #2980b9;
+    border-color: #2980b9;
+    color: #fff;
 }

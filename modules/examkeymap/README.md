@@ -6,9 +6,9 @@ Stellt im Testplayer ein **virtuelles Tastatur-Layout (DE/EN)** bereit — für 
 
 Funktioniert in `input[type=text]`, `textarea` und im TinyMCE-Editor der Freitextfragen (contenteditable im iframe, wird laufend nachregistriert). Die Layout-Wahl wird pro Browser-Tab gemerkt (`sessionStorage`) und überlebt die Fragennavigation.
 
-**Seit 1.1.0:**
+**Seit 1.1.0/1.1.1:**
 
-- **Lupe-/Suchtaste als Feststelltaste** (pro Test): Auf Chromebooks sitzt die Lupe auf der CapsLock-Position. Ein kurzer Tap wirkt dann als virtuelle Feststelltaste (nur bei aktivem Layout DE/EN); der Button zeigt ⇪. Tap-Erkennung: Kombis wie Lupe+Taste toggeln nicht.
+- **Virtuelle Feststelltaste** (pro Test): Ein ⇪-Button über dem Layout-Button wirkt als Feststelltaste (nur bei aktivem Layout DE/EN). Zusätzlich toggelt die Lupe-/Suchtaste (CapsLock-Position auf Chromebooks), sofern das Gerät den Tastendruck durchreicht — im ChromeOS-Kioskmodus schluckt das System den Einzeldruck meist, dort ist der ⇪-Button der verlässliche Weg (Grund für 1.1.1).
 - **Globale Übersetzungstabelle** in der Plugin-Administration (Tab „Tastatur-Layout"): Ein gezeichnetes virtuelles ISO-Keyboard zeigt die Belegungen beider Layouts; per Klick auf eine Taste lassen sich Basis/Shift/AltGr überschreiben oder Tasten deaktivieren. Die Overrides gelten für alle Tests.
 
 ## Konfiguration
@@ -77,7 +77,8 @@ Tabelle `examkeymap_custom` (global, Übersetzungstabelle):
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
-| 1.1.0 | `ExamKeymap_v1.1.0.zip` | 9 | Lupe-/Suchtaste als Feststelltaste (pro Test), globale Übersetzungstabelle mit virtuellem Keyboard-Editor in der Administration (benötigt Plugin-Update mit Tab „Tastatur-Layout") |
+| 1.1.1 | `ExamKeymap_v1.1.1.zip` | 9 | Virtueller ⇪-Feststelltasten-Button im Testplayer (ChromeOS-Kioskmodus schluckt den Lupe-Einzeldruck); Lupe-Toggle bleibt als Fallback |
+| 1.1.0 | `archive/ExamKeymap_v1.1.0.zip` | 9 | Lupe-/Suchtaste als Feststelltaste (pro Test), globale Übersetzungstabelle mit virtuellem Keyboard-Editor in der Administration (benötigt Plugin-Update mit Tab „Tastatur-Layout") |
 | 1.0.0 | `archive/ExamKeymap_v1.0.0.zip` | 9 | Initiale Version: Layouts DE (ISO QWERTZ) + EN-US (QWERTY), Drei-Zustände-Button, TinyMCE-Support, sessionStorage-Persistenz |
 
 ## Installation

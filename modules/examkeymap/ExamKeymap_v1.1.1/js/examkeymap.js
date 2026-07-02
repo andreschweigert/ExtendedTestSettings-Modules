@@ -10,8 +10,11 @@
  * Ein fixierter Button unten rechts rotiert durch: OS → DE → EN → OS.
  * Zustand "OS" = Pass-through (kein Eingriff).
  *
- * Optional (pro Test): Die ChromeOS-Lupe-/Suchtaste (physisch auf der
- * CapsLock-Position, code "MetaLeft") wirkt als virtuelle Feststelltaste.
+ * Virtuelle Feststelltaste (Option pro Test): primär über einen ⇪-Button
+ * über dem Layout-Button — im ChromeOS-Kioskmodus schluckt das System den
+ * Einzeldruck der Lupe-/Suchtaste, sodass KEIN Key-Event ankommt. Falls das
+ * Gerät den Tastendruck doch durchreicht (MetaLeft/OSLeft), toggelt auch die
+ * Taste selbst (sofort beim keydown, Rücknahme bei Kombination).
  *
  * Die eingebauten Tabellen werden als window.ExamKeymap.tables exponiert —
  * der Keyboard-Editor in der Administration (examkeymap_admin.js) nutzt sie.
@@ -191,13 +194,23 @@
         setLayout(CYCLE[(idx + 1) % CYCLE.length]);
     }
 
-    // ─── Virtuelle Feststelltaste (Lupe-/Suchtaste, code "MetaLeft") ────────
-    // Tap-Erkennung wie bei echten Modifiern: Toggle nur, wenn zwischen
-    // keydown und keyup der Lupe-Taste KEINE andere Taste gedrückt wurde
-    // (sonst würden OS-Shortcuts wie Lupe+L die Feststellung mit-toggeln).
+    // ─── Virtuelle Feststelltaste ────────────────────────────────────────────
+    // Primäre Bedienung: ⇪-Button (im ChromeOS-Kioskmodus erreicht der
+    // Einzeldruck der Lupe-Taste die Seite NICHT — das System schluckt ihn).
+    // Zusätzlich, falls Events ankommen: Lupe-/Suchtaste (MetaLeft, je nach
+    // Chrome-Version auch OSLeft) toggelt sofort beim keydown — Launcher/
+    // Startmenü öffnen erst beim keyup, bis dahin ist der Toggle durch.
+    // Folgt eine Kombination (Lupe+Taste = OS-Shortcut), wird zurückgetoggelt.
 
     var virtualCaps = false;
-    var metaTapPending = false;
+    var searchKeyDown = false;
+    var searchToggled = false;
+
+    function isSearchKey(e) {
+        return e.code === 'MetaLeft' || e.code === 'MetaRight'
+            || e.code === 'OSLeft' || e.code === 'OSRight'
+            || (!e.code && e.key === 'Meta');
+    }
 
     function loadVirtualCaps() {
         try {
@@ -256,7 +269,7 @@
             var shift = e.shiftKey;
 
             // CapsLock invertiert Shift nur bei Buchstaben (inkl. Umlauten).
-            // XOR aus echter CapsLock und virtueller Feststelltaste (Lupe).
+            // XOR aus echter CapsLock und virtueller Feststelltaste.
             var realCaps = !!(e.getModifierState && e.getModifierState('CapsLock'));
             var caps = realCaps !== (searchCapsActive() && virtualCaps);
             if (entry.b && isLetter(entry.b) && caps) {
@@ -345,16 +358,24 @@
             return;
         }
 
-        // Lupe-/Suchtaste: Tap-Erkennung für virtuelle Feststelltaste
-        if (e.code === 'MetaLeft') {
-            if (searchCapsActive() && !e.repeat) {
-                metaTapPending = true;
+        // Lupe-/Suchtaste: sofort beim keydown toggeln (falls das Event
+        // überhaupt ankommt — im Kioskmodus meist nicht, siehe oben)
+        if (isSearchKey(e)) {
+            if (!e.repeat && !searchKeyDown) {
+                searchKeyDown = true;
+                searchToggled = false;
+                if (searchCapsActive()) {
+                    toggleVirtualCaps();
+                    searchToggled = true;
+                }
             }
             return;
         }
-        if (e.metaKey) {
-            // andere Taste während Lupe gehalten → kein Tap (OS-Shortcut)
-            metaTapPending = false;
+
+        // Lupe+Taste = Kombination (OS-Shortcut) → Toggle zurücknehmen
+        if ((searchKeyDown || e.metaKey) && searchToggled) {
+            toggleVirtualCaps();
+            searchToggled = false;
         }
 
         var layout = currentLayout();
@@ -405,17 +426,16 @@
         if (e.code === 'AltRight') {
             altRightDown = false;
         }
-        if (e.code === 'MetaLeft' && metaTapPending) {
-            metaTapPending = false;
-            if (searchCapsActive()) {
-                toggleVirtualCaps();
-            }
+        if (isSearchKey(e)) {
+            searchKeyDown = false;
+            searchToggled = false;
         }
     }
 
     function onWindowBlur() {
         altRightDown = false;
-        metaTapPending = false;
+        searchKeyDown = false;
+        searchToggled = false;
     }
 
     // ─── Listener-Registrierung (Hauptdokument + TinyMCE-iframes) ───────────
@@ -453,20 +473,32 @@
         }
     }
 
-    // ─── Umschalt-Button ─────────────────────────────────────────────────────
+    // ─── Buttons (Layout-Umschalter + Feststelltaste) ────────────────────────
 
     var button = null;
+    var capsButton = null;
 
     function ensureButton() {
         if (button || !document.body || !cfg().player) {
             return;
         }
         loadVirtualCaps();
+
         button = document.createElement('button');
         button.id = 'examkeymap-btn';
         button.type = 'button';
         button.addEventListener('click', cycleLayout);
         document.body.appendChild(button);
+
+        // ⇪-Button: primäre Bedienung der virtuellen Feststelltaste
+        // (Lupe-Einzeldruck kommt im Kioskmodus nicht im Browser an)
+        capsButton = document.createElement('button');
+        capsButton.id = 'examkeymap-caps-btn';
+        capsButton.type = 'button';
+        capsButton.textContent = '⇪';
+        capsButton.addEventListener('click', toggleVirtualCaps);
+        document.body.appendChild(capsButton);
+
         renderButton();
     }
 
@@ -480,10 +512,15 @@
             de: txt('de', 'DE'),
             en: txt('en', 'EN')
         };
-        var caps = (searchCapsActive() && virtualCaps) ? ' ⇪' : '';
-        button.textContent = '⌨ ' + labels[layout] + caps;
+        button.textContent = '⌨ ' + labels[layout];
         button.title = txt('tooltip', 'Tastatur-Layout umschalten (OS → DE → EN)');
         button.setAttribute('data-layout', layout);
+
+        if (capsButton) {
+            capsButton.style.display = searchCapsActive() ? '' : 'none';
+            capsButton.title = txt('caps_tooltip', 'Feststelltaste umschalten (Großschreibung)');
+            capsButton.setAttribute('data-active', virtualCaps ? '1' : '0');
+        }
     }
 
     // ─── Init ────────────────────────────────────────────────────────────────

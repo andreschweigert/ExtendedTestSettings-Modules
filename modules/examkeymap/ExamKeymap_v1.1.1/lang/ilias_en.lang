@@ -8,9 +8,10 @@ default_off#:#Off (OS layout, no rewriting)
 default_de#:#German (QWERTZ)
 default_en#:#English (QWERTY, EN-US)
 default_info#:#Layout preselected when the test is first opened. Students can switch through OS → DE → EN via the button at any time; the choice persists per browser tab.
-search_caps#:#Search key as Caps Lock
-search_caps_info#:#On ChromeOS devices the Search key sits on the Caps Lock position. With this option enabled, a short tap on the Search key acts as a virtual Caps Lock — only while layout DE/EN is active, not in OS mode. The button then shows ⇪.
+search_caps#:#Virtual Caps Lock (⇪ button / Search key)
+search_caps_info#:#Shows a ⇪ button above the layout button in the test player that acts as a Caps Lock (only while layout DE/EN is active). Additionally, the Search key toggles the lock if the device passes the keystroke through — in ChromeOS kiosk mode the lone Search key press is usually swallowed by the system, so the ⇪ button is the reliable way. The real Caps Lock (on ChromeOS: Alt+Search) is respected independently.
 btn_tooltip#:#Switch keyboard layout (OS → DE → EN)
+btn_caps_tooltip#:#Toggle Caps Lock (uppercase)
 btn_os#:#OS
 btn_de#:#DE
 btn_en#:#EN

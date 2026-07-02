@@ -160,10 +160,11 @@ class ilExamKeymapHandler implements ilExamModuleInterface
         // Sichtbare Button-Texte aus den Modul-Sprachdateien mitgeben —
         // das JS hat keinen Zugriff auf den Plugin-Übersetzer.
         $config['txt'] = [
-            'tooltip' => $this->lng->txt('btn_tooltip'),
-            'os'      => $this->lng->txt('btn_os'),
-            'de'      => $this->lng->txt('btn_de'),
-            'en'      => $this->lng->txt('btn_en'),
+            'tooltip'      => $this->lng->txt('btn_tooltip'),
+            'caps_tooltip' => $this->lng->txt('btn_caps_tooltip'),
+            'os'           => $this->lng->txt('btn_os'),
+            'de'           => $this->lng->txt('btn_de'),
+            'en'           => $this->lng->txt('btn_en'),
         ];
 
         $tpl->addCss($this->plugin_path . '/modules/examkeymap/css/examkeymap.css');
@@ -266,7 +267,7 @@ class ilExamKeymapHandler implements ilExamModuleInterface
             'title'       => $this->lng->txt('title'),
             'icon'        => '⌨',
             'description' => $this->lng->txt('description'),
-            'version'     => '1.1.0',
+            'version'     => '1.1.1',
             'features'    => [
                 'Virtuelles Tastatur-Layout DE (QWERTZ) / EN-US (QWERTY), unabhängig vom OS-Layout',
                 'Umschalt-Button im Testplayer: OS → DE → EN → OS',
@@ -274,7 +275,7 @@ class ilExamKeymapHandler implements ilExamModuleInterface
                 'AltGr-Belegung DE: @ € { } [ ] \\ ~ | µ ² ³, Umlaute ä ö ü ß',
                 'Funktioniert in input, textarea und TinyMCE (Freitextfragen)',
                 'Layout-Wahl überlebt Fragennavigation (sessionStorage pro Test)',
-                'Lupe-/Suchtaste (ChromeOS) als Feststelltaste nutzbar (pro Test)',
+                'Virtuelle Feststelltaste: ⇪-Button im Testplayer + Lupe-Taste (pro Test)',
                 'Globale Übersetzungstabelle mit virtuellem Keyboard-Editor in der Administration',
             ],
         ];

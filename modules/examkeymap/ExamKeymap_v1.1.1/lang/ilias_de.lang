@@ -8,9 +8,10 @@ default_off#:#Aus (OS-Layout, kein Umschreiben)
 default_de#:#Deutsch (QWERTZ)
 default_en#:#Englisch (QWERTY, EN-US)
 default_info#:#Layout, das beim ersten Aufruf des Tests vorausgewählt ist. Studierende können jederzeit per Button durch OS → DE → EN wechseln; die Wahl bleibt pro Browser-Tab erhalten.
-search_caps#:#Lupe-/Suchtaste als Feststelltaste
-search_caps_info#:#Auf ChromeOS-Geräten sitzt die Lupe-Taste auf der CapsLock-Position. Ist diese Option aktiv, wirkt ein kurzer Druck auf die Lupe als virtuelle Feststelltaste — nur bei aktivem Layout DE/EN, nicht im OS-Modus. Der Button zeigt dann ⇪ an.
+search_caps#:#Virtuelle Feststelltaste (⇪-Button / Lupe-Taste)
+search_caps_info#:#Zeigt im Testplayer einen ⇪-Button über dem Layout-Button, der wie eine Feststelltaste wirkt (nur bei aktivem Layout DE/EN). Zusätzlich toggelt die Lupe-/Suchtaste die Feststellung, sofern das Gerät den Tastendruck durchreicht — im ChromeOS-Kioskmodus wird der Einzeldruck der Lupe meist vom System geschluckt, dort ist der ⇪-Button der verlässliche Weg. Die echte Feststelltaste (unter ChromeOS: Alt+Lupe) wird unabhängig davon berücksichtigt.
 btn_tooltip#:#Tastatur-Layout umschalten (OS → DE → EN)
+btn_caps_tooltip#:#Feststelltaste umschalten (Großschreibung)
 btn_os#:#OS
 btn_de#:#DE
 btn_en#:#EN
