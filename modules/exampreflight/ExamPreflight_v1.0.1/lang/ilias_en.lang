@@ -1,0 +1,54 @@
+<!-- language file start -->
+title#:#Preflight Run
+description#:#Guided dry run: checks images, videos, formulas and layout for every question and captures screenshots for a review report
+settings_intro#:#Starts a guided dry run through this test. For every question, media, formulas and layout are checked automatically and screenshots are captured (optional).
+settings_info#:#The dry run creates a regular test attempt for your account. Delete it via the participants tab before the exam starts.
+start_cockpit#:#Start preflight run
+show_reports#:#Show review reports
+last_run_summary#:#Last run on %s: %d questions checked, %d errors, %d warnings
+cockpit_title#:#Preflight Run
+report_title#:#Preflight Review Report
+access_denied#:#Access denied.
+state_idle#:#Ready
+state_waiting#:#Waiting for test player
+state_running#:#Running
+state_paused#:#Paused
+state_done#:#Completed
+state_aborted#:#Aborted
+state_error#:#Error — run stopped
+hint_initial#:#Click "Start run". Then start the test in the window below — checking begins automatically with the first question.
+hint_capture#:#Please confirm the browser dialog to share this tab (needed for screenshots).
+hint_capture_denied#:#Screen sharing denied — the run continues without screenshots.
+hint_start_test#:#Please start the test in the window below now ("Start test" or "Resume test").
+hint_running#:#Run in progress — questions are checked automatically. Please do not click inside the test window.
+hint_done#:#Run completed. Note: delete this account's test attempt via the participants tab before the exam.
+hint_done_page#:#Test finish page reached.
+hint_aborted#:#Run aborted. Questions checked so far are stored in the report.
+hint_non_question#:#The player is not showing a question right now (modal/intermediate page). Check the test window and continue with "Resume".
+with_screenshots#:#With screenshots
+btn_start#:#Start run
+btn_pause#:#Pause / Resume
+btn_stop#:#Abort
+progress_of#:#of
+question_short#:#Question
+anomalies_found#:#anomalies found
+open_report#:#Open report
+confirm_stop#:#Really abort this run? Questions checked so far remain stored.
+finding_prefix#:#Finding
+no_runs#:#No preflight runs for this test yet.
+no_results#:#No question results in this run.
+no_findings#:#No findings
+th_run#:#Run
+th_date#:#Date
+th_user#:#Checked by
+th_status#:#Status
+th_questions#:#Questions
+th_findings#:#Findings
+status_running#:#still running
+status_completed#:#completed
+status_aborted#:#aborted
+run_detail_heading#:#Run #%d — results per question
+run_still_running#:#This run has not finished yet — results may be incomplete.
+testdata_note#:#Note: the preflight run creates a regular test attempt for the checking account. Delete it via "Participants" before the exam starts.
+run_deleted#:#Run deleted.
+confirm_delete_run#:#Delete this run including all screenshots?

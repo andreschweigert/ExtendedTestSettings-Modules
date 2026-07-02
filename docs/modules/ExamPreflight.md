@@ -1,0 +1,179 @@
+# ExamPreflight — Entwicklerdokumentation
+
+**Modul-ID:** `exampreflight`
+**Speicherort:** `modules/exampreflight/` (externes Modul)
+**Referenz-ZIP:** `modules-zip/modules/exampreflight/ExamPreflight_v1.0.1.zip`
+**Zuletzt aktualisiert:** 2026-07-02
+
+---
+
+## Was ist ExamPreflight?
+
+Geführter Probedurchlauf ("Preflight" wie beim Flugzeug) durch einen Test vor der
+Prüfung. Während ExamChecker die **Einstellungen** gegen Standards prüft, prüft
+ExamPreflight das tatsächliche **Rendering** jeder Frage: Bilder, Video/Audio,
+Formeln, Layout — inklusive Screenshot pro Frage für den Prüfbericht.
+
+**Architektur-Grundidee:** Der Testplayer läuft in einem **same-origin iframe**
+innerhalb einer Cockpit-Seite (Modul-GUI). Das Cockpit-JS greift von außen auf das
+iframe-DOM zu, führt die Checks aus, macht Screenshots über die Screen-Capture-API
+und klickt selbst auf „Weiter". Dadurch:
+
+- **kein** Code-Injection in den Testplayer (`isEnabled()` → immer `false`,
+  `injectAssets()` no-op) — echte Prüfungsdurchläufe bleiben unberührt
+- die Screen-Capture-Freigabe überlebt die Player-Navigation, weil die Cockpit-Seite
+  (Inhaberin des MediaStream) nie neu lädt — bei Injection ins Player-Fenster würde
+  jede Fragen-Navigation den Stream beenden
+
+---
+
+## Dateistruktur
+
+```
+modules/exampreflight/
+├── module.json                        ← gui_file/gui_class gesetzt, 2 Tabellen
+├── class.ilExamPreflightHandler.php   ← Handler: nur Buttons in den Test-Einstellungen
+├── class.ilExamPreflightGUI.php       ← Cockpit + AJAX-Endpunkte + Prüfbericht
+├── js/exampreflight.js                ← gesamte Durchlauf-Logik (Zustandsmaschine)
+├── css/exampreflight.css              ← Cockpit + Berichts-Styles
+├── lang/ilias_de.lang, ilias_en.lang
+└── sql/install.php, uninstall.php
+```
+
+---
+
+## Datenbank
+
+### `exampreflight_runs` — ein Datensatz pro Durchlauf
+
+| Spalte | Inhalt |
+|---|---|
+| `run_id` (PK, Sequence) | Lauf-ID |
+| `test_obj_id`, `test_ref_id` | Test-Zuordnung |
+| `user_id` | Prüfer |
+| `status` | `running` / `completed` / `aborted` |
+| `started_at`, `finished_at` | Unix-Timestamps |
+| `questions_checked`, `error_count`, `warning_count` | Aggregation (bei finishRun serverseitig aus results berechnet) |
+| `meta` (clob) | JSON: userAgent, viewport, screenshots ja/nein |
+
+### `exampreflight_results` — ein Datensatz pro geprüfter Frage
+
+| Spalte | Inhalt |
+|---|---|
+| `result_id` (PK, Sequence), `run_id` (Index) | Zuordnung |
+| `position` | laufende Nummer im Durchlauf |
+| `title`, `qtype` | Fragentitel (aus DOM), heuristischer Fragetyp |
+| `status` | `ok` / `warn` / `fail` (serverseitig aus den Befunden abgeleitet) |
+| `error_count`, `warning_count` | Befund-Zählung |
+| `checks` (clob) | JSON-Array der Befunde `{check, level, message, detail}` |
+| `page_url` | Player-URL der Frage |
+| `shot_file`, `shot_w`, `shot_h` | Screenshot-Dateiname (serverseitig generiert: `qNNN.jpg`) + Maße |
+
+### Screenshots (Dateisystem)
+
+```
+<CLIENT_DATA_DIR>/plugins/ExtendedTestSettings/exampreflight/<test_obj_id>/<run_id>/qNNN.jpg
+```
+
+Gelöscht bei „Lauf löschen" und bei Modul-Deinstallation (`sql/uninstall.php`).
+
+---
+
+## GUI-Kommandos (`class.ilExamPreflightGUI.php`)
+
+Alle über den Proxy geroutet, **alle** erfordern Schreibrecht am Test
+(kein `allow_student_access`):
+
+| cmd | Art | Zweck |
+|---|---|---|
+| `show` | GET | Cockpit-Seite (Statusleiste + iframe) |
+| `startRun` | POST (AJAX) | Lauf anlegen → `{runId}` |
+| `report` | POST (AJAX, multipart) | Fragen-Ergebnis + Screenshot speichern |
+| `finishRun` | POST (AJAX) | Lauf abschließen (`completed`/`aborted`), Aggregation |
+| `showReport` | GET | Läufe-Tabelle + Fragen-Karten des gewählten Laufs |
+| `screenshot` | GET | Screenshot ausliefern (`result_id`, Zugehörigkeit wird geprüft) |
+| `deleteRun` | **POST** | Lauf + Screenshots löschen — CSRF-geschützt via Session-Token (`epf_token`) |
+
+Sicherheitsdetails:
+- `report`/`finishRun` binden den Lauf an `run_id + test_obj_id + user_id + status='running'`
+  (`getOwnRunningRun()`) — fremde/abgeschlossene Läufe sind nicht beschreibbar
+- Screenshot-Dateiname wird **serverseitig** erzeugt; Upload max. 8 MB, `is_uploaded_file`
+- `screenshot`/`deleteRun` verifizieren, dass der Lauf zum per Proxy autorisierten Test gehört
+
+---
+
+## Cockpit-JS: Zustandsmaschine
+
+```
+idle → (Start-Klick: optional getDisplayMedia + startRun) → waiting
+waiting → (iframe lädt Fragenseite: #taForm + .tst_question-container) → running
+running → pro Frage: waitForMedia → runChecks → takeScreenshot → uploadResult → clickNext
+running ⇄ paused   (Pause-Button; Resume auf bereits verarbeiteter Seite → nur clickNext)
+running → done      (kein Weiter-Button mehr / Abschlussseite erreicht → finishRun)
+running → aborted   (Stop-Button oder Schleifenerkennung)
+```
+
+Wichtige Mechanik:
+- **Duplikat-/Schleifenschutz:** `pageKey` = `sequence`-Parameter + Titel. Gleiche Seite
+  erneut geladen → einmal erneut „Weiter" versuchen, beim zweiten Mal Lauf abbrechen.
+- **Modal-Handling:** Wenn ILIAS statt zu navigieren einen Bestätigungs-Modal zeigt
+  (z.B. „Antwort festschreiben"), wird nach 2 s dessen Primär-Button geklickt.
+  Passiert 8 s gar nichts → Pause statt Hängen.
+- **Der Test wird nie automatisch abgegeben** — nach der letzten Frage endet nur der Lauf.
+
+### Checks pro Frage
+
+| check | Level | Bedingung |
+|---|---|---|
+| `broken_image` | error | `img.complete && naturalWidth === 0` |
+| `slow_image` | warning | Bild nach Wartezeit (10 s Cap) nicht fertig |
+| `broken_media` | error | `media.error` oder `NETWORK_NO_SOURCE` |
+| `slow_media` | warning | `readyState === 0` nach Wartezeit |
+| `empty_video` | error | Metadaten da, aber `videoWidth/Height === 0` |
+| `empty_iframe` / `external_iframe` | warning / info | leerer bzw. cross-origin Frame — nur sichtbare Frames (>10×10 px) mit echter `src` (unsichtbare Hilfs-iframes wie TinyMCE werden ignoriert) |
+| `math_error` | error | `merror, .MathJax_Error, mjx-merror` vorhanden |
+| `h_overflow` | warning | `scrollWidth > clientWidth` am Delos-Scroll-Container |
+| `protruding` | warning | Elemente ragen > 12 px aus `.tst_question-container` |
+| `empty_question` | error | Fragenbereich ohne Text und ohne interaktive Elemente |
+| `http_error` | error | `PerformanceResourceTiming.responseStatus >= 400` (nur neuere Browser) |
+| `js_error` | warning | `window.onerror` im iframe (ab Seiten-Load) |
+
+### Screenshot-Mechanik (Screen-Capture-API)
+
+- `getDisplayMedia({preferCurrentTab: true, selfBrowserSurface: 'include'})` — ein
+  Freigabe-Dialog beim Start (Chrome/Edge schlagen den eigenen Tab vor). Ablehnung
+  → Lauf läuft ohne Screenshots weiter.
+- **Delos-Detail:** ILIAS 9 scrollt nicht im `document`, sondern in
+  `.il-layout-page-content`. Die Segmentierung scrollt daher **diesen Container** im
+  iframe durch (`getScroller()`), erfasst pro Segment den sichtbaren Container-Bereich
+  aus dem Video-Frame und setzt die Segmente auf einem Canvas zur vollen Fragenhöhe
+  zusammen (max. `maxSegments` = 5). Koordinaten-Mapping:
+  `scale = videoWidth / window.innerWidth` (≈ devicePixelRatio bei Tab-Capture).
+- Ausgabe: JPEG (Qualität 0.85) via `canvas.toBlob`, Upload als multipart FormData.
+
+---
+
+## Grenzen / bewusste Entscheidungen
+
+- **Testlauf-Daten:** Der Durchlauf erzeugt einen echten Testlauf (`tst_active`) für den
+  Prüfer. Bewusst kein automatisches Löschen (keine Schreibzugriffe auf ILIAS-Kerntabellen
+  per Konvention) — Hinweis mit Handlungsanweisung erscheint im Bericht und in den
+  Einstellungen.
+- **Screenshots in Firefox:** kein `preferCurrentTab` — Nutzer muss im Picker das
+  Browserfenster wählen; Mapping stimmt dann nur näherungsweise. Empfehlung: Chrome/Edge.
+- **`http_error`-Check** ist opportunistisch (`responseStatus` erst ab Chrome 109+).
+- **JS-Fehler beim Seitenaufbau** (vor dem `load`-Event) werden nicht erfasst — der
+  Listener wird erst nach dem Load angehängt.
+- Zwischenseiten (Passwort, Einleitung, Zugangscode) werden nicht geprüft — das Cockpit
+  wartet, bis der Prüfer sie durchklickt.
+- Fragentyp-Erkennung ist eine grobe DOM-Heuristik (radio→SingleChoice etc.), rein
+  informativ.
+
+---
+
+## Changelog
+
+| Datum | Was |
+|---|---|
+| 2026-07-02 | **v1.0.1:** `empty_iframe`-Check nur noch für sichtbare Frames (>10×10 px) mit echter `src` (nicht leer, nicht `about:blank`) — vorher False Positive auf jeder Fragenseite durch unsichtbare Hilfs-iframes (TinyMCE bzw. andere Module) |
+| 2026-07-02 | **v1.0.0:** Initiale Version — Cockpit mit iframe-Durchlauf, 12 Check-Typen, segmentierte Screenshots via Screen-Capture-API, Prüfbericht mit Fragen-Karten, CSRF-geschütztes Lauf-Löschen |

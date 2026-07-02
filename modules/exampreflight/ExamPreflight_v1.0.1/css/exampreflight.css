@@ -1,0 +1,158 @@
+/* ExamPreflight — Cockpit + Prüfbericht */
+
+/* ─── Cockpit ─── */
+
+#epf-cockpit {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#epf-statusbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.epf-status-left,
+.epf-status-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.epf-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 12px;
+    color: #fff;
+    background: #999;
+}
+
+.epf-badge-idle    { background: #999; }
+.epf-badge-waiting { background: #31708f; }
+.epf-badge-running { background: #3c763d; }
+.epf-badge-paused  { background: #8a6d3b; }
+.epf-badge-done    { background: #3c763d; }
+.epf-badge-aborted { background: #a94442; }
+.epf-badge-error   { background: #a94442; }
+
+.epf-shot-toggle {
+    font-weight: normal;
+    margin: 0;
+    cursor: pointer;
+}
+
+.epf-hint {
+    padding: 6px 12px;
+    background: #d9edf7;
+    border: 1px solid #bce8f1;
+    border-radius: 4px;
+    color: #31708f;
+}
+
+#epf-findings {
+    max-height: 120px;
+    overflow-y: auto;
+    font-size: 12px;
+}
+
+.epf-finding-line {
+    padding: 2px 8px;
+    border-left: 3px solid #ccc;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.epf-finding-ok      { border-left-color: #3c763d; }
+.epf-finding-warn    { border-left-color: #8a6d3b; background: #fcf8e3; }
+.epf-finding-fail    { border-left-color: #a94442; background: #f2dede; }
+.epf-finding-summary { border-left-color: #31708f; background: #d9edf7; padding: 6px 8px; }
+
+#epf-frame {
+    width: 100%;
+    height: calc(100vh - 340px);
+    min-height: 480px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #fff;
+}
+
+/* ─── Prüfbericht ─── */
+
+.epf-runlist {
+    margin-bottom: 20px;
+}
+
+.epf-run-active td {
+    background: #d9edf7 !important;
+}
+
+.epf-run-note {
+    padding: 6px 12px;
+    background: #fcf8e3;
+    border: 1px solid #faebcc;
+    border-radius: 4px;
+    color: #8a6d3b;
+}
+
+.epf-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.epf-card {
+    border: 1px solid #ddd;
+    border-left-width: 4px;
+    border-radius: 4px;
+    background: #fff;
+}
+
+.epf-card-ok   { border-left-color: #3c763d; }
+.epf-card-warn { border-left-color: #f0ad4e; }
+.epf-card-fail { border-left-color: #a94442; }
+
+.epf-card-head {
+    padding: 8px 12px;
+    background: #f9f9f9;
+    border-bottom: 1px solid #eee;
+}
+
+.epf-card-body {
+    display: flex;
+    gap: 16px;
+    padding: 10px 12px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.epf-findings-list {
+    flex: 1 1 300px;
+    margin: 0;
+    padding-left: 4px;
+    list-style: none;
+}
+
+.epf-findings-list li {
+    margin-bottom: 4px;
+}
+
+.epf-shot-thumb {
+    max-width: 320px;
+    max-height: 240px;
+    object-fit: contain;
+    object-position: top;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}

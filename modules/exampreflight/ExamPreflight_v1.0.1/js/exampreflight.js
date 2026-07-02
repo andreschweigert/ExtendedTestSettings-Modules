@@ -1,0 +1,749 @@
+/**
+ * ExamPreflight Cockpit — geführter Probedurchlauf durch den ILIAS-Testplayer
+ *
+ * Der Testplayer läuft in einem same-origin iframe. Das Cockpit:
+ *   1. startet (optional) einen Tab-Capture via Screen-Capture-API
+ *   2. wartet, bis der Prüfer den Test im iframe startet
+ *   3. prüft pro Fragenseite Medien/Formeln/Layout, macht einen Screenshot
+ *      (segmentiert über die gesamte Fragenhöhe) und klickt automatisch weiter
+ *   4. lädt jedes Ergebnis per fetch() zum Server hoch
+ *
+ * Config wird via init() aus addOnLoadCode übergeben — niemals beim Script-Load
+ * cachen (addJavaScript läuft vor addOnLoadCode).
+ */
+(function () {
+    'use strict';
+
+    var cfg = null;
+    var els = {};
+
+    var state = 'idle';        // idle | waiting | running | paused | done | aborted | error
+    var runId = 0;
+    var position = 0;
+    var lastPageKey = '';      // zuletzt fertig verarbeitete Seite
+    var repeatCount = 0;
+    var totalErrors = 0;
+    var totalWarnings = 0;
+    var pausedRequested = false;
+    var processingPage = false;
+    var finishing = false;
+
+    var captureStream = null;
+    var captureVideo = null;
+
+    var jsErrors = [];
+
+    // ─── Init / UI ────────────────────────────────────────────────────────────
+
+    function init(config) {
+        cfg = config;
+        els.frame    = document.getElementById('epf-frame');
+        els.state    = document.getElementById('epf-state');
+        els.progress = document.getElementById('epf-progress');
+        els.hint     = document.getElementById('epf-hint');
+        els.findings = document.getElementById('epf-findings');
+        els.btnStart = document.getElementById('epf-btn-start');
+        els.btnPause = document.getElementById('epf-btn-pause');
+        els.btnStop  = document.getElementById('epf-btn-stop');
+        els.shotsCb  = document.getElementById('epf-shots-enabled');
+
+        if (!els.frame || !cfg) { return; }
+
+        els.btnStart.addEventListener('click', onStart);
+        els.btnPause.addEventListener('click', onPauseToggle);
+        els.btnStop.addEventListener('click', onStop);
+        els.frame.addEventListener('load', onFrameLoad);
+    }
+
+    function t(key) {
+        return (cfg && cfg.lang && cfg.lang[key]) || key;
+    }
+
+    function setState(s, badgeClass) {
+        state = s;
+        els.state.textContent = t('state_' + s);
+        els.state.className = 'epf-badge epf-badge-' + (badgeClass || s);
+    }
+
+    function setHint(text) {
+        els.hint.textContent = text;
+    }
+
+    function updateProgress() {
+        var total = cfg.expectedQuestions > 0 ? (' ' + t('progress_of') + ' ~' + cfg.expectedQuestions) : '';
+        els.progress.textContent = position > 0
+            ? (t('question_short') || 'Frage') + ' ' + position + total
+                + ' — ' + totalErrors + ' ❌ / ' + totalWarnings + ' ⚠️'
+            : '';
+    }
+
+    function addFindingLine(pos, title, status, findings) {
+        var line = document.createElement('div');
+        var icon = status === 'fail' ? '❌' : (status === 'warn' ? '⚠️' : '✅');
+        line.className = 'epf-finding-line epf-finding-' + status;
+        var msg = '';
+        if (findings.length) {
+            msg = ' — ' + findings.slice(0, 3).map(function (f) { return f.message; }).join('; ');
+            if (findings.length > 3) { msg += ' …'; }
+        }
+        line.textContent = icon + ' ' + pos + '. ' + title + msg;
+        els.findings.insertBefore(line, els.findings.firstChild);
+    }
+
+    // ─── Start / Pause / Stop ─────────────────────────────────────────────────
+
+    function onStart() {
+        els.btnStart.disabled = true;
+        els.shotsCb.disabled = true;
+
+        // Zustand für einen (Neu-)Start zurücksetzen
+        position = 0;
+        lastPageKey = '';
+        repeatCount = 0;
+        totalErrors = 0;
+        totalWarnings = 0;
+        pausedRequested = false;
+        processingPage = false;
+        finishing = false;
+        updateProgress();
+
+        var wantShots = els.shotsCb.checked;
+        var capturePromise = wantShots ? startCapture() : Promise.resolve(false);
+
+        capturePromise.then(function (captureOk) {
+            if (wantShots && !captureOk) {
+                setHint(t('hint_capture_denied'));
+            }
+            var body = new FormData();
+            body.append('screenshots', captureOk ? '1' : '');
+            body.append('viewport', window.innerWidth + 'x' + window.innerHeight);
+            return fetch(cfg.startRunUrl, { method: 'POST', body: body, credentials: 'same-origin' })
+                .then(function (r) { return r.json(); });
+        }).then(function (data) {
+            if (!data || !data.ok) { throw new Error('startRun failed'); }
+            runId = data.runId;
+            setState('waiting');
+            setHint(t('hint_start_test'));
+            els.btnPause.disabled = false;
+            els.btnStop.disabled = false;
+            // Falls der Prüfer den Test schon geöffnet hat: aktuelle Seite direkt verarbeiten
+            onFrameLoad();
+        }).catch(function () {
+            setState('error');
+            els.btnStart.disabled = false;
+            els.shotsCb.disabled = false;
+        });
+    }
+
+    function onPauseToggle() {
+        if (state === 'running' || state === 'waiting') {
+            pausedRequested = true;
+            setState('paused');
+        } else if (state === 'paused') {
+            pausedRequested = false;
+            setState('running');
+            var doc = frameDoc();
+            if (doc && isQuestionPage(doc) && pageKeyOf(doc, extractTitle(doc)) === lastPageKey) {
+                // Seite wurde vor der Pause bereits fertig verarbeitet → nur weiterblättern
+                clickNext(doc);
+            } else {
+                processCurrentPage();
+            }
+        }
+    }
+
+    function onStop() {
+        if (!window.confirm(t('confirm_stop'))) { return; }
+        finishRun('aborted');
+    }
+
+    function finishRun(result) {
+        if (finishing) { return; }
+        finishing = true;
+        stopCapture();
+        var body = new FormData();
+        body.append('run_id', String(runId));
+        body.append('result', result);
+        fetch(cfg.finishRunUrl, { method: 'POST', body: body, credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .catch(function () { return null; })
+            .then(function (data) {
+                setState(result === 'aborted' ? 'aborted' : 'done');
+                setHint(result === 'aborted' ? t('hint_aborted') : t('hint_done'));
+                els.btnPause.disabled = true;
+                els.btnStop.disabled = true;
+                els.btnStart.disabled = false;   // erneuter Lauf ohne Seiten-Reload möglich
+                els.shotsCb.disabled = false;
+                var summary = data && data.ok
+                    ? data.checked + ' ✓, ' + data.errors + ' ❌, ' + data.warnings + ' ⚠️ — '
+                    : '';
+                var link = document.createElement('a');
+                link.href = cfg.reportPageUrl;
+                link.className = 'btn btn-primary btn-sm';
+                link.textContent = t('open_report');
+                var line = document.createElement('div');
+                line.className = 'epf-finding-line epf-finding-summary';
+                line.textContent = summary;
+                line.appendChild(link);
+                els.findings.insertBefore(line, els.findings.firstChild);
+            });
+    }
+
+    // ─── Frame-Navigation ─────────────────────────────────────────────────────
+
+    function onFrameLoad() {
+        if (runId <= 0 || finishing || state === 'done' || state === 'aborted') { return; }
+
+        var doc = frameDoc();
+        if (!doc) { return; }
+
+        // JS-Fehler der Fragenseite ab jetzt mitschneiden
+        jsErrors = [];
+        try {
+            els.frame.contentWindow.addEventListener('error', function (e) {
+                if (jsErrors.length < 10) {
+                    jsErrors.push(String(e.message || 'resource error: ' + (e.target && e.target.src ? e.target.src : '')));
+                }
+            }, true);
+        } catch (ignore) {}
+
+        if (!isQuestionPage(doc)) {
+            if (state === 'running') { setState('waiting'); }
+            setHint(isFinishedPage(doc) ? t('hint_done_page') || t('hint_non_question') : t('hint_start_test'));
+            // Ende-Seite erreicht (z.B. "Test beenden" wurde geklickt) → Lauf abschließen
+            if (position > 0 && isFinishedPage(doc)) {
+                finishRun('completed');
+            }
+            return;
+        }
+
+        if (pausedRequested) {
+            setState('paused');
+            return;
+        }
+
+        setState('running');
+        setHint(t('hint_running'));
+        processCurrentPage();
+    }
+
+    function frameDoc() {
+        try {
+            return els.frame.contentDocument;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function isQuestionPage(doc) {
+        return !!(doc.getElementById('taForm') && doc.querySelector('.tst_question-container'));
+    }
+
+    function isFinishedPage(doc) {
+        // Abschluss-/Ergebnisseite des Players (kein Fragenformular mehr, aber Player-Kontext)
+        var url = '';
+        try { url = String(els.frame.contentWindow.location.href); } catch (ignore) {}
+        return /cmd(=|%5B)(afterTestPassFinished|showFinalStatement|finishTest|redirectAfterFinish)/i.test(url);
+    }
+
+    // ─── Fragen-Verarbeitung ──────────────────────────────────────────────────
+
+    function processCurrentPage() {
+        if (processingPage || finishing || state !== 'running') { return; }
+        var doc = frameDoc();
+        if (!doc || !isQuestionPage(doc)) { return; }
+
+        // Duplikat-Erkennung VOR der Verarbeitung: dieselbe Seite erneut geladen
+        // (z.B. weil der Weiter-Klick nicht navigiert hat) → nicht doppelt erfassen,
+        // sondern erneut weiterklicken; ab dem 2. Mal abbrechen (Endlosschleife).
+        var pageKey = pageKeyOf(doc, extractTitle(doc));
+        if (pageKey === lastPageKey) {
+            repeatCount++;
+            if (repeatCount >= 2) {
+                setState('error');
+                setHint(t('state_error'));
+                finishRun('aborted');
+            } else {
+                clickNext(doc);
+            }
+            return;
+        }
+
+        processingPage = true;
+
+        waitForMedia(doc, cfg.settleMs)
+            .then(function () {
+                doc = frameDoc();
+                if (!doc || !isQuestionPage(doc) || finishing) { processingPage = false; return null; }
+
+                var title = extractTitle(doc);
+                repeatCount = 0;
+                lastPageKey = pageKeyOf(doc, title);
+                position++;
+
+                var findings = runChecks(doc);
+                updateProgress();
+
+                return takeScreenshot(doc).then(function (shot) {
+                    return uploadResult(title, detectQType(doc), findings, shot);
+                }).then(function (status) {
+                    addFindingLine(position, title, status, findings);
+                    processingPage = false;
+                    if (state === 'running' && !pausedRequested && !finishing) {
+                        clickNext(doc);
+                    } else if (pausedRequested) {
+                        setState('paused');
+                    }
+                });
+            })
+            .catch(function () {
+                processingPage = false;
+            });
+    }
+
+    function extractTitle(doc) {
+        var el = doc.querySelector('#tst_right .ilc_page_title_PageTitle, .ilc_page_title_PageTitle, #tst_right h1');
+        var title = el ? el.textContent.trim() : '';
+        return title || (doc.title || '').trim() || ('Frage ' + (position + 1));
+    }
+
+    function pageKeyOf(doc, title) {
+        var seq = '';
+        try {
+            var m = String(els.frame.contentWindow.location.href).match(/sequence=(\d+)/);
+            if (m) { seq = m[1]; }
+        } catch (ignore) {}
+        return seq + '|' + title;
+    }
+
+    function detectQType(doc) {
+        var c = doc.querySelector('.tst_question-container');
+        if (!c) { return ''; }
+        if (c.querySelector('input[type=radio]'))    { return 'SingleChoice'; }
+        if (c.querySelector('input[type=checkbox]')) { return 'MultipleChoice'; }
+        if (c.querySelector('textarea'))             { return 'Freitext'; }
+        if (c.querySelector('select'))               { return 'Auswahl'; }
+        if (c.querySelector('input[type=text]'))     { return 'Eingabe'; }
+        if (c.querySelector('input[type=file]'))     { return 'Upload'; }
+        return '';
+    }
+
+    // Warten bis Bilder/Videos geladen (oder fehlgeschlagen) sind + Settle-Zeit
+    function waitForMedia(doc, settleMs) {
+        var waits = [];
+
+        doc.querySelectorAll('img').forEach(function (img) {
+            if (!img.complete) {
+                waits.push(new Promise(function (resolve) {
+                    img.addEventListener('load', resolve, { once: true });
+                    img.addEventListener('error', resolve, { once: true });
+                    setTimeout(resolve, 10000);
+                }));
+            }
+        });
+
+        doc.querySelectorAll('video, audio').forEach(function (m) {
+            if (m.readyState === 0 && !m.error) {
+                waits.push(new Promise(function (resolve) {
+                    m.addEventListener('loadedmetadata', resolve, { once: true });
+                    m.addEventListener('error', resolve, { once: true });
+                    setTimeout(resolve, 10000);
+                }));
+            }
+        });
+
+        return Promise.all(waits).then(function () {
+            return new Promise(function (resolve) { setTimeout(resolve, settleMs); });
+        });
+    }
+
+    // ─── Checks ───────────────────────────────────────────────────────────────
+
+    function runChecks(doc) {
+        var findings = [];
+        var container = doc.querySelector('.tst_question-container') || doc.body;
+
+        checkImages(container, findings);
+        checkAv(container, findings);
+        checkIframes(container, findings);
+        checkMath(doc, findings);
+        checkLayout(doc, container, findings);
+        checkResources(findings);
+
+        jsErrors.forEach(function (msg) {
+            findings.push({ check: 'js_error', level: 'warning', message: 'JavaScript-Fehler', detail: msg.substring(0, 300) });
+        });
+
+        return findings;
+    }
+
+    function shortSrc(src) {
+        return String(src || '').split('?')[0].split('/').slice(-2).join('/').substring(0, 200);
+    }
+
+    function checkImages(container, findings) {
+        container.querySelectorAll('img').forEach(function (img) {
+            if (!img.src || img.src.indexOf('data:') === 0) { return; }
+            if (img.complete && img.naturalWidth === 0) {
+                findings.push({
+                    check: 'broken_image', level: 'error',
+                    message: 'Bild wird nicht geladen',
+                    detail: shortSrc(img.src) + (img.alt ? ' (alt: ' + img.alt + ')' : '')
+                });
+            } else if (!img.complete) {
+                findings.push({
+                    check: 'slow_image', level: 'warning',
+                    message: 'Bild nach Wartezeit noch nicht geladen',
+                    detail: shortSrc(img.src)
+                });
+            }
+        });
+    }
+
+    function checkAv(container, findings) {
+        container.querySelectorAll('video, audio').forEach(function (m) {
+            var kind = m.tagName === 'VIDEO' ? 'Video' : 'Audio';
+            var src = m.currentSrc || m.src || (m.querySelector('source') ? m.querySelector('source').src : '');
+            if (m.error || m.networkState === 3 /* NETWORK_NO_SOURCE */) {
+                findings.push({
+                    check: 'broken_media', level: 'error',
+                    message: kind + '-Quelle kann nicht abgespielt werden',
+                    detail: shortSrc(src) + (m.error ? ' (Code ' + m.error.code + ')' : '')
+                });
+            } else if (m.readyState === 0) {
+                findings.push({
+                    check: 'slow_media', level: 'warning',
+                    message: kind + ' nach Wartezeit ohne Metadaten',
+                    detail: shortSrc(src)
+                });
+            }
+            if (m.tagName === 'VIDEO' && m.readyState >= 1 && (m.videoWidth === 0 || m.videoHeight === 0)) {
+                findings.push({
+                    check: 'empty_video', level: 'error',
+                    message: 'Video liefert keine Bilddaten (0×0)',
+                    detail: shortSrc(src)
+                });
+            }
+        });
+    }
+
+    function checkIframes(container, findings) {
+        container.querySelectorAll('iframe').forEach(function (f) {
+            // Unsichtbare Hilfs-iframes (TinyMCE, Modul-Helfer, about:blank) sind
+            // kein Rendering-Problem für Studierende → nur sichtbare Frames mit
+            // echter Quelle prüfen.
+            var r = f.getBoundingClientRect();
+            var src = f.getAttribute('src') || '';
+            if (r.width < 10 || r.height < 10 || src === '' || src === 'about:blank') {
+                return;
+            }
+            try {
+                var d = f.contentDocument;
+                if (d && d.body && d.body.innerHTML.trim() === '') {
+                    findings.push({
+                        check: 'empty_iframe', level: 'warning',
+                        message: 'Eingebetteter Frame ist leer',
+                        detail: shortSrc(src)
+                    });
+                }
+            } catch (e) {
+                findings.push({
+                    check: 'external_iframe', level: 'info',
+                    message: 'Externer Frame (Inhalt nicht prüfbar)',
+                    detail: shortSrc(src)
+                });
+            }
+        });
+    }
+
+    function checkMath(doc, findings) {
+        var errs = doc.querySelectorAll('merror, .MathJax_Error, mjx-merror');
+        if (errs.length > 0) {
+            findings.push({
+                check: 'math_error', level: 'error',
+                message: 'Formel-Renderfehler (MathJax)',
+                detail: errs.length + ' Fehlerstelle(n), z.B.: ' + (errs[0].textContent || '').trim().substring(0, 120)
+            });
+        }
+    }
+
+    function checkLayout(doc, container, findings) {
+        // Delos scrollt in .il-layout-page-content — horizontaler Overflow landet dort
+        var sc = getScroller(doc) || doc.documentElement;
+
+        if (sc.scrollWidth > sc.clientWidth + 4) {
+            findings.push({
+                check: 'h_overflow', level: 'warning',
+                message: 'Seite hat horizontalen Overflow (Scrollbalken)',
+                detail: sc.scrollWidth + 'px Inhalt bei ' + sc.clientWidth + 'px Viewport'
+            });
+        }
+
+        var cRect = container.getBoundingClientRect();
+        var protruding = 0;
+        var example = '';
+        container.querySelectorAll('img, table, div, iframe, video, pre').forEach(function (el) {
+            var r = el.getBoundingClientRect();
+            if (r.width > 0 && r.right > cRect.right + 12) {
+                protruding++;
+                if (!example) {
+                    example = '<' + el.tagName.toLowerCase() + '> '
+                        + Math.round(r.right - cRect.right) + 'px über den Rand';
+                }
+            }
+        });
+        if (protruding > 0) {
+            findings.push({
+                check: 'protruding', level: 'warning',
+                message: protruding + ' Element(e) ragen aus dem Fragenbereich',
+                detail: example
+            });
+        }
+
+        var text = (container.textContent || '').trim();
+        var interactive = container.querySelectorAll('input, textarea, select, img, video, audio, canvas').length;
+        if (text.length < 5 && interactive === 0) {
+            findings.push({
+                check: 'empty_question', level: 'error',
+                message: 'Fragenbereich ist (nahezu) leer',
+                detail: ''
+            });
+        }
+    }
+
+    function checkResources(findings) {
+        try {
+            var entries = els.frame.contentWindow.performance.getEntriesByType('resource');
+            entries.forEach(function (e) {
+                // responseStatus gibt es erst in neueren Browsern — opportunistisch nutzen
+                if (typeof e.responseStatus === 'number' && e.responseStatus >= 400) {
+                    findings.push({
+                        check: 'http_error', level: 'error',
+                        message: 'Ressource liefert HTTP ' + e.responseStatus,
+                        detail: shortSrc(e.name)
+                    });
+                }
+            });
+        } catch (ignore) {}
+    }
+
+    // ─── Screenshots (Screen-Capture-API, segmentiert) ────────────────────────
+
+    function startCapture() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+            return Promise.resolve(false);
+        }
+        setHint(t('hint_capture'));
+        return navigator.mediaDevices.getDisplayMedia({
+            video: { displaySurface: 'browser' },
+            audio: false,
+            preferCurrentTab: true,          // Chrome: eigenen Tab vorschlagen
+            selfBrowserSurface: 'include'
+        }).then(function (stream) {
+            captureStream = stream;
+            captureVideo = document.createElement('video');
+            captureVideo.style.position = 'fixed';
+            captureVideo.style.left = '-99999px';
+            captureVideo.muted = true;
+            captureVideo.srcObject = stream;
+            document.body.appendChild(captureVideo);
+            stream.getVideoTracks()[0].addEventListener('ended', function () {
+                captureStream = null;   // Nutzer hat Freigabe beendet → ohne Screenshots weiter
+            });
+            return captureVideo.play().then(function () { return true; });
+        }).catch(function () {
+            captureStream = null;
+            return false;
+        });
+    }
+
+    function stopCapture() {
+        if (captureStream) {
+            captureStream.getTracks().forEach(function (tr) { tr.stop(); });
+            captureStream = null;
+        }
+        if (captureVideo) {
+            captureVideo.remove();
+            captureVideo = null;
+        }
+    }
+
+    /**
+     * Scroll-Container einer ILIAS-9-Seite: Delos scrollt nicht im document,
+     * sondern in .il-layout-page-content. Fallback: scrollingElement (z.B. Kiosk).
+     */
+    function getScroller(doc) {
+        return doc.querySelector('.il-layout-page-content') || null;
+    }
+
+    /**
+     * Screenshot der gesamten Frage: scrollt den Inhalts-Container des Players
+     * segmentweise durch und setzt die Frames auf einem Canvas zusammen.
+     * Gibt {blob,w,h} oder null.
+     */
+    function takeScreenshot(doc) {
+        if (!captureStream || !captureVideo || captureVideo.videoWidth === 0) {
+            return Promise.resolve(null);
+        }
+
+        var win = els.frame.contentWindow;
+        var scaleX = captureVideo.videoWidth / window.innerWidth;
+        var scaleY = captureVideo.videoHeight / window.innerHeight;
+
+        // Cockpit so scrollen, dass der iframe möglichst vollständig sichtbar ist
+        try { els.frame.scrollIntoView({ block: 'start' }); } catch (ignore) {}
+        var rect = els.frame.getBoundingClientRect();
+
+        // Scroll-/Mess-Element im Player bestimmen
+        var scroller = getScroller(doc);
+        var isRoot = !scroller;
+        var band; // sichtbarer Content-Bereich in Tab-Koordinaten (CSS px)
+        if (isRoot) {
+            scroller = doc.scrollingElement || doc.documentElement;
+            band = { top: rect.top, left: rect.left, width: rect.width, height: win.innerHeight || rect.height };
+        } else {
+            var sRect = scroller.getBoundingClientRect(); // iframe-interne Koordinaten
+            band = {
+                top: rect.top + sRect.top,
+                left: rect.left + sRect.left,
+                width: sRect.width,
+                height: sRect.height
+            };
+        }
+
+        var visTop    = Math.max(band.top, 0);
+        var visBottom = Math.min(band.top + band.height, rect.bottom, window.innerHeight);
+        var ch        = visBottom - visTop;              // erfasste Content-Höhe pro Segment
+        if (ch < 50 || band.width < 50) {
+            return Promise.resolve(null);
+        }
+        var srcOffset = visTop - band.top;               // oben abgeschnittener Teil des Containers
+
+        var contentH = Math.max(scroller.scrollHeight, ch);
+        var segments = Math.min(cfg.maxSegments, Math.max(1, Math.ceil(contentH / ch)));
+        var totalH   = Math.min(contentH, segments * ch);
+
+        var canvas = document.createElement('canvas');
+        canvas.width  = Math.round(band.width * scaleX);
+        canvas.height = Math.round(totalH * scaleY);
+        var ctx = canvas.getContext('2d');
+
+        var seg = 0;
+
+        function grabSegment() {
+            return new Promise(function (resolve) {
+                scroller.scrollTop = seg * ch;
+                setTimeout(function () {
+                    var actualY = scroller.scrollTop || 0;
+                    try {
+                        ctx.drawImage(
+                            captureVideo,
+                            Math.round(Math.max(0, band.left) * scaleX), Math.round(visTop * scaleY),
+                            Math.round(band.width * scaleX), Math.round(ch * scaleY),
+                            0, Math.round((actualY + srcOffset) * scaleY),
+                            Math.round(band.width * scaleX), Math.round(ch * scaleY)
+                        );
+                    } catch (ignore) {}
+                    seg++;
+                    resolve();
+                }, 250);
+            });
+        }
+
+        var chain = Promise.resolve();
+        for (var i = 0; i < segments; i++) {
+            chain = chain.then(grabSegment);
+        }
+
+        return chain.then(function () {
+            scroller.scrollTop = 0;
+            return new Promise(function (resolve) {
+                canvas.toBlob(function (blob) {
+                    resolve(blob ? { blob: blob, w: canvas.width, h: canvas.height } : null);
+                }, 'image/jpeg', 0.85);
+            });
+        }).catch(function () {
+            return null;
+        });
+    }
+
+    // ─── Upload + Weiter-Navigation ───────────────────────────────────────────
+
+    function uploadResult(title, qtype, findings, shot) {
+        findings.forEach(function (f) {
+            if (f.level === 'error') { totalErrors++; }
+            if (f.level === 'warning') { totalWarnings++; }
+        });
+        updateProgress();
+
+        var body = new FormData();
+        body.append('run_id', String(runId));
+        body.append('position', String(position));
+        body.append('title', title);
+        body.append('qtype', qtype);
+        body.append('checks', JSON.stringify(findings));
+        try {
+            body.append('page_url', String(els.frame.contentWindow.location.href));
+        } catch (ignore) {}
+        if (shot) {
+            body.append('shot', shot.blob, 'shot.jpg');
+            body.append('shot_w', String(shot.w));
+            body.append('shot_h', String(shot.h));
+        }
+
+        return fetch(cfg.reportUrl, { method: 'POST', body: body, credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                return (data && data.status) ? data.status
+                    : (findings.some(function (f) { return f.level === 'error'; }) ? 'fail'
+                        : (findings.some(function (f) { return f.level === 'warning'; }) ? 'warn' : 'ok'));
+            })
+            .catch(function () { return 'ok'; });
+    }
+
+    function clickNext(doc) {
+        var btn = doc.querySelector('.ilTstNavigationBtn_Next button, .ilTstNavigationBtn_Next a');
+        if (!btn) {
+            // Keine Weiter-Schaltfläche → letzte Frage erreicht, Lauf abschließen.
+            // Der Test wird bewusst NICHT automatisch beendet/abgegeben.
+            finishRun('completed');
+            return;
+        }
+
+        var nav = { happened: false };
+        var posAtClick = position;
+        try {
+            els.frame.contentWindow.addEventListener('pagehide', function () { nav.happened = true; }, { once: true });
+        } catch (ignore) {}
+
+        function navigated() {
+            return nav.happened || position !== posAtClick;
+        }
+
+        btn.click();
+
+        // ILIAS kann statt zu navigieren einen Bestätigungs-Modal zeigen
+        // (z.B. "Antwort festschreiben") → dessen Bestätigen-Button klicken.
+        setTimeout(function () {
+            if (navigated() || state !== 'running') { return; }
+            var d = frameDoc();
+            if (!d) { return; }
+            var modal = d.querySelector('.modal.in, .il-modal-roundtrip:not([style*="display: none"])');
+            if (modal) {
+                var confirmBtn = modal.querySelector('.btn-primary, button[name*="cmd"], input[type=submit]');
+                if (confirmBtn) { confirmBtn.click(); }
+            }
+        }, 2000);
+
+        // Wenn nach längerer Zeit gar nichts passiert ist: pausieren statt hängen
+        setTimeout(function () {
+            if (!navigated() && state === 'running' && !processingPage) {
+                pausedRequested = true;
+                setState('paused');
+                setHint(t('hint_non_question'));
+            }
+        }, 8000);
+    }
+
+    window.ExamPreflightCockpit = { init: init };
+})();

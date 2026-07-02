@@ -1,0 +1,54 @@
+<!-- language file start -->
+title#:#Preflight-Durchlauf
+description#:#Geführter Probedurchlauf: prüft pro Frage Bilder, Videos, Formeln und Layout und erstellt Screenshots für einen Prüfbericht
+settings_intro#:#Startet einen geführten Probedurchlauf durch diesen Test. Pro Frage werden Medien, Formeln und Layout automatisch geprüft und (optional) Screenshots erstellt.
+settings_info#:#Der Durchlauf erzeugt einen normalen Testlauf für Ihr Konto. Löschen Sie diesen danach über Teilnehmerdaten, bevor die Prüfung beginnt.
+start_cockpit#:#Preflight-Durchlauf starten
+show_reports#:#Prüfberichte anzeigen
+last_run_summary#:#Letzter Lauf am %s: %d Fragen geprüft, %d Fehler, %d Warnungen
+cockpit_title#:#Preflight-Durchlauf
+report_title#:#Preflight-Prüfbericht
+access_denied#:#Zugriff verweigert.
+state_idle#:#Bereit
+state_waiting#:#Warte auf Testplayer
+state_running#:#Läuft
+state_paused#:#Pausiert
+state_done#:#Abgeschlossen
+state_aborted#:#Abgebrochen
+state_error#:#Fehler — Durchlauf gestoppt
+hint_initial#:#Klicken Sie auf „Durchlauf starten". Danach starten Sie den Test im Fenster unten — ab der ersten Frage läuft die Prüfung automatisch.
+hint_capture#:#Bitte im Browser-Dialog die Freigabe für diesen Tab bestätigen (für die Screenshots).
+hint_capture_denied#:#Bildschirm-Freigabe abgelehnt — der Durchlauf läuft ohne Screenshots weiter.
+hint_start_test#:#Bitte starten Sie jetzt den Test im Fenster unten (Button „Test starten" bzw. „Test fortsetzen").
+hint_running#:#Durchlauf läuft — Fragen werden automatisch geprüft. Bitte nicht im Testfenster klicken.
+hint_done#:#Durchlauf abgeschlossen. Hinweis: Der Testlauf Ihres Kontos sollte vor der Prüfung über Teilnehmerdaten gelöscht werden.
+hint_done_page#:#Test-Abschlussseite erreicht.
+hint_aborted#:#Durchlauf abgebrochen. Bereits geprüfte Fragen sind im Bericht gespeichert.
+hint_non_question#:#Der Player zeigt gerade keine Frage (Modal/Zwischenseite). Prüfen Sie das Testfenster und setzen Sie mit „Fortsetzen" fort.
+with_screenshots#:#Mit Screenshots
+btn_start#:#Durchlauf starten
+btn_pause#:#Pause / Fortsetzen
+btn_stop#:#Abbrechen
+progress_of#:#von
+question_short#:#Frage
+anomalies_found#:#Anomalien gefunden
+open_report#:#Bericht öffnen
+confirm_stop#:#Durchlauf wirklich abbrechen? Bereits geprüfte Fragen bleiben gespeichert.
+finding_prefix#:#Befund
+no_runs#:#Noch keine Preflight-Durchläufe für diesen Test.
+no_results#:#Keine Fragen-Ergebnisse in diesem Lauf.
+no_findings#:#Keine Auffälligkeiten
+th_run#:#Lauf
+th_date#:#Datum
+th_user#:#Geprüft von
+th_status#:#Status
+th_questions#:#Fragen
+th_findings#:#Befunde
+status_running#:#läuft noch
+status_completed#:#abgeschlossen
+status_aborted#:#abgebrochen
+run_detail_heading#:#Lauf #%d — Ergebnisse pro Frage
+run_still_running#:#Dieser Lauf ist noch nicht abgeschlossen — Ergebnisse können unvollständig sein.
+testdata_note#:#Hinweis: Der Preflight-Durchlauf erzeugt einen normalen Testlauf für das prüfende Konto. Diesen vor Prüfungsbeginn unter „Teilnehmerdaten" löschen.
+run_deleted#:#Lauf gelöscht.
+confirm_delete_run#:#Diesen Lauf inklusive aller Screenshots löschen?
