@@ -16,7 +16,7 @@ state_paused#:#Pausiert
 state_done#:#Abgeschlossen
 state_aborted#:#Abgebrochen
 state_error#:#Fehler — Durchlauf gestoppt
-hint_initial#:#Klicken Sie auf „Durchlauf starten". Danach starten Sie den Test im Fenster unten — ab der ersten Frage läuft die Prüfung automatisch.
+hint_initial#:#Klicken Sie auf „Durchlauf starten" — der Test wird automatisch gestartet (inkl. Passwort-Eingabe), alle Fragen werden geprüft und der Testlauf wird auf Wunsch am Ende gelöscht.
 hint_capture#:#Bitte im Browser-Dialog die Freigabe für diesen Tab bestätigen (für die Screenshots).
 hint_capture_denied#:#Bildschirm-Freigabe abgelehnt — der Durchlauf läuft ohne Screenshots weiter.
 hint_start_test#:#Bitte starten Sie jetzt den Test im Fenster unten (Button „Test starten" bzw. „Test fortsetzen").
@@ -55,3 +55,8 @@ confirm_delete_run#:#Diesen Lauf inklusive aller Screenshots löschen?
 tab_cockpit#:#Preflight-Cockpit
 tab_report#:#Prüfberichte
 hint_capture_unavailable#:#Screenshots sind auf diesem System nicht verfügbar (kein HTTPS — die Screen-Capture-API erfordert eine sichere Verbindung). Der Durchlauf läuft ohne Screenshots weiter.
+opt_delete_attempt#:#Testlauf danach löschen
+hint_autostart#:#Test wird automatisch gestartet …
+hint_password#:#Passwort wird automatisch eingetragen …
+attempt_deleted#:#Eigener Testlauf wurde gelöscht — der Test ist wieder im Ausgangszustand.
+attempt_delete_failed#:#Eigener Testlauf konnte nicht gelöscht werden — bitte manuell über „Teilnehmerdaten" löschen.

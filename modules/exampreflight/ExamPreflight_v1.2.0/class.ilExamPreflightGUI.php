@@ -68,6 +68,9 @@ class ilExamPreflightGUI
             case 'finishrun':
                 $this->ajaxFinishRun($ref_id);
                 return;
+            case 'deleteownattempt':
+                $this->ajaxDeleteOwnAttempt($ref_id);
+                return;
         }
 
         if ($ref_id <= 0) {
@@ -155,8 +158,13 @@ class ilExamPreflightGUI
             'startRunUrl'       => $this->ajaxUrl('startRun', $ref_id),
             'reportUrl'         => $this->ajaxUrl('report', $ref_id),
             'finishRunUrl'      => $this->ajaxUrl('finishRun', $ref_id),
+            'deleteAttemptUrl'  => $this->ajaxUrl('deleteOwnAttempt', $ref_id),
+            'csrfToken'         => $this->csrfToken(),
             'reportPageUrl'     => str_replace('&amp;', '&', $this->proxyLink('showReport')),
             'expectedQuestions' => $this->expectedQuestionCount($obj_id),
+            // Test-Passwort für Autofill im Start-Modal — Cockpit ist auf Prüfer
+            // mit Schreibrecht beschränkt, die das Passwort ohnehin sehen dürfen.
+            'password'          => $this->getTestPassword($obj_id),
             'settleMs'          => 1500,
             'maxSegments'       => 5,
             'lang'              => $this->jsTexts(),
@@ -179,6 +187,8 @@ class ilExamPreflightGUI
             .   '<div class="epf-status-right">'
             .     '<label class="epf-shot-toggle"><input type="checkbox" id="epf-shots-enabled" checked> '
             .        $this->esc($this->lng->txt('with_screenshots')) . '</label>'
+            .     '<label class="epf-shot-toggle"><input type="checkbox" id="epf-del-attempt" checked> '
+            .        $this->esc($this->lng->txt('opt_delete_attempt')) . '</label>'
             .     '<button id="epf-btn-start" class="btn btn-primary">' . $this->esc($this->lng->txt('btn_start')) . '</button>'
             .     '<button id="epf-btn-pause" class="btn btn-default" disabled>' . $this->esc($this->lng->txt('btn_pause')) . '</button>'
             .     '<button id="epf-btn-stop" class="btn btn-default" disabled>' . $this->esc($this->lng->txt('btn_stop')) . '</button>'
@@ -210,6 +220,8 @@ class ilExamPreflightGUI
             'hint_capture', 'hint_capture_denied', 'hint_capture_unavailable',
             'hint_start_test', 'hint_running',
             'hint_done', 'hint_done_page', 'hint_aborted', 'hint_non_question',
+            'hint_autostart', 'hint_password',
+            'attempt_deleted', 'attempt_delete_failed',
             'progress_of', 'question_short', 'open_report', 'confirm_stop',
         ];
         $out = [];
@@ -684,6 +696,71 @@ class ilExamPreflightGUI
         } catch (Exception $e) {
             return 0;
         }
+    }
+
+    // ─── AJAX: Eigenen Testlauf löschen ───────────────────────────────────────
+
+    /**
+     * Löscht den Testlauf des AKTUELLEN Nutzers (und nur diesen) über die
+     * offizielle ILIAS-API — gleiche Methoden wie "Teilnehmerdaten löschen".
+     */
+    private function ajaxDeleteOwnAttempt(int $ref_id): void
+    {
+        $this->beginJson();
+
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST'
+            || !hash_equals($this->csrfToken(), (string)($_POST['epf_token'] ?? ''))
+        ) {
+            $this->jsonOut(['error' => 'forbidden'], 403);
+        }
+
+        if ($ref_id <= 0 || $this->user->getId() <= 0) {
+            $this->jsonOut(['error' => 'invalid request'], 400);
+        }
+
+        global $DIC;
+
+        try {
+            $user_id = $this->user->getId();
+            $test    = new ilObjTest($ref_id, true);
+
+            $participantData = new ilTestParticipantData($this->db, $DIC->language());
+            $participantData->setUserIdsFilter([$user_id]);
+            $participantData->load($test->getTestId());
+
+            $active_ids = $participantData->getActiveIds();
+            if (count($active_ids) === 0) {
+                $this->jsonOut(['ok' => true, 'deleted' => 0]);
+            }
+
+            $test->removeTestResultsByUserIds([$user_id]);
+            $test->removeTestActives($active_ids);
+
+            $this->jsonOut(['ok' => true, 'deleted' => count($active_ids)]);
+        } catch (Exception $e) {
+            error_log('[ExamPreflight] deleteOwnAttempt: ' . $e->getMessage());
+            $this->jsonOut(['error' => 'delete failed'], 500);
+        }
+    }
+
+    /** Test-Passwort (nur wenn Passwortschutz aktiv), read-only aus tst_tests */
+    private function getTestPassword(int $obj_id): string
+    {
+        try {
+            $res = $this->db->queryF(
+                'SELECT password, password_enabled FROM tst_tests WHERE obj_fi = %s',
+                ['integer'],
+                [$obj_id]
+            );
+            if ($row = $this->db->fetchAssoc($res)) {
+                if ((int)($row['password_enabled'] ?? 0) === 1) {
+                    return (string)($row['password'] ?? '');
+                }
+            }
+        } catch (Exception $e) {
+            error_log('[ExamPreflight] getTestPassword: ' . $e->getMessage());
+        }
+        return '';
     }
 
     /** Session-gebundener Token für zustandsändernde Formulare (deleteRun) */

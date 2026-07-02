@@ -90,10 +90,12 @@ class ilExamPreflightHandler implements ilExamModuleInterface
             'title'       => $this->lng->txt('title'),
             'icon'        => '🛫',
             'description' => $this->lng->txt('description'),
-            'version'     => '1.1.1',
+            'version'     => '1.2.0',
             'features'    => [
                 'Cockpit mit Testplayer im iframe — kein Eingriff in echte Prüfungsdurchläufe',
+                'Vollautomatischer Durchlauf: Test-Start, Passwort und Prüfungsbedingungen werden selbst bedient',
                 'Automatische Navigation durch alle Fragen (Pause/Abbruch jederzeit)',
+                'Eigener Testlauf wird am Ende auf Wunsch automatisch gelöscht (offizielle ILIAS-API, nur der eigene)',
                 'Medien-Checks: kaputte Bilder, Video-/Audio-Quellen, iframe-Inhalte, 404-Ressourcen',
                 'Formel-Checks: MathJax-Renderfehler (merror) + unverarbeiteter Formel-Code im Text',
                 'Layout-Checks: horizontaler Overflow, überstehende Elemente, leere Frageninhalte',

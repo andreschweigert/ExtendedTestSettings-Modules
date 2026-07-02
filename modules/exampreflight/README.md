@@ -51,6 +51,7 @@ aktivieren (siehe [docs/how-to.md](../../docs/how-to.md)).
 
 | Version | Datum | Änderungen |
 |---|---|---|
+| 1.2.0 | 2026-07-02 | Vollautomatischer Durchlauf: Test-Start/Fortsetzen wird selbst geklickt, Passwort und Prüfungsbedingungen im Start-Modal automatisch ausgefüllt; Option „Testlauf danach löschen" entfernt am Ende den eigenen (!) Testlauf über die offizielle ILIAS-API |
 | 1.1.1 | 2026-07-02 | Navigation: Back-Link „← Test" + Tabs Cockpit/Prüfberichte in allen Ansichten; klarer Hinweis, wenn Screenshots mangels HTTPS nicht verfügbar sind |
 | 1.1.0 | 2026-07-02 | Neue Checks: unverarbeiteter Formel-Code, kaputte CSS-Hintergrundbilder, Antwortoptionen-Plausibilität, Formatierung (Encoding, sichtbarer HTML-Code, Mini-Schrift, kaum lesbarer Text) |
 | 1.0.1 | 2026-07-02 | Fix: „Eingebetteter Frame ist leer" nicht mehr für unsichtbare Hilfs-iframes (TinyMCE, Modul-Helfer, `about:blank`) melden — nur sichtbare Frames mit echter Quelle werden geprüft |

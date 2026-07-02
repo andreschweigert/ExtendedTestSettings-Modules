@@ -16,7 +16,7 @@ state_paused#:#Paused
 state_done#:#Completed
 state_aborted#:#Aborted
 state_error#:#Error — run stopped
-hint_initial#:#Click "Start run". Then start the test in the window below — checking begins automatically with the first question.
+hint_initial#:#Click "Start run" — the test is started automatically (including password entry), all questions are checked and the attempt is deleted at the end if selected.
 hint_capture#:#Please confirm the browser dialog to share this tab (needed for screenshots).
 hint_capture_denied#:#Screen sharing denied — the run continues without screenshots.
 hint_start_test#:#Please start the test in the window below now ("Start test" or "Resume test").
@@ -55,3 +55,8 @@ confirm_delete_run#:#Delete this run including all screenshots?
 tab_cockpit#:#Preflight Cockpit
 tab_report#:#Review Reports
 hint_capture_unavailable#:#Screenshots are not available on this system (no HTTPS — the Screen Capture API requires a secure context). The run continues without screenshots.
+opt_delete_attempt#:#Delete own attempt afterwards
+hint_autostart#:#Starting the test automatically …
+hint_password#:#Entering the password automatically …
+attempt_deleted#:#Own test attempt has been deleted — the test is back in its initial state.
+attempt_delete_failed#:#Own test attempt could not be deleted — please remove it manually via "Participants".

@@ -32,6 +32,8 @@
     var captureVideo = null;
 
     var jsErrors = [];
+    var autoStartAttempts = 0;
+    var pwAttempts = 0;
 
     // ─── Init / UI ────────────────────────────────────────────────────────────
 
@@ -46,6 +48,7 @@
         els.btnPause = document.getElementById('epf-btn-pause');
         els.btnStop  = document.getElementById('epf-btn-stop');
         els.shotsCb  = document.getElementById('epf-shots-enabled');
+        els.delCb    = document.getElementById('epf-del-attempt');
 
         if (!els.frame || !cfg) { return; }
 
@@ -105,6 +108,8 @@
         pausedRequested = false;
         processingPage = false;
         finishing = false;
+        autoStartAttempts = 0;
+        pwAttempts = 0;
         updateProgress();
 
         var wantShots = els.shotsCb.checked;
@@ -189,6 +194,30 @@
                 line.textContent = summary;
                 line.appendChild(link);
                 els.findings.insertBefore(line, els.findings.firstChild);
+
+                if (els.delCb && els.delCb.checked) {
+                    deleteOwnAttempt();
+                }
+            });
+    }
+
+    /** Eigenen Testlauf des Prüfers serverseitig löschen (offizielle ILIAS-API) */
+    function deleteOwnAttempt() {
+        var body = new FormData();
+        body.append('epf_token', cfg.csrfToken);
+        fetch(cfg.deleteAttemptUrl, { method: 'POST', body: body, credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .catch(function () { return null; })
+            .then(function (data) {
+                var ok = data && data.ok;
+                var line = document.createElement('div');
+                line.className = 'epf-finding-line ' + (ok ? 'epf-finding-ok' : 'epf-finding-warn');
+                line.textContent = ok ? '🗑 ' + t('attempt_deleted') : '⚠️ ' + t('attempt_delete_failed');
+                els.findings.insertBefore(line, els.findings.firstChild);
+                if (ok) {
+                    // Testfenster auf den frischen Ausgangszustand zurücksetzen
+                    els.frame.src = cfg.testUrl;
+                }
             });
     }
 
@@ -212,10 +241,14 @@
 
         if (!isQuestionPage(doc)) {
             if (state === 'running') { setState('waiting'); }
-            setHint(isFinishedPage(doc) ? t('hint_done_page') || t('hint_non_question') : t('hint_start_test'));
             // Ende-Seite erreicht (z.B. "Test beenden" wurde geklickt) → Lauf abschließen
             if (position > 0 && isFinishedPage(doc)) {
+                setHint(t('hint_done_page'));
                 finishRun('completed');
+                return;
+            }
+            if (!pausedRequested) {
+                tryAutoAdvance(doc);
             }
             return;
         }
@@ -247,6 +280,94 @@
         var url = '';
         try { url = String(els.frame.contentWindow.location.href); } catch (ignore) {}
         return /cmd(=|%5B)(afterTestPassFinished|showFinalStatement|finishTest|redirectAfterFinish)/i.test(url);
+    }
+
+    // ─── Auto-Start: Zwischenseiten selbst bedienen ───────────────────────────
+
+    /**
+     * Auf Nicht-Fragenseiten (TestScreen, Info-Seite, Passwort-Seite) den Test
+     * automatisch starten: Start-/Fortsetzen-Link klicken, Launcher-Modal mit
+     * Passwort + Prüfungsbedingungen ausfüllen, klassische Passwort-Seite bedienen.
+     */
+    function tryAutoAdvance(doc) {
+        // 1. Klassische Passwort-Seite (ilTestPasswordProtectionGUI)
+        var pw = doc.querySelector('input[type=password][name="password"]');
+        if (pw && cfg.password && pwAttempts < 2) {
+            pwAttempts++;
+            setHint(t('hint_password'));
+            setInputValue(pw, cfg.password);
+            var form = pw.form;
+            var sub = form && form.querySelector('input[type=submit], button[type=submit], [name^="cmd["]');
+            if (sub) { sub.click(); } else if (form) { form.submit(); }
+            return;
+        }
+
+        if (autoStartAttempts >= 5) {
+            setHint(t('hint_start_test'));
+            return;
+        }
+
+        // 2. Direkter Start-/Fortsetzen-Link (TestScreen-Launcher oder Info-Toolbar)
+        var link = doc.querySelector(
+            'a[href*="cmd=resumePlayer"], [data-action*="cmd=resumePlayer"],'
+            + ' a[href*="cmd=startPlayer"], [data-action*="cmd=startPlayer"],'
+            + ' a[href*="cmd=startTest"], [data-action*="cmd=startTest"]'
+        );
+        if (link) {
+            autoStartAttempts++;
+            setHint(t('hint_autostart'));
+            link.click();
+            return;
+        }
+
+        // 3. Modal-Launcher (Passwort/Prüfungsbedingungen): öffnen, ausfüllen, abschicken
+        var trigger = doc.querySelector(
+            'a[href*="launcher_id=exam_modal"], [data-action*="launcher_id=exam_modal"],'
+            + ' .il-launcher button, .il-launcher a'
+        );
+        if (trigger) {
+            autoStartAttempts++;
+            setHint(t('hint_autostart'));
+            trigger.click();
+            setTimeout(function () { fillLauncherModal(doc); }, 900);
+            return;
+        }
+
+        setHint(t('hint_start_test'));
+    }
+
+    /** Sichtbares Launcher-Modal ausfüllen: Passwort, Pflicht-Checkboxen, Absenden */
+    function fillLauncherModal(doc) {
+        if (finishing || pausedRequested) { return; }
+
+        var modal = doc.querySelector('.modal.in, .il-modal-roundtrip:not([style*="display: none"]), dialog[open]');
+        if (!modal) { return; }
+
+        var pw = modal.querySelector('input[type=password]');
+        if (pw) {
+            if (!cfg.password) { setHint(t('hint_start_test')); return; }
+            setInputValue(pw, cfg.password);
+        }
+
+        // Prüfungsbedingungen (Eigenständigkeitserklärung) u.ä. bestätigen
+        modal.querySelectorAll('input[type=checkbox]').forEach(function (cb) {
+            if (!cb.checked) { cb.click(); }
+        });
+
+        var submit = modal.querySelector(
+            '.modal-footer button.btn-primary, .modal-footer input[type=submit],'
+            + ' button[type=submit], input[type=submit], button.btn-primary'
+        );
+        if (submit) { submit.click(); }
+    }
+
+    /** Wert setzen + input-Event feuern (für Formular-Frameworks) */
+    function setInputValue(input, value) {
+        input.value = value;
+        try {
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        } catch (ignore) {}
     }
 
     // ─── Fragen-Verarbeitung ──────────────────────────────────────────────────
