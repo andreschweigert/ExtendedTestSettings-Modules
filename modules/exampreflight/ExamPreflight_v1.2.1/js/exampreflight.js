@@ -21,6 +21,7 @@
     var runId = 0;
     var position = 0;
     var lastPageKey = '';      // zuletzt fertig verarbeitete Seite
+    var seenPages = {};        // alle in diesem Lauf geprüften Seiten (Zyklus-Erkennung)
     var repeatCount = 0;
     var totalErrors = 0;
     var totalWarnings = 0;
@@ -102,6 +103,7 @@
         // Zustand für einen (Neu-)Start zurücksetzen
         position = 0;
         lastPageKey = '';
+        seenPages = {};
         repeatCount = 0;
         totalErrors = 0;
         totalWarnings = 0;
@@ -290,6 +292,29 @@
      * Passwort + Prüfungsbedingungen ausfüllen, klassische Passwort-Seite bedienen.
      */
     function tryAutoAdvance(doc) {
+        // Harte Sperre: Innerhalb des laufenden Players (Zwischenseiten wie
+        // Einleitung, Beenden-Bestätigung) NIEMALS automatisch klicken/submitten —
+        // Auto-Start gehört nur auf TestScreen/Info-/Passwort-Seite.
+        var url = '';
+        try { url = String(els.frame.contentWindow.location.href); } catch (ignore) {}
+        if (/cmdclass=iltestoutput|cmdclass=iltestplayer|cmd=startPlayer|cmd=resumePlayer/i.test(url)) {
+            // Einzige sichere Ausnahme: Fragenübersicht — der Sprung zur ersten
+            // Frage ist ein reiner GET-Navigations-Link (cmd=showQuestion), kein Submit.
+            var qlink = doc.querySelector('a[href*="cmd=showQuestion"][href*="sequence="]');
+            if (qlink && autoStartAttempts < 5) {
+                autoStartAttempts++;
+                setHint(t('hint_autostart'));
+                try {
+                    els.frame.contentWindow.location.href = qlink.href;
+                } catch (e) {
+                    qlink.click();
+                }
+                return;
+            }
+            setHint(t('hint_non_question'));
+            return;
+        }
+
         // 1. Klassische Passwort-Seite (ilTestPasswordProtectionGUI)
         var pw = doc.querySelector('input[type=password][name="password"]');
         if (pw && cfg.password && pwAttempts < 2) {
@@ -320,45 +345,68 @@
             return;
         }
 
-        // 3. Modal-Launcher (Passwort/Prüfungsbedingungen): öffnen, ausfüllen, abschicken
+        // 3. KS-Launcher-Modal (Eigenständigkeitserklärung/Prüfungsbedingungen,
+        //    Passwort): Das Formular liegt bereits im DOM (.c-launcher__form bzw.
+        //    <dialog>) — direkt befüllen und abschicken, statt auf Signal-Buttons
+        //    zu klicken (die reagieren nicht zuverlässig auf synthetische Klicks).
+        if (fillLauncherModal(doc)) {
+            autoStartAttempts++;
+            setHint(t('hint_autostart'));
+            return;
+        }
+
+        // 4. Fallback: Launcher-Button klicken (Modal öffnet sich), dann ausfüllen
         var trigger = doc.querySelector(
             'a[href*="launcher_id=exam_modal"], [data-action*="launcher_id=exam_modal"],'
-            + ' .il-launcher button, .il-launcher a'
+            + ' .c-launcher button, .c-launcher a.btn, .c-launcher a'
         );
         if (trigger) {
             autoStartAttempts++;
             setHint(t('hint_autostart'));
             trigger.click();
-            setTimeout(function () { fillLauncherModal(doc); }, 900);
+            // Modal braucht ggf. einen Moment — mehrfach versuchen (idempotent)
+            setTimeout(function () { fillLauncherModal(doc); }, 700);
+            setTimeout(function () { fillLauncherModal(doc); }, 1800);
             return;
         }
 
         setHint(t('hint_start_test'));
     }
 
-    /** Sichtbares Launcher-Modal ausfüllen: Passwort, Pflicht-Checkboxen, Absenden */
+    /**
+     * Launcher-/Modal-Formular befüllen und direkt absenden (Checkbox für
+     * Eigenständigkeitserklärung, Passwort). Das Modal muss dafür nicht sichtbar
+     * sein — der POST geht auch aus dem versteckten <dialog> raus.
+     * Gibt true zurück, wenn ein Formular gefunden und abgeschickt wurde.
+     */
     function fillLauncherModal(doc) {
-        if (finishing || pausedRequested) { return; }
+        if (finishing || pausedRequested) { return false; }
 
-        var modal = doc.querySelector('.modal.in, .il-modal-roundtrip:not([style*="display: none"]), dialog[open]');
-        if (!modal) { return; }
+        // NUR das Formular des Start-Launchers — niemals andere Modal-Formulare!
+        // Player-Seiten enthalten z.B. das "Test beenden"-Bestätigungs-Modal im DOM;
+        // ein breiterer Selektor würde dessen Formular abschicken und den Test beenden.
+        var form = doc.querySelector('.c-launcher form, .c-launcher__form form');
+        if (!form || form.getAttribute('data-epf-handled') === '1') { return false; }
 
-        var pw = modal.querySelector('input[type=password]');
+        var pw = form.querySelector('input[type=password]');
         if (pw) {
-            if (!cfg.password) { setHint(t('hint_start_test')); return; }
+            if (!cfg.password) { setHint(t('hint_start_test')); return false; }
             setInputValue(pw, cfg.password);
         }
 
         // Prüfungsbedingungen (Eigenständigkeitserklärung) u.ä. bestätigen
-        modal.querySelectorAll('input[type=checkbox]').forEach(function (cb) {
-            if (!cb.checked) { cb.click(); }
+        form.querySelectorAll('input[type=checkbox]').forEach(function (cb) {
+            cb.checked = true;
+            try { cb.dispatchEvent(new Event('change', { bubbles: true })); } catch (ignore) {}
         });
 
-        var submit = modal.querySelector(
-            '.modal-footer button.btn-primary, .modal-footer input[type=submit],'
-            + ' button[type=submit], input[type=submit], button.btn-primary'
-        );
-        if (submit) { submit.click(); }
+        form.setAttribute('data-epf-handled', '1');
+        try {
+            if (form.requestSubmit) { form.requestSubmit(); } else { form.submit(); }
+        } catch (e) {
+            form.submit();
+        }
+        return true;
     }
 
     /** Wert setzen + input-Event feuern (für Formular-Frameworks) */
@@ -393,6 +441,13 @@
             return;
         }
 
+        // Zyklus-Erkennung: Frage schon früher geprüft (z.B. Fragenübersicht am Ende
+        // → Sprung zur ersten Frage) → alle Fragen durch, Lauf sauber abschließen.
+        if (seenPages[pageKey]) {
+            finishRun('completed');
+            return;
+        }
+
         processingPage = true;
 
         waitForMedia(doc, cfg.settleMs)
@@ -403,6 +458,7 @@
                 var title = extractTitle(doc);
                 repeatCount = 0;
                 lastPageKey = pageKeyOf(doc, title);
+                seenPages[lastPageKey] = true;
                 position++;
 
                 return runChecks(doc).then(function (findings) {
@@ -495,6 +551,7 @@
         checkRawTex(container, findings);
         checkFormatting(doc, container, findings);
         checkOptions(container, findings);
+        checkQuestionText(container, findings);
         checkLayout(doc, container, findings);
         checkResources(findings);
 
@@ -815,6 +872,37 @@
         }
         var l1 = lum(a), l2 = lum(b);
         return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+    }
+
+    /**
+     * Fragentext selbst prüfen: In ILIAS steht der Fragentext in .ilc_qtitle_Title
+     * (Formelfrage: .ilc_question_FormulaQuestion > .ilc_qanswer_Answer). Fehlt er
+     * oder ist er extrem kurz UND ohne Bild/Formel, wird die Frage faktisch ohne
+     * erkennbaren Text angezeigt — häufige Import-/Editier-Panne.
+     */
+    function checkQuestionText(container, findings) {
+        var qtitle = container.querySelector('.ilc_qtitle_Title')
+            || container.querySelector('.ilc_question_FormulaQuestion > .ilc_qanswer_Answer');
+
+        // Kein bekannter Fragentext-Container → nicht zuverlässig prüfbar, nicht melden
+        if (!qtitle) { return; }
+
+        var txt   = (qtitle.textContent || '').replace(/\s+/g, ' ').trim();
+        var media = qtitle.querySelector('img, video, audio, canvas, svg, mjx-container, .MathJax');
+
+        if (txt.length === 0 && !media) {
+            findings.push({
+                check: 'missing_questiontext', level: 'error',
+                message: 'Frage hat keinen Fragentext',
+                detail: ''
+            });
+        } else if (txt.length > 0 && txt.split(' ').length < 5 && !media) {
+            findings.push({
+                check: 'short_questiontext', level: 'warning',
+                message: 'Fragentext ist sehr kurz (unter 5 Wörter) — evtl. unvollständig',
+                detail: '„' + txt + '"'
+            });
+        }
     }
 
     function checkLayout(doc, container, findings) {

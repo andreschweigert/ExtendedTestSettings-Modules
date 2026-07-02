@@ -2,7 +2,7 @@
 
 **Modul-ID:** `exampreflight`
 **Speicherort:** `modules/exampreflight/` (externes Modul)
-**Referenz-ZIP:** `modules-zip/modules/exampreflight/ExamPreflight_v1.2.0.zip`
+**Referenz-ZIP:** `modules-zip/modules/exampreflight/ExamPreflight_v1.2.1.zip`
 **Zuletzt aktualisiert:** 2026-07-02
 
 ---
@@ -142,6 +142,8 @@ Wichtige Mechanik:
 | `h_overflow` | warning | `scrollWidth > clientWidth` am Delos-Scroll-Container |
 | `protruding` | warning | Elemente ragen > 12 px aus `.tst_question-container` |
 | `empty_question` | error | Fragenbereich ohne Text und ohne interaktive Elemente |
+| `missing_questiontext` | error | `.ilc_qtitle_Title` (Formelfrage: `.ilc_question_FormulaQuestion > .ilc_qanswer_Answer`) leer und ohne Bild/Formel |
+| `short_questiontext` | warning | Fragentext unter 5 Wörtern (ohne Medien) — evtl. unvollständig |
 | `http_error` | error | `PerformanceResourceTiming.responseStatus >= 400` (nur neuere Browser) |
 | `js_error` | warning | `window.onerror` im iframe (ab Seiten-Load) |
 
@@ -182,6 +184,7 @@ Wichtige Mechanik:
 
 | Datum | Was |
 |---|---|
+| 2026-07-02 | **v1.2.1:** Auto-Start-Fixes nach Live-Test: Launcher-Selektor `.c-launcher` (nicht `.il-launcher`); Start-Modal-Formular wird DIREKT befüllt+submitted (nur `.c-launcher form` — ein breiterer Selektor hatte das „Test beenden"-Modal erwischt und den Test abgegeben!); harte Player-Sperre in `tryAutoAdvance()` (auf `iltestoutput`/`iltestplayer`-Seiten keine Auto-Aktionen, einzige Ausnahme: Fragenübersicht → GET-Link `cmd=showQuestion`); Zyklus-Erkennung via `seenPages` (Fragenübersicht am Ende → Sprung zu Frage 1 → Lauf wird als completed beendet statt Endlosschleife). Neue Checks: `missing_questiontext` (error) + `short_questiontext` (< 5 Wörter, warning) |
 | 2026-07-02 | **v1.2.0:** Auto-Start via `tryAutoAdvance()` — klickt Start-/Resume-Links (`cmd=startTest/startPlayer/resumePlayer`), bedient den ILIAS-9-TestScreen-Modal-Launcher (`launcher_id=exam_modal`: Passwort-Autofill aus `tst_tests.password`, Pflicht-Checkboxen wie `exam_conditions`) und die klassische Passwort-Seite (`input[name=password]`); Caps: 5 Auto-Start-Versuche, 2 Passwort-Versuche. Neu: `cmd=deleteOwnAttempt` (POST + `epf_token`) löscht NUR den Testlauf des aktuellen Nutzers via `ilObjTest::removeTestResultsByUserIds()` + `removeTestActives()` (gleiche API wie „Teilnehmerdaten löschen"); Cockpit-Checkbox „Testlauf danach löschen" (Default an) |
 | 2026-07-02 | **v1.1.1:** `setupNavigation()` — `setBackTarget('← <Test>', ilRepositoryGUI)` + Tabs `epf_cockpit`/`epf_report` (Muster: ExamGrouping); Capture-Hinweis unterscheidet „abgelehnt" von „nicht verfügbar (kein HTTPS/Secure Context)" |
 | 2026-07-02 | **v1.1.0:** 7 neue Check-Typen: `raw_tex`, `broken_bg_image` (async HEAD → `runChecks()` gibt jetzt Promise zurück), `sparse_options`, `encoding_error`, `raw_html`, `tiny_font`, `low_contrast`; Text-Checks laufen über `proseText()` (ignoriert `<pre>`/`<code>`/`<textarea>` gegen False Positives bei Programmier-Fragen) |

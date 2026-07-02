@@ -18,6 +18,7 @@ ExamPreflight prüft das tatsächliche *Rendering* der Fragen.
 | Layout | horizontaler Overflow, aus dem Fragenbereich ragende Elemente, (nahezu) leere Fragen |
 | Formatierung | Encoding-Salat (`Ã¤`, `â€“`, `�`), HTML-Code als sichtbarer Text, winzige Schrift (< 9 px), kaum lesbarer Text (Farbe ≈ Hintergrund) — Code-Blöcke (`<pre>`/`<code>`) werden ignoriert |
 | Antwortoptionen | leere Auswahlmenüs, Radio-Gruppen mit nur einer Option (Import-Artefakte) |
+| Fragentext | fehlender Fragentext (Fehler) bzw. sehr kurzer Fragentext unter 5 Wörtern (Warnung) — Bild-/Formel-Fragen ausgenommen |
 | Ressourcen | HTTP-Fehler ≥ 400 (via Performance-API, browserabhängig) |
 | JavaScript | Fehler während der Fragenseite |
 
@@ -51,6 +52,7 @@ aktivieren (siehe [docs/how-to.md](../../docs/how-to.md)).
 
 | Version | Datum | Änderungen |
 |---|---|---|
+| 1.2.1 | 2026-07-02 | Auto-Start stabilisiert (Launcher-Erkennung, Start-Modal wird direkt abgeschickt, Sperre gegen Fremd-Modals im Player, Fragenübersicht wird übersprungen, Zyklus-Erkennung am Testende); neue Checks: fehlender/zu kurzer Fragentext |
 | 1.2.0 | 2026-07-02 | Vollautomatischer Durchlauf: Test-Start/Fortsetzen wird selbst geklickt, Passwort und Prüfungsbedingungen im Start-Modal automatisch ausgefüllt; Option „Testlauf danach löschen" entfernt am Ende den eigenen (!) Testlauf über die offizielle ILIAS-API |
 | 1.1.1 | 2026-07-02 | Navigation: Back-Link „← Test" + Tabs Cockpit/Prüfberichte in allen Ansichten; klarer Hinweis, wenn Screenshots mangels HTTPS nicht verfügbar sind |
 | 1.1.0 | 2026-07-02 | Neue Checks: unverarbeiteter Formel-Code, kaputte CSS-Hintergrundbilder, Antwortoptionen-Plausibilität, Formatierung (Encoding, sichtbarer HTML-Code, Mini-Schrift, kaum lesbarer Text) |

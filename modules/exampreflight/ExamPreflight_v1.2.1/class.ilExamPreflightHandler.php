@@ -90,7 +90,7 @@ class ilExamPreflightHandler implements ilExamModuleInterface
             'title'       => $this->lng->txt('title'),
             'icon'        => '🛫',
             'description' => $this->lng->txt('description'),
-            'version'     => '1.2.0',
+            'version'     => '1.2.1',
             'features'    => [
                 'Cockpit mit Testplayer im iframe — kein Eingriff in echte Prüfungsdurchläufe',
                 'Vollautomatischer Durchlauf: Test-Start, Passwort und Prüfungsbedingungen werden selbst bedient',
