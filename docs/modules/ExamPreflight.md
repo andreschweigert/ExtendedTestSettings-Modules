@@ -2,7 +2,7 @@
 
 **Modul-ID:** `exampreflight`
 **Speicherort:** `modules/exampreflight/` (externes Modul)
-**Referenz-ZIP:** `modules-zip/modules/exampreflight/ExamPreflight_v1.2.1.zip`
+**Referenz-ZIP:** `modules-zip/modules/exampreflight/ExamPreflight_v1.2.2.zip`
 **Zuletzt aktualisiert:** 2026-07-02
 
 ---
@@ -184,6 +184,7 @@ Wichtige Mechanik:
 
 | Datum | Was |
 |---|---|
+| 2026-07-02 | **v1.2.2:** Härtung nach zwei Code-Reviews. **HOCH:** `clickNext`-Modal-Fallback prüft jetzt echte Sichtbarkeit (`getComputedStyle`/`dialog.open`, nicht nur Inline-Style) und ignoriert Buttons mit `finish/suspend/submit test` → kein versehentliches Test-Beenden mehr. **JS-Logik:** Zombie-Lauf nach fehlgeschlagenem `startRun` (runId=0+stopCapture im catch); Resume auf Nicht-Fragenseite ruft `onFrameLoad`; pageKey neu berechnet nach `waitForMedia` (stale-doc/Doppel-Upload) + Sequence aus Form-Action/DOM-Fallback (Kollision); Lazy-Offscreen-Bilder nicht als `slow_image`; Pause während Verarbeitung respektiert; `uploadResult`-Fehler → `warn`+Hinweis; Restart erst nach `deleteOwnAttempt`; Screenshot-Ränder (srcLeft/effWidth statt schwarzem Balken); eigener Cap `summaryJumps` für Fragenübersicht. **Check-FPs:** `raw_html`-Regex (Ungleichungen `a<b`), `checkOptions` (Long-Menu/Kprim), `checkBgImages` GET+Range statt HEAD, `checkQuestionText` akzeptiert iframe/object/embed. **Security:** CSRF-Token auf `startRun`/`report`/`finishRun` (vorher nur delete\*); Screenshot-Upload nur echte JPEGs (`getimagesize`+`IMAGETYPE_JPEG`); `X-Content-Type-Options: nosniff` + `Content-Disposition` bei Auslieferung und JSON; `Cache-Control: no-store` auf der Cockpit-Seite (Passwort im HTML); Debug-`error_log` (Header-/Cookie-Leak) im Proxy entfernt (Haupt-Repo) |
 | 2026-07-02 | **v1.2.1:** Auto-Start-Fixes nach Live-Test: Launcher-Selektor `.c-launcher` (nicht `.il-launcher`); Start-Modal-Formular wird DIREKT befüllt+submitted (nur `.c-launcher form` — ein breiterer Selektor hatte das „Test beenden"-Modal erwischt und den Test abgegeben!); harte Player-Sperre in `tryAutoAdvance()` (auf `iltestoutput`/`iltestplayer`-Seiten keine Auto-Aktionen, einzige Ausnahme: Fragenübersicht → GET-Link `cmd=showQuestion`); Zyklus-Erkennung via `seenPages` (Fragenübersicht am Ende → Sprung zu Frage 1 → Lauf wird als completed beendet statt Endlosschleife). Neue Checks: `missing_questiontext` (error) + `short_questiontext` (< 5 Wörter, warning) |
 | 2026-07-02 | **v1.2.0:** Auto-Start via `tryAutoAdvance()` — klickt Start-/Resume-Links (`cmd=startTest/startPlayer/resumePlayer`), bedient den ILIAS-9-TestScreen-Modal-Launcher (`launcher_id=exam_modal`: Passwort-Autofill aus `tst_tests.password`, Pflicht-Checkboxen wie `exam_conditions`) und die klassische Passwort-Seite (`input[name=password]`); Caps: 5 Auto-Start-Versuche, 2 Passwort-Versuche. Neu: `cmd=deleteOwnAttempt` (POST + `epf_token`) löscht NUR den Testlauf des aktuellen Nutzers via `ilObjTest::removeTestResultsByUserIds()` + `removeTestActives()` (gleiche API wie „Teilnehmerdaten löschen"); Cockpit-Checkbox „Testlauf danach löschen" (Default an) |
 | 2026-07-02 | **v1.1.1:** `setupNavigation()` — `setBackTarget('← <Test>', ilRepositoryGUI)` + Tabs `epf_cockpit`/`epf_report` (Muster: ExamGrouping); Capture-Hinweis unterscheidet „abgelehnt" von „nicht verfügbar (kein HTTPS/Secure Context)" |

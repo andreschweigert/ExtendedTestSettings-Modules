@@ -35,6 +35,8 @@
     var jsErrors = [];
     var autoStartAttempts = 0;
     var pwAttempts = 0;
+    var summaryJumps = 0;      // eigener Cap für den Fragenübersicht-Sprung
+    var uploadFailures = 0;
 
     // ─── Init / UI ────────────────────────────────────────────────────────────
 
@@ -112,6 +114,8 @@
         finishing = false;
         autoStartAttempts = 0;
         pwAttempts = 0;
+        summaryJumps = 0;
+        uploadFailures = 0;
         updateProgress();
 
         var wantShots = els.shotsCb.checked;
@@ -125,6 +129,7 @@
                 setHint(t(captureUnavailable ? 'hint_capture_unavailable' : 'hint_capture_denied'));
             }
             var body = new FormData();
+            body.append('epf_token', cfg.csrfToken);
             body.append('screenshots', captureOk ? '1' : '');
             body.append('viewport', window.innerWidth + 'x' + window.innerHeight);
             return fetch(cfg.startRunUrl, { method: 'POST', body: body, credentials: 'same-origin' })
@@ -139,6 +144,10 @@
             // Falls der Prüfer den Test schon geöffnet hat: aktuelle Seite direkt verarbeiten
             onFrameLoad();
         }).catch(function () {
+            // Kein Zombie-Lauf: alte runId entwerten und Capture-Stream freigeben,
+            // sonst würden spätere Frame-Loads in den vorherigen Lauf hochladen.
+            runId = 0;
+            stopCapture();
             setState('error');
             els.btnStart.disabled = false;
             els.shotsCb.disabled = false;
@@ -157,7 +166,9 @@
                 // Seite wurde vor der Pause bereits fertig verarbeitet → nur weiterblättern
                 clickNext(doc);
             } else {
-                processCurrentPage();
+                // Deckt auch Nicht-Fragenseiten ab (TestScreen etc.): onFrameLoad
+                // entscheidet zwischen processCurrentPage und tryAutoAdvance.
+                onFrameLoad();
             }
         }
     }
@@ -172,6 +183,7 @@
         finishing = true;
         stopCapture();
         var body = new FormData();
+        body.append('epf_token', cfg.csrfToken);
         body.append('run_id', String(runId));
         body.append('result', result);
         fetch(cfg.finishRunUrl, { method: 'POST', body: body, credentials: 'same-origin' })
@@ -182,8 +194,6 @@
                 setHint(result === 'aborted' ? t('hint_aborted') : t('hint_done'));
                 els.btnPause.disabled = true;
                 els.btnStop.disabled = true;
-                els.btnStart.disabled = false;   // erneuter Lauf ohne Seiten-Reload möglich
-                els.shotsCb.disabled = false;
                 var summary = data && data.ok
                     ? data.checked + ' ✓, ' + data.errors + ' ❌, ' + data.warnings + ' ⚠️ — '
                     : '';
@@ -198,7 +208,12 @@
                 els.findings.insertBefore(line, els.findings.firstChild);
 
                 if (els.delCb && els.delCb.checked) {
+                    // Start bleibt gesperrt, bis der iframe zurückgesetzt ist —
+                    // sonst würde ein sofortiger Neu-Start ins iframe-Reset rennen.
                     deleteOwnAttempt();
+                } else {
+                    els.btnStart.disabled = false;   // erneuter Lauf ohne Seiten-Reload möglich
+                    els.shotsCb.disabled = false;
                 }
             });
     }
@@ -220,6 +235,9 @@
                     // Testfenster auf den frischen Ausgangszustand zurücksetzen
                     els.frame.src = cfg.testUrl;
                 }
+                // Erst jetzt einen neuen Lauf erlauben (iframe-Reset ist angestoßen)
+                els.btnStart.disabled = false;
+                els.shotsCb.disabled = false;
             });
     }
 
@@ -301,8 +319,8 @@
             // Einzige sichere Ausnahme: Fragenübersicht — der Sprung zur ersten
             // Frage ist ein reiner GET-Navigations-Link (cmd=showQuestion), kein Submit.
             var qlink = doc.querySelector('a[href*="cmd=showQuestion"][href*="sequence="]');
-            if (qlink && autoStartAttempts < 5) {
-                autoStartAttempts++;
+            if (qlink && summaryJumps < 3) {
+                summaryJumps++;   // eigener Cap — teilt sich NICHT das Auto-Start-Budget
                 setHint(t('hint_autostart'));
                 try {
                     els.frame.contentWindow.location.href = qlink.href;
@@ -409,6 +427,19 @@
         return true;
     }
 
+    /** Echt sichtbar? (geschlossene Modals sind per Stylesheet versteckt) */
+    function isElementVisible(el, doc) {
+        try {
+            if (el.tagName === 'DIALOG' && !el.open) { return false; }
+            var cs = doc.defaultView.getComputedStyle(el);
+            if (cs.display === 'none' || cs.visibility === 'hidden') { return false; }
+            var r = el.getBoundingClientRect();
+            return r.width > 0 && r.height > 0;
+        } catch (e) {
+            return false;
+        }
+    }
+
     /** Wert setzen + input-Event feuern (für Formular-Frameworks) */
     function setInputValue(input, value) {
         input.value = value;
@@ -432,7 +463,7 @@
         if (pageKey === lastPageKey) {
             repeatCount++;
             if (repeatCount >= 2) {
-                setState('error');
+                // Navigation dreht sich im Kreis → Lauf als abgebrochen beenden.
                 setHint(t('state_error'));
                 finishRun('aborted');
             } else {
@@ -455,10 +486,27 @@
                 doc = frameDoc();
                 if (!doc || !isQuestionPage(doc) || finishing) { processingPage = false; return null; }
 
+                // Während des Waits kann der Prüfer im iframe navigiert haben →
+                // Seite neu bewerten, sonst Doppel-Upload/umgangene Zyklus-Erkennung.
                 var title = extractTitle(doc);
+                var pk = pageKeyOf(doc, title);
+                if (pk === lastPageKey || seenPages[pk]) {
+                    processingPage = false;
+                    if (state === 'running' && !pausedRequested) { clickNext(doc); }
+                    return null;
+                }
+
+                // Pause während des Waits angefordert → hier stoppen, beim Resume
+                // wird die Seite erneut verarbeitet (lastPageKey ist noch nicht gesetzt).
+                if (pausedRequested) {
+                    processingPage = false;
+                    setState('paused');
+                    return null;
+                }
+
                 repeatCount = 0;
-                lastPageKey = pageKeyOf(doc, title);
-                seenPages[lastPageKey] = true;
+                lastPageKey = pk;
+                seenPages[pk] = true;
                 position++;
 
                 return runChecks(doc).then(function (findings) {
@@ -493,6 +541,23 @@
             var m = String(els.frame.contentWindow.location.href).match(/sequence=(\d+)/);
             if (m) { seq = m[1]; }
         } catch (ignore) {}
+
+        // Sequence zuverlässiger aus der Formular-Action (die trägt die ilCtrl-Params
+        // auch dann, wenn die Browser-URL nach einem POST keine sequence enthält).
+        if (!seq) {
+            var form = doc.getElementById('taForm');
+            var action = form ? (form.getAttribute('action') || '') : '';
+            var fm = action.match(/sequence[=%5D]+(\d+)/i);
+            if (fm) { seq = fm[1]; }
+        }
+
+        // Falls weder URL noch Action eine Sequence liefern: Fragen-ID aus dem DOM,
+        // sonst würde ein konstanter doc.title alle Seiten gleich aussehen lassen.
+        if (!seq) {
+            var q = doc.querySelector('[id^="question"], [id^="ilc_qid"], .ilc_question_Standard [name]');
+            if (q) { seq = q.id || q.getAttribute('name') || ''; }
+        }
+
         return seq + '|' + title;
     }
 
@@ -514,6 +579,13 @@
 
         doc.querySelectorAll('img').forEach(function (img) {
             if (!img.complete) {
+                // Lazy-Bilder unterhalb des Viewports laden erst beim Scrollen (das
+                // passiert erst beim Screenshot) → nicht darauf warten, sonst 10 s
+                // Stall + falsches "slow_image". Eager anfordern und weiterlaufen.
+                if ((img.loading === 'lazy') && !isNearViewport(img, doc)) {
+                    try { img.loading = 'eager'; } catch (ignore) {}
+                    return;
+                }
                 waits.push(new Promise(function (resolve) {
                     img.addEventListener('load', resolve, { once: true });
                     img.addEventListener('error', resolve, { once: true });
@@ -577,7 +649,9 @@
                     message: 'Bild wird nicht geladen',
                     detail: shortSrc(img.src) + (img.alt ? ' (alt: ' + img.alt + ')' : '')
                 });
-            } else if (!img.complete) {
+            } else if (!img.complete && img.loading !== 'lazy') {
+                // Lazy-Bilder, die (noch) nicht sichtbar sind, sind kein Fehler —
+                // sie laden bewusst erst beim Scrollen. Nicht als "slow" werten.
                 findings.push({
                     check: 'slow_image', level: 'warning',
                     message: 'Bild nach Wartezeit noch nicht geladen',
@@ -585,6 +659,17 @@
                 });
             }
         });
+    }
+
+    /** Grobe Nähe zum sichtbaren Bereich (± ein Viewport) */
+    function isNearViewport(el, doc) {
+        try {
+            var r = el.getBoundingClientRect();
+            var h = (doc.defaultView.innerHeight || 800);
+            return r.top < h * 2 && r.bottom > -h;
+        } catch (e) {
+            return true;
+        }
     }
 
     function checkAv(container, findings) {
@@ -713,9 +798,11 @@
             var abs;
             try { abs = new URL(u, doc.baseURI); } catch (e) { return Promise.resolve(); }
             if (abs.origin !== window.location.origin) { return Promise.resolve(); } // cross-origin nicht prüfbar
-            return fetch(abs.href, { method: 'HEAD', credentials: 'same-origin' })
+            // GET mit Range statt HEAD: manche Server/Handler lehnen HEAD ab (405)
+            // oder validieren signierte Pfade nur bei GET → sonst False Positives.
+            return fetch(abs.href, { method: 'GET', headers: { Range: 'bytes=0-0' }, credentials: 'same-origin' })
                 .then(function (r) {
-                    if (!r.ok) {
+                    if (!r.ok && r.status !== 206) {
                         findings.push({
                             check: 'broken_bg_image', level: 'error',
                             message: 'CSS-Hintergrundbild liefert HTTP ' + r.status,
@@ -738,6 +825,13 @@
     /** Antwortoptionen-Plausibilität: leere Auswahlmenüs, Radio-Gruppen mit nur einer Option */
     function checkOptions(container, findings) {
         container.querySelectorAll('select').forEach(function (s) {
+            // Long-Menu-/JS-befüllte Selects (autocomplete) starten leer und werden
+            // erst clientseitig gefüllt → nicht als Fehler werten.
+            if (s.getAttribute('data-autocomplete') !== null
+                || s.className.indexOf('autocomplete') !== -1
+                || s.closest('.ilc_question_KprimChoice, .ilc_question_LongMenu')) {
+                return;
+            }
             if (s.querySelectorAll('option').length < 2) {
                 findings.push({
                     check: 'sparse_options', level: 'warning',
@@ -775,8 +869,10 @@
             });
         }
 
-        // HTML-Code als sichtbarer Text (doppelt escaped, Import-Artefakt)
-        var raw = text.match(/<\/?(p|br|div|span|strong|em|b|i|ul|ol|li|table|img)\b[^>]{0,80}>|&nbsp;|&lt;|&amp;[a-z]+;/);
+        // HTML-Code als sichtbarer Text (doppelt escaped, Import-Artefakt).
+        // Nach dem Tagnamen MUSS '>', '/>' oder Whitespace+Attribut folgen — sonst
+        // schlägt der Check auf Ungleichungen wie "a<b und c>d" an (Variablen b/i/p…).
+        var raw = text.match(/<\/?(p|br|div|span|strong|em|b|i|ul|ol|li|table|img)(\s*\/?>|\s+[a-z-]+\s*=)|&nbsp;|&lt;\/?[a-z]|&amp;[a-z]+;/i);
         if (raw) {
             findings.push({
                 check: 'raw_html', level: 'warning',
@@ -888,7 +984,7 @@
         if (!qtitle) { return; }
 
         var txt   = (qtitle.textContent || '').replace(/\s+/g, ' ').trim();
-        var media = qtitle.querySelector('img, video, audio, canvas, svg, mjx-container, .MathJax');
+        var media = qtitle.querySelector('img, video, audio, canvas, svg, iframe, object, embed, mjx-container, .MathJax');
 
         if (txt.length === 0 && !media) {
             findings.push({
@@ -1052,17 +1148,19 @@
         var visTop    = Math.max(band.top, 0);
         var visBottom = Math.min(band.top + band.height, rect.bottom, window.innerHeight);
         var ch        = visBottom - visTop;              // erfasste Content-Höhe pro Segment
-        if (ch < 50 || band.width < 50) {
+        // Linke Kante sauber clampen (Quell-X UND Breite), sonst horizontaler Versatz
+        var srcLeft   = Math.max(0, band.left);
+        var effWidth  = band.width - (srcLeft - band.left);
+        if (ch < 50 || effWidth < 50) {
             return Promise.resolve(null);
         }
-        var srcOffset = visTop - band.top;               // oben abgeschnittener Teil des Containers
 
         var contentH = Math.max(scroller.scrollHeight, ch);
         var segments = Math.min(cfg.maxSegments, Math.max(1, Math.ceil(contentH / ch)));
         var totalH   = Math.min(contentH, segments * ch);
 
         var canvas = document.createElement('canvas');
-        canvas.width  = Math.round(band.width * scaleX);
+        canvas.width  = Math.round(effWidth * scaleX);
         canvas.height = Math.round(totalH * scaleY);
         var ctx = canvas.getContext('2d');
 
@@ -1072,14 +1170,16 @@
             return new Promise(function (resolve) {
                 scroller.scrollTop = seg * ch;
                 setTimeout(function () {
+                    // Ziel-Y = tatsächliche Scrollposition → keine Lücke/kein schwarzer
+                    // Balken, auch wenn die Container-Oberkante über dem Viewport liegt.
                     var actualY = scroller.scrollTop || 0;
                     try {
                         ctx.drawImage(
                             captureVideo,
-                            Math.round(Math.max(0, band.left) * scaleX), Math.round(visTop * scaleY),
-                            Math.round(band.width * scaleX), Math.round(ch * scaleY),
-                            0, Math.round((actualY + srcOffset) * scaleY),
-                            Math.round(band.width * scaleX), Math.round(ch * scaleY)
+                            Math.round(srcLeft * scaleX), Math.round(visTop * scaleY),
+                            Math.round(effWidth * scaleX), Math.round(ch * scaleY),
+                            0, Math.round(actualY * scaleY),
+                            Math.round(effWidth * scaleX), Math.round(ch * scaleY)
                         );
                     } catch (ignore) {}
                     seg++;
@@ -1115,6 +1215,7 @@
         updateProgress();
 
         var body = new FormData();
+        body.append('epf_token', cfg.csrfToken);
         body.append('run_id', String(runId));
         body.append('position', String(position));
         body.append('title', title);
@@ -1130,13 +1231,22 @@
         }
 
         return fetch(cfg.reportUrl, { method: 'POST', body: body, credentials: 'same-origin' })
-            .then(function (r) { return r.json(); })
+            .then(function (r) {
+                if (!r.ok) { throw new Error('http ' + r.status); }
+                return r.json();
+            })
             .then(function (data) {
                 return (data && data.status) ? data.status
                     : (findings.some(function (f) { return f.level === 'error'; }) ? 'fail'
                         : (findings.some(function (f) { return f.level === 'warning'; }) ? 'warn' : 'ok'));
             })
-            .catch(function () { return 'ok'; });
+            .catch(function () {
+                // Upload fehlgeschlagen → im Cockpit sichtbar machen; die Frage fehlt
+                // sonst still im Server-Bericht (Zählerdiskrepanz).
+                uploadFailures++;
+                setHint(t('hint_upload_failed'));
+                return 'warn';
+            });
     }
 
     function clickNext(doc) {
@@ -1162,15 +1272,25 @@
 
         // ILIAS kann statt zu navigieren einen Bestätigungs-Modal zeigen
         // (z.B. "Antwort festschreiben") → dessen Bestätigen-Button klicken.
+        // WICHTIG: Nur ECHT SICHTBARE Modals (geschlossene sind nur per Stylesheet
+        // versteckt und lägen sonst im Selektor!) und NIEMALS einen Button, der den
+        // Test beendet/abgibt — das "Test beenden"-Modal liegt immer mit im DOM.
         setTimeout(function () {
             if (navigated() || state !== 'running') { return; }
             var d = frameDoc();
             if (!d) { return; }
-            var modal = d.querySelector('.modal.in, .il-modal-roundtrip:not([style*="display: none"])');
-            if (modal) {
-                var confirmBtn = modal.querySelector('.btn-primary, button[name*="cmd"], input[type=submit]');
-                if (confirmBtn) { confirmBtn.click(); }
-            }
+            var modal = null;
+            d.querySelectorAll('.modal, .il-modal-roundtrip, dialog').forEach(function (m) {
+                if (!modal && isElementVisible(m, d)) { modal = m; }
+            });
+            if (!modal) { return; }
+            var confirmBtn = modal.querySelector('.btn-primary, button[name*="cmd"], input[type=submit]');
+            if (!confirmBtn) { return; }
+            var haystack = (confirmBtn.name || '')
+                + ' ' + (confirmBtn.getAttribute('onclick') || '')
+                + ' ' + ((confirmBtn.form && confirmBtn.form.action) || '');
+            if (/finish|suspend|submit.*test/i.test(haystack)) { return; }
+            confirmBtn.click();
         }, 2000);
 
         // Wenn nach längerer Zeit gar nichts passiert ist: pausieren statt hängen

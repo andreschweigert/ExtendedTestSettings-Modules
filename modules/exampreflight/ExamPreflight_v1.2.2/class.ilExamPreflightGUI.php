@@ -148,6 +148,12 @@ class ilExamPreflightGUI
         $this->setProxyParams($ref_id);
         $this->setupNavigation($ref_id, 'epf_cockpit');
 
+        // Das Test-Passwort steht (für write-Berechtigte) in der Config im Seiten-HTML
+        // → Seite nicht cachen, damit es nicht im Disk-Cache geteilter Geräte landet.
+        if (!headers_sent()) {
+            header('Cache-Control: no-store, private');
+        }
+
         $obj_id     = (int)ilObject::_lookupObjectId($ref_id);
         $test_title = ilObject::_lookupTitle($obj_id);
         $test_url   = ILIAS_HTTP_PATH . '/goto.php?target=tst_' . $ref_id;
@@ -220,7 +226,7 @@ class ilExamPreflightGUI
             'hint_capture', 'hint_capture_denied', 'hint_capture_unavailable',
             'hint_start_test', 'hint_running',
             'hint_done', 'hint_done_page', 'hint_aborted', 'hint_non_question',
-            'hint_autostart', 'hint_password',
+            'hint_autostart', 'hint_password', 'hint_upload_failed',
             'attempt_deleted', 'attempt_delete_failed',
             'progress_of', 'question_short', 'open_report', 'confirm_stop',
         ];
@@ -236,6 +242,7 @@ class ilExamPreflightGUI
     private function ajaxStartRun(int $ref_id): void
     {
         $this->beginJson();
+        $this->requirePostToken();
 
         $obj_id = (int)ilObject::_lookupObjectId($ref_id);
         if ($ref_id <= 0 || $obj_id <= 0 || $this->user->getId() <= 0) {
@@ -271,6 +278,7 @@ class ilExamPreflightGUI
     private function ajaxReport(int $ref_id): void
     {
         $this->beginJson();
+        $this->requirePostToken();
 
         $run = $this->getOwnRunningRun((int)($_POST['run_id'] ?? 0), $ref_id);
         if ($run === null) {
@@ -318,7 +326,11 @@ class ilExamPreflightGUI
         $shot_w    = max(0, min(20000, (int)($_POST['shot_w'] ?? 0)));
         $shot_h    = max(0, min(60000, (int)($_POST['shot_h'] ?? 0)));
         if (!empty($_FILES['shot']) && is_uploaded_file($_FILES['shot']['tmp_name'])) {
-            if ((int)$_FILES['shot']['size'] <= self::MAX_SHOT_BYTES) {
+            // Nur echte JPEGs akzeptieren (Magic-Byte-Prüfung, nicht dem Client-MIME
+            // vertrauen) — verhindert das Ablegen von HTML/JS als "Screenshot".
+            $info = @getimagesize($_FILES['shot']['tmp_name']);
+            $is_jpeg = is_array($info) && ($info[2] ?? 0) === IMAGETYPE_JPEG;
+            if ($is_jpeg && (int)$_FILES['shot']['size'] <= self::MAX_SHOT_BYTES) {
                 $dir = $this->storageDir((int)$run['test_obj_id'], (int)$run['run_id']);
                 if ($dir !== '') {
                     $shot_file = 'q' . str_pad((string)$position, 3, '0', STR_PAD_LEFT) . '.jpg';
@@ -355,6 +367,7 @@ class ilExamPreflightGUI
     private function ajaxFinishRun(int $ref_id): void
     {
         $this->beginJson();
+        $this->requirePostToken();
 
         $run = $this->getOwnRunningRun((int)($_POST['run_id'] ?? 0), $ref_id);
         if ($run === null) {
@@ -597,6 +610,8 @@ class ilExamPreflightGUI
             ob_end_clean();
         }
         header('Content-Type: image/jpeg');
+        header('X-Content-Type-Options: nosniff');
+        header('Content-Disposition: inline; filename="screenshot.jpg"');
         header('Content-Length: ' . (string)filesize($file));
         header('Cache-Control: private, max-age=3600');
         readfile($file);
@@ -707,12 +722,7 @@ class ilExamPreflightGUI
     private function ajaxDeleteOwnAttempt(int $ref_id): void
     {
         $this->beginJson();
-
-        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST'
-            || !hash_equals($this->csrfToken(), (string)($_POST['epf_token'] ?? ''))
-        ) {
-            $this->jsonOut(['error' => 'forbidden'], 403);
-        }
+        $this->requirePostToken();
 
         if ($ref_id <= 0 || $this->user->getId() <= 0) {
             $this->jsonOut(['error' => 'invalid request'], 400);
@@ -780,6 +790,20 @@ class ilExamPreflightGUI
             ob_end_clean();
         }
         header('Content-Type: application/json');
+        header('X-Content-Type-Options: nosniff');
+    }
+
+    /**
+     * CSRF-Schutz für alle mutierenden AJAX-Endpunkte: POST + gültiger Session-Token.
+     * Beendet den Request mit 403, wenn nicht erfüllt.
+     */
+    private function requirePostToken(): void
+    {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST'
+            || !hash_equals($this->csrfToken(), (string)($_POST['epf_token'] ?? ''))
+        ) {
+            $this->jsonOut(['error' => 'forbidden'], 403);
+        }
     }
 
     /** @return never */
