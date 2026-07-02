@@ -108,11 +108,14 @@
         updateProgress();
 
         var wantShots = els.shotsCb.checked;
-        var capturePromise = wantShots ? startCapture() : Promise.resolve(false);
+        // Screen-Capture-API gibt es nur in Secure Contexts (HTTPS) — auf einem
+        // HTTP-System klar sagen, dass es an der Umgebung liegt, nicht am Nutzer.
+        var captureUnavailable = !(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia);
+        var capturePromise = (wantShots && !captureUnavailable) ? startCapture() : Promise.resolve(false);
 
         capturePromise.then(function (captureOk) {
             if (wantShots && !captureOk) {
-                setHint(t('hint_capture_denied'));
+                setHint(t(captureUnavailable ? 'hint_capture_unavailable' : 'hint_capture_denied'));
             }
             var body = new FormData();
             body.append('screenshots', captureOk ? '1' : '');

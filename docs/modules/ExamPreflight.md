@@ -2,7 +2,7 @@
 
 **Modul-ID:** `exampreflight`
 **Speicherort:** `modules/exampreflight/` (externes Modul)
-**Referenz-ZIP:** `modules-zip/modules/exampreflight/ExamPreflight_v1.1.0.zip`
+**Referenz-ZIP:** `modules-zip/modules/exampreflight/ExamPreflight_v1.1.1.zip`
 **Zuletzt aktualisiert:** 2026-07-02
 
 ---
@@ -182,6 +182,7 @@ Wichtige Mechanik:
 
 | Datum | Was |
 |---|---|
+| 2026-07-02 | **v1.1.1:** `setupNavigation()` — `setBackTarget('← <Test>', ilRepositoryGUI)` + Tabs `epf_cockpit`/`epf_report` (Muster: ExamGrouping); Capture-Hinweis unterscheidet „abgelehnt" von „nicht verfügbar (kein HTTPS/Secure Context)" |
 | 2026-07-02 | **v1.1.0:** 7 neue Check-Typen: `raw_tex`, `broken_bg_image` (async HEAD → `runChecks()` gibt jetzt Promise zurück), `sparse_options`, `encoding_error`, `raw_html`, `tiny_font`, `low_contrast`; Text-Checks laufen über `proseText()` (ignoriert `<pre>`/`<code>`/`<textarea>` gegen False Positives bei Programmier-Fragen) |
 | 2026-07-02 | **v1.0.1:** `empty_iframe`-Check nur noch für sichtbare Frames (>10×10 px) mit echter `src` (nicht leer, nicht `about:blank`) — vorher False Positive auf jeder Fragenseite durch unsichtbare Hilfs-iframes (TinyMCE bzw. andere Module) |
 | 2026-07-02 | **v1.0.0:** Initiale Version — Cockpit mit iframe-Durchlauf, 12 Check-Typen, segmentierte Screenshots via Screen-Capture-API, Prüfbericht mit Fragen-Karten, CSRF-geschütztes Lauf-Löschen |

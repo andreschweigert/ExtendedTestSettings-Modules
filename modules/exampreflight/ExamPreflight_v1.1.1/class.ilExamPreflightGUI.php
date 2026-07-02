@@ -113,11 +113,37 @@ class ilExamPreflightGUI
         return $link;
     }
 
+    // ─── Navigation (Back-Target zum Test + Modul-Tabs) ───────────────────────
+
+    private function setupNavigation(int $ref_id, string $active): void
+    {
+        global $DIC;
+
+        try {
+            $test_title = ilObject::_lookupTitle(ilObject::_lookupObjectId($ref_id));
+
+            $tabs = $DIC->offsetExists('ilTabs') ? $DIC['ilTabs'] : null;
+            if ($tabs) {
+                $tabs->setBackTarget(
+                    '← ' . $test_title,
+                    'ilias.php?ref_id=' . $ref_id . '&baseClass=ilRepositoryGUI'
+                );
+                $this->setProxyParams($ref_id);
+                $tabs->addTab('epf_cockpit', $this->lng->txt('tab_cockpit'), $this->proxyLink('show'));
+                $tabs->addTab('epf_report', $this->lng->txt('tab_report'), $this->proxyLink('showReport'));
+                $tabs->activateTab($active);
+            }
+        } catch (Exception $e) {
+            // Navigation-Setup ist nicht kritisch
+        }
+    }
+
     // ─── Cockpit ──────────────────────────────────────────────────────────────
 
     private function showCockpit(int $ref_id): void
     {
         $this->setProxyParams($ref_id);
+        $this->setupNavigation($ref_id, 'epf_cockpit');
 
         $obj_id     = (int)ilObject::_lookupObjectId($ref_id);
         $test_title = ilObject::_lookupTitle($obj_id);
@@ -181,7 +207,8 @@ class ilExamPreflightGUI
         $keys = [
             'state_idle', 'state_waiting', 'state_running', 'state_paused',
             'state_done', 'state_aborted', 'state_error',
-            'hint_capture', 'hint_capture_denied', 'hint_start_test', 'hint_running',
+            'hint_capture', 'hint_capture_denied', 'hint_capture_unavailable',
+            'hint_start_test', 'hint_running',
             'hint_done', 'hint_done_page', 'hint_aborted', 'hint_non_question',
             'progress_of', 'question_short', 'open_report', 'confirm_stop',
         ];
@@ -357,6 +384,7 @@ class ilExamPreflightGUI
     private function showReport(int $ref_id): void
     {
         $this->setProxyParams($ref_id);
+        $this->setupNavigation($ref_id, 'epf_report');
 
         $obj_id     = (int)ilObject::_lookupObjectId($ref_id);
         $test_title = ilObject::_lookupTitle($obj_id);

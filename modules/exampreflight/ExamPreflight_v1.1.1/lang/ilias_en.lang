@@ -52,3 +52,6 @@ run_still_running#:#This run has not finished yet — results may be incomplete.
 testdata_note#:#Note: the preflight run creates a regular test attempt for the checking account. Delete it via "Participants" before the exam starts.
 run_deleted#:#Run deleted.
 confirm_delete_run#:#Delete this run including all screenshots?
+tab_cockpit#:#Preflight Cockpit
+tab_report#:#Review Reports
+hint_capture_unavailable#:#Screenshots are not available on this system (no HTTPS — the Screen Capture API requires a secure context). The run continues without screenshots.

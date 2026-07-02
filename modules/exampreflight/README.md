@@ -51,6 +51,7 @@ aktivieren (siehe [docs/how-to.md](../../docs/how-to.md)).
 
 | Version | Datum | Änderungen |
 |---|---|---|
+| 1.1.1 | 2026-07-02 | Navigation: Back-Link „← Test" + Tabs Cockpit/Prüfberichte in allen Ansichten; klarer Hinweis, wenn Screenshots mangels HTTPS nicht verfügbar sind |
 | 1.1.0 | 2026-07-02 | Neue Checks: unverarbeiteter Formel-Code, kaputte CSS-Hintergrundbilder, Antwortoptionen-Plausibilität, Formatierung (Encoding, sichtbarer HTML-Code, Mini-Schrift, kaum lesbarer Text) |
 | 1.0.1 | 2026-07-02 | Fix: „Eingebetteter Frame ist leer" nicht mehr für unsichtbare Hilfs-iframes (TinyMCE, Modul-Helfer, `about:blank`) melden — nur sichtbare Frames mit echter Quelle werden geprüft |
 | 1.0.0 | 2026-07-02 | Initiale Version |

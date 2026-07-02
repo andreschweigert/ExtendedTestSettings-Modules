@@ -52,3 +52,6 @@ run_still_running#:#Dieser Lauf ist noch nicht abgeschlossen — Ergebnisse kön
 testdata_note#:#Hinweis: Der Preflight-Durchlauf erzeugt einen normalen Testlauf für das prüfende Konto. Diesen vor Prüfungsbeginn unter „Teilnehmerdaten" löschen.
 run_deleted#:#Lauf gelöscht.
 confirm_delete_run#:#Diesen Lauf inklusive aller Screenshots löschen?
+tab_cockpit#:#Preflight-Cockpit
+tab_report#:#Prüfberichte
+hint_capture_unavailable#:#Screenshots sind auf diesem System nicht verfügbar (kein HTTPS — die Screen-Capture-API erfordert eine sichere Verbindung). Der Durchlauf läuft ohne Screenshots weiter.
