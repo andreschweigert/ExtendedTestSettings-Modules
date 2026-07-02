@@ -281,19 +281,19 @@
                 lastPageKey = pageKeyOf(doc, title);
                 position++;
 
-                var findings = runChecks(doc);
-                updateProgress();
-
-                return takeScreenshot(doc).then(function (shot) {
-                    return uploadResult(title, detectQType(doc), findings, shot);
-                }).then(function (status) {
-                    addFindingLine(position, title, status, findings);
-                    processingPage = false;
-                    if (state === 'running' && !pausedRequested && !finishing) {
-                        clickNext(doc);
-                    } else if (pausedRequested) {
-                        setState('paused');
-                    }
+                return runChecks(doc).then(function (findings) {
+                    updateProgress();
+                    return takeScreenshot(doc).then(function (shot) {
+                        return uploadResult(title, detectQType(doc), findings, shot);
+                    }).then(function (status) {
+                        addFindingLine(position, title, status, findings);
+                        processingPage = false;
+                        if (state === 'running' && !pausedRequested && !finishing) {
+                            clickNext(doc);
+                        } else if (pausedRequested) {
+                            setState('paused');
+                        }
+                    });
                 });
             })
             .catch(function () {
@@ -359,6 +359,7 @@
 
     // ─── Checks ───────────────────────────────────────────────────────────────
 
+    /** Führt alle Checks aus; asynchron wegen der HEAD-Requests für Hintergrundbilder. */
     function runChecks(doc) {
         var findings = [];
         var container = doc.querySelector('.tst_question-container') || doc.body;
@@ -367,6 +368,9 @@
         checkAv(container, findings);
         checkIframes(container, findings);
         checkMath(doc, findings);
+        checkRawTex(container, findings);
+        checkFormatting(doc, container, findings);
+        checkOptions(container, findings);
         checkLayout(doc, container, findings);
         checkResources(findings);
 
@@ -374,7 +378,9 @@
             findings.push({ check: 'js_error', level: 'warning', message: 'JavaScript-Fehler', detail: msg.substring(0, 300) });
         });
 
-        return findings;
+        return checkBgImages(doc, container, findings).then(function () {
+            return findings;
+        });
     }
 
     function shortSrc(src) {
@@ -465,6 +471,226 @@
                 detail: errs.length + ' Fehlerstelle(n), z.B.: ' + (errs[0].textContent || '').trim().substring(0, 120)
             });
         }
+    }
+
+    /**
+     * Sichtbarer Fließtext ohne Code-Bereiche: <pre>/<code>/<textarea> zeigen
+     * Markup/LaTeX legitim als Inhalt (z.B. Programmier-Fragen) → für die
+     * Text-Checks (raw_tex, raw_html, Encoding) ausblenden.
+     */
+    function proseText(container) {
+        var out = '';
+        (function walk(node) {
+            for (var n = node.firstChild; n; n = n.nextSibling) {
+                if (n.nodeType === 3) {
+                    out += n.nodeValue;
+                } else if (n.nodeType === 1) {
+                    var tag = n.tagName;
+                    if (tag === 'PRE' || tag === 'CODE' || tag === 'TEXTAREA'
+                        || tag === 'SCRIPT' || tag === 'STYLE') {
+                        continue;
+                    }
+                    walk(n);
+                }
+            }
+        })(container);
+        return out;
+    }
+
+    /** Unverarbeiteter Formel-Code sichtbar → MathJax ist gar nicht angesprungen */
+    function checkRawTex(container, findings) {
+        var text = proseText(container);
+        var m = text.match(/\[tex\]|\[\/tex\]|\\begin\{/);
+        if (!m) {
+            // \( … \) als sichtbarer Text — verarbeitete Formeln tauchen so nicht im textContent auf
+            m = text.match(/\\\([^)]{1,300}\\\)/);
+        }
+        if (m) {
+            findings.push({
+                check: 'raw_tex', level: 'error',
+                message: 'Unverarbeiteter Formel-Code sichtbar (MathJax nicht angewendet)',
+                detail: text.substr(Math.max(0, m.index - 20), 100).replace(/\s+/g, ' ').trim()
+            });
+        }
+    }
+
+    /** CSS-Hintergrundbilder per HEAD-Request prüfen (asynchron, same-origin) */
+    function checkBgImages(doc, container, findings) {
+        var urls = {};
+        var all = container.querySelectorAll('*');
+        var win = doc.defaultView;
+        for (var i = 0; i < all.length && i < 800; i++) {
+            var bg = '';
+            try { bg = win.getComputedStyle(all[i]).backgroundImage || ''; } catch (e) { continue; }
+            var m = /url\(["']?([^"')]+)["']?\)/.exec(bg);
+            if (m && m[1] && m[1].indexOf('data:') !== 0) {
+                urls[m[1]] = true;
+            }
+        }
+
+        var jobs = Object.keys(urls).slice(0, 10).map(function (u) {
+            var abs;
+            try { abs = new URL(u, doc.baseURI); } catch (e) { return Promise.resolve(); }
+            if (abs.origin !== window.location.origin) { return Promise.resolve(); } // cross-origin nicht prüfbar
+            return fetch(abs.href, { method: 'HEAD', credentials: 'same-origin' })
+                .then(function (r) {
+                    if (!r.ok) {
+                        findings.push({
+                            check: 'broken_bg_image', level: 'error',
+                            message: 'CSS-Hintergrundbild liefert HTTP ' + r.status,
+                            detail: shortSrc(abs.href)
+                        });
+                    }
+                })
+                .catch(function () {
+                    findings.push({
+                        check: 'broken_bg_image', level: 'warning',
+                        message: 'CSS-Hintergrundbild nicht ladbar',
+                        detail: shortSrc(abs.href)
+                    });
+                });
+        });
+
+        return Promise.all(jobs);
+    }
+
+    /** Antwortoptionen-Plausibilität: leere Auswahlmenüs, Radio-Gruppen mit nur einer Option */
+    function checkOptions(container, findings) {
+        container.querySelectorAll('select').forEach(function (s) {
+            if (s.querySelectorAll('option').length < 2) {
+                findings.push({
+                    check: 'sparse_options', level: 'warning',
+                    message: 'Auswahlmenü ohne echte Optionen',
+                    detail: (s.name || s.id || '').substring(0, 100)
+                });
+            }
+        });
+
+        var groups = {};
+        container.querySelectorAll('input[type=radio]').forEach(function (r) {
+            groups[r.name] = (groups[r.name] || 0) + 1;
+        });
+        var single = Object.keys(groups).filter(function (n) { return groups[n] === 1; });
+        if (single.length > 0) {
+            findings.push({
+                check: 'sparse_options', level: 'warning',
+                message: single.length + ' Antwortgruppe(n) mit nur einer Auswahloption',
+                detail: single.slice(0, 3).join(', ').substring(0, 150)
+            });
+        }
+    }
+
+    /** Formatierungs-Auffälligkeiten: Encoding-Salat, sichtbarer HTML-Code, Mini-Schrift, unlesbarer Text */
+    function checkFormatting(doc, container, findings) {
+        var text = proseText(container);
+
+        // Encoding-Probleme (UTF-8/Latin-1-Mojibake, Ersatzzeichen)
+        var enc = text.match(/�|Ã¤|Ã¶|Ã¼|ÃŸ|Ã„|Ã–|Ãœ|â€“|â€ž|â€œ|â‚¬/);
+        if (enc) {
+            findings.push({
+                check: 'encoding_error', level: 'warning',
+                message: 'Zeichensalat im Text (Encoding-Problem)',
+                detail: text.substr(Math.max(0, enc.index - 20), 80).replace(/\s+/g, ' ').trim()
+            });
+        }
+
+        // HTML-Code als sichtbarer Text (doppelt escaped, Import-Artefakt)
+        var raw = text.match(/<\/?(p|br|div|span|strong|em|b|i|ul|ol|li|table|img)\b[^>]{0,80}>|&nbsp;|&lt;|&amp;[a-z]+;/);
+        if (raw) {
+            findings.push({
+                check: 'raw_html', level: 'warning',
+                message: 'HTML-Code als Text sichtbar (nicht gerendert)',
+                detail: text.substr(Math.max(0, raw.index - 20), 100).replace(/\s+/g, ' ').trim()
+            });
+        }
+
+        // Winzige Schrift + kaum lesbarer Text (Farbe ≈ Hintergrund)
+        var win = doc.defaultView;
+        var tiny = 0, tinyExample = '';
+        var faint = 0, faintExample = '';
+        var els = container.querySelectorAll('p, span, li, td, div, em, strong, label');
+        for (var i = 0; i < els.length && i < 500; i++) {
+            var el = els[i];
+            var own = directText(el);
+            if (own.length < 3) { continue; }
+            var rect = el.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) { continue; }
+
+            var cs;
+            try { cs = win.getComputedStyle(el); } catch (e) { continue; }
+
+            if (parseFloat(cs.fontSize) < 9) {
+                tiny++;
+                if (!tinyExample) { tinyExample = own.substring(0, 60); }
+            }
+
+            if (own.length >= 15 && !cs.backgroundImage.includes('url(')) {
+                var fg = parseColor(cs.color);
+                var bg = effectiveBg(el, win);
+                if (fg && bg && contrastRatio(fg, bg) < 1.5) {
+                    faint++;
+                    if (!faintExample) { faintExample = own.substring(0, 60); }
+                }
+            }
+        }
+        if (tiny > 0) {
+            findings.push({
+                check: 'tiny_font', level: 'warning',
+                message: tiny + ' Element(e) mit winziger Schrift (< 9 px)',
+                detail: tinyExample
+            });
+        }
+        if (faint > 0) {
+            findings.push({
+                check: 'low_contrast', level: 'warning',
+                message: faint + ' Element(e) mit kaum lesbarem Text (Farbe ≈ Hintergrund)',
+                detail: faintExample
+            });
+        }
+    }
+
+    /** Direkter Text eines Elements (ohne Kind-Elemente) */
+    function directText(el) {
+        var s = '';
+        for (var n = el.firstChild; n; n = n.nextSibling) {
+            if (n.nodeType === 3) { s += n.nodeValue; }
+        }
+        return s.trim();
+    }
+
+    /** 'rgb(a)'-String → [r,g,b] oder null (bei voller Transparenz) */
+    function parseColor(str) {
+        var m = /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\)/.exec(String(str));
+        if (!m) { return null; }
+        if (m[4] !== undefined && parseFloat(m[4]) < 0.1) { return null; }
+        return [parseInt(m[1], 10), parseInt(m[2], 10), parseInt(m[3], 10)];
+    }
+
+    /** Wirksame Hintergrundfarbe: Eltern hochlaufen bis nicht-transparent; Default weiß */
+    function effectiveBg(el, win) {
+        var node = el;
+        while (node && node.nodeType === 1) {
+            var cs;
+            try { cs = win.getComputedStyle(node); } catch (e) { return null; }
+            if (cs.backgroundImage && cs.backgroundImage.includes('url(')) { return null; } // Bild-Hintergrund → nicht bewertbar
+            var c = parseColor(cs.backgroundColor);
+            if (c) { return c; }
+            node = node.parentElement;
+        }
+        return [255, 255, 255];
+    }
+
+    /** WCAG-Kontrastverhältnis zweier RGB-Farben */
+    function contrastRatio(a, b) {
+        function lum(c) {
+            var v = c.map(function (x) {
+                x /= 255;
+                return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+            });
+            return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2];
+        }
+        var l1 = lum(a), l2 = lum(b);
+        return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
     }
 
     function checkLayout(doc, container, findings) {

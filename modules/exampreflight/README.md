@@ -11,11 +11,13 @@ ExamPreflight prüft das tatsächliche *Rendering* der Fragen.
 
 | Bereich | Checks |
 |---|---|
-| Bilder | nicht ladbare Bilder (`naturalWidth == 0`), nach Wartezeit unvollständige Bilder |
+| Bilder | nicht ladbare Bilder (`naturalWidth == 0`), nach Wartezeit unvollständige Bilder, kaputte CSS-Hintergrundbilder (HEAD-Request) |
 | Video/Audio | nicht abspielbare Quellen, fehlende Metadaten, Videos ohne Bilddaten (0×0) |
 | Frames | leere eingebettete Frames, Hinweis auf externe (nicht prüfbare) Frames |
-| Formeln | MathJax-Renderfehler (`merror`) |
+| Formeln | MathJax-Renderfehler (`merror`), unverarbeiteter Formel-Code im sichtbaren Text (`[tex]`, `\(…\)`) |
 | Layout | horizontaler Overflow, aus dem Fragenbereich ragende Elemente, (nahezu) leere Fragen |
+| Formatierung | Encoding-Salat (`Ã¤`, `â€“`, `�`), HTML-Code als sichtbarer Text, winzige Schrift (< 9 px), kaum lesbarer Text (Farbe ≈ Hintergrund) — Code-Blöcke (`<pre>`/`<code>`) werden ignoriert |
+| Antwortoptionen | leere Auswahlmenüs, Radio-Gruppen mit nur einer Option (Import-Artefakte) |
 | Ressourcen | HTTP-Fehler ≥ 400 (via Performance-API, browserabhängig) |
 | JavaScript | Fehler während der Fragenseite |
 
@@ -49,5 +51,6 @@ aktivieren (siehe [docs/how-to.md](../../docs/how-to.md)).
 
 | Version | Datum | Änderungen |
 |---|---|---|
+| 1.1.0 | 2026-07-02 | Neue Checks: unverarbeiteter Formel-Code, kaputte CSS-Hintergrundbilder, Antwortoptionen-Plausibilität, Formatierung (Encoding, sichtbarer HTML-Code, Mini-Schrift, kaum lesbarer Text) |
 | 1.0.1 | 2026-07-02 | Fix: „Eingebetteter Frame ist leer" nicht mehr für unsichtbare Hilfs-iframes (TinyMCE, Modul-Helfer, `about:blank`) melden — nur sichtbare Frames mit echter Quelle werden geprüft |
 | 1.0.0 | 2026-07-02 | Initiale Version |

@@ -2,7 +2,7 @@
 
 **Modul-ID:** `exampreflight`
 **Speicherort:** `modules/exampreflight/` (externes Modul)
-**Referenz-ZIP:** `modules-zip/modules/exampreflight/ExamPreflight_v1.0.1.zip`
+**Referenz-ZIP:** `modules-zip/modules/exampreflight/ExamPreflight_v1.1.0.zip`
 **Zuletzt aktualisiert:** 2026-07-02
 
 ---
@@ -132,6 +132,13 @@ Wichtige Mechanik:
 | `empty_video` | error | Metadaten da, aber `videoWidth/Height === 0` |
 | `empty_iframe` / `external_iframe` | warning / info | leerer bzw. cross-origin Frame — nur sichtbare Frames (>10×10 px) mit echter `src` (unsichtbare Hilfs-iframes wie TinyMCE werden ignoriert) |
 | `math_error` | error | `merror, .MathJax_Error, mjx-merror` vorhanden |
+| `raw_tex` | error | unverarbeiteter Formel-Code (`[tex]`, `\begin{`, `\(…\)`) im sichtbaren Fließtext (`proseText()` — ohne `<pre>`/`<code>`/`<textarea>`) |
+| `broken_bg_image` | error/warning | CSS-`background-image` liefert HTTP ≥ 400 bzw. ist nicht ladbar (HEAD-Request, same-origin, max. 10 URLs/Frage) |
+| `sparse_options` | warning | `<select>` mit < 2 Optionen oder Radio-Gruppe mit nur einer Option (Import-Artefakt) |
+| `encoding_error` | warning | Mojibake/Ersatzzeichen im Fließtext (`Ã¤`, `â€“`, `�` …) |
+| `raw_html` | warning | HTML-Tags/Entities als sichtbarer Text (doppelt escaped), ohne Code-Blöcke |
+| `tiny_font` | warning | sichtbare Elemente mit `font-size` < 9 px und eigenem Text |
+| `low_contrast` | warning | WCAG-Kontrast Text/wirksamer Hintergrund < 1.5:1 (Eltern-Kette, bei Bild-Hintergrund übersprungen) |
 | `h_overflow` | warning | `scrollWidth > clientWidth` am Delos-Scroll-Container |
 | `protruding` | warning | Elemente ragen > 12 px aus `.tst_question-container` |
 | `empty_question` | error | Fragenbereich ohne Text und ohne interaktive Elemente |
@@ -175,5 +182,6 @@ Wichtige Mechanik:
 
 | Datum | Was |
 |---|---|
+| 2026-07-02 | **v1.1.0:** 7 neue Check-Typen: `raw_tex`, `broken_bg_image` (async HEAD → `runChecks()` gibt jetzt Promise zurück), `sparse_options`, `encoding_error`, `raw_html`, `tiny_font`, `low_contrast`; Text-Checks laufen über `proseText()` (ignoriert `<pre>`/`<code>`/`<textarea>` gegen False Positives bei Programmier-Fragen) |
 | 2026-07-02 | **v1.0.1:** `empty_iframe`-Check nur noch für sichtbare Frames (>10×10 px) mit echter `src` (nicht leer, nicht `about:blank`) — vorher False Positive auf jeder Fragenseite durch unsichtbare Hilfs-iframes (TinyMCE bzw. andere Module) |
 | 2026-07-02 | **v1.0.0:** Initiale Version — Cockpit mit iframe-Durchlauf, 12 Check-Typen, segmentierte Screenshots via Screen-Capture-API, Prüfbericht mit Fragen-Karten, CSRF-geschütztes Lauf-Löschen |
