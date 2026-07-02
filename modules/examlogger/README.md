@@ -62,6 +62,8 @@ und Navigation zwischen Fragen.
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
+| 1.3.0 | `ExamLogger_v1.3.0.zip` | 9 | i18n DE/EN der ViewGUI (Protokoll, Geräte, CSV-Export, Geräte-Import) |
+| 1.2.0 | `archive/ExamLogger_v1.2.0.zip` | 9 | Modul-i18n DE/EN (Handler/getInfo) |
 | 1.1.0 | `ExamLogger_v1.1.0.zip` | 9 | Frage-ID + Fragenname in Protokoll/CSV; Geräteverwaltung (examlogger_hosts); `test_submit` / `test_submit_confirmed` differenziert (GET vs. POST) |
 | 1.0.0 | `archive/ExamLogger_v1.0.0.zip` | 9 | Erstveröffentlichung |
 

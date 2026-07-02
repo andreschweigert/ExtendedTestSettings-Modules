@@ -88,6 +88,7 @@ OpenDyslexic ist unter der **SIL Open Font License 1.1** lizenziert — frei ver
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
+| 1.1.0 | `ExamDyslexia_v1.1.0.zip` | 9 | Modul-i18n DE/EN (ilModuleLanguage) |
 | 1.0.1 | `ExamDyslexia_v1.0.1.zip` | 9 | ILIAS-Kompatibilität auf 9 beschränkt |
 | 1.0.0 | `ExamDyslexia_v1.0.0.zip` | 9–12 | Erstveröffentlichung |
 

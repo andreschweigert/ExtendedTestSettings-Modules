@@ -42,6 +42,7 @@ Eigene Tabelle: `examcalc_settings`
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
+| 1.2.0 | `ExamCalc_v1.2.0.zip` | 9 | Modul-i18n DE/EN (ilModuleLanguage), sichtbare Strings über lang-Dateien |
 | 1.1.1 | `ExamCalc_v1.1.1.zip` | 9 | ILIAS-Kompatibilität auf 9 beschränkt |
 | 1.1.0 | `ExamCalc_v1.1.0.zip` | 9–12 | Migration aus Built-in zu externem Modul, Asset-Pfade angepasst |
 
