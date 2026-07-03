@@ -18,9 +18,6 @@ class ilExamBatteryViewGUI
     // Meldungen älter als 10 Minuten gelten als veraltet (Gerät evtl. aus / Teilnehmer fertig)
     private const STALE_SECONDS = 600;
 
-    // Auto-Refresh-Intervall der Aufsichts-Ansicht
-    private const REFRESH_SECONDS = 30;
-
     private ilModuleLanguage $lng;
 
     public function __construct()
@@ -243,6 +240,15 @@ class ilExamBatteryViewGUI
         $f = $DIC->ui()->factory();
         $r = $DIC->ui()->renderer();
 
+        // Kein Auto-Refresh — die Aufsicht aktualisiert bewusst per Button.
+        // Die komplette URL wird wiederverwendet, dadurch bleibt die Sortierung erhalten.
+        $refreshUrl = 'ilias.php?' . http_build_query($_GET);
+        $toolbar = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">'
+            . $r->render($f->button()->standard($this->lng->txt('btn_refresh'), $refreshUrl))
+            . '<span class="text-muted" style="font-size:13px;">'
+            . sprintf($this->lng->txt('last_loaded'), date('H:i:s')) . '</span>'
+            . '</div>';
+
         if (empty($rows)) {
             $content = $r->render($f->messageBox()->info($this->lng->txt('no_data')));
         } else {
@@ -253,7 +259,7 @@ class ilExamBatteryViewGUI
             $content = $r->render($panel);
         }
 
-        $tpl->setContent($content . $this->refreshScript());
+        $tpl->setContent($toolbar . $content);
         // Proxy druckt das Template nicht selbst — ohne printToStdout bleibt die Seite weiß.
         $tpl->printToStdout();
     }
@@ -294,7 +300,6 @@ class ilExamBatteryViewGUI
 
         $html  = '<p style="font-size:13px;color:#555;margin:0 0 12px;">'
                . sprintf($this->lng->txt('legend'), $warn, $crit)
-               . ' &nbsp;|&nbsp; ' . $this->lng->txt('refresh_hint')
                . '<br>' . $this->lng->txt('stale_hint')
                . ' ' . $this->lng->txt('remaining_hint')
                . '</p>';
@@ -399,13 +404,6 @@ class ilExamBatteryViewGUI
              . '</div>'
              . '<strong style="min-width:44px;text-align:right;color:' . $col . ';">' . $level . '&nbsp;%</strong>'
              . '</div>';
-    }
-
-    private function refreshScript(): string
-    {
-        // Auto-Refresh — die Aufsicht lässt die Seite offen liegen
-        return '<script>setTimeout(function () { window.location.reload(); }, '
-            . (self::REFRESH_SECONDS * 1000) . ');</script>';
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────────

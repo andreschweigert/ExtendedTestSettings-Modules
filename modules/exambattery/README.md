@@ -19,17 +19,20 @@ Geräte, bevor sie ausfallen.
 ## Funktionsweise
 
 1. **Battery Status API** (`navigator.getBattery()`): Das JS liest den Akkustand rein
-   passiv aus. Initial wird gemeldet, danach bei jeder Änderung (`levelchange`,
-   `chargingchange` — die API pusht) plus ein Heartbeat höchstens alle 3 Minuten,
-   damit „letzte Meldung" in der Aufsichts-Ansicht aktuell bleibt.
+   passiv aus. Gemeldet wird **gedrosselt** — nur wenn der Akkustand gefallen ist,
+   der Ladezustand gewechselt hat oder der Heartbeat fällig ist (höchstens alle
+   5 Minuten). Der letzte Report-Stand liegt im `sessionStorage` und überlebt die
+   Seitenneuladungen bei der Fragennavigation — Fragenwechsel erzeugen keine
+   eigenen Reports.
 2. **Report**: `fetch` POST an den Modul-Proxy (`cmd=report`), Payload
-   `{level: 0–100, charging: 0|1}`. Fehlgeschlagene Reports werden still verworfen
-   (kein Retry-Sturm — der nächste Heartbeat kommt ohnehin).
+   `{level: 0–100, charging: 0|1, remaining: Minuten|-1}`. Fehlgeschlagene Reports
+   werden still verworfen (kein Retry-Sturm — der nächste Heartbeat kommt ohnehin).
 3. **Upsert**: Pro (Test, Teilnehmer) zählt nur der letzte Stand — keine Historie.
 4. **Aufsichts-Ansicht** (`cmd=showStatus`, Schreibrecht): Tabelle aller gemeldeten
    Geräte, aufsteigend nach Akkustand (kritische oben), farbig nach den Test-Schwellen
-   (grün/gelb/rot), mit Ladezustand, Gerät, IP-Adresse und Zeitpunkt der letzten Meldung.
-   Auto-Refresh alle 30 s; Meldungen älter als 10 Minuten werden ausgegraut
+   (grün/gelb/rot), mit Restzeit, Ladezustand, Gerät, IP-Adresse und Zeitpunkt der
+   letzten Meldung; Spalten per Klick sortierbar. Aktualisierung **per Button**
+   (mit „Stand: hh:mm:ss"-Anzeige); Meldungen älter als 10 Minuten werden ausgegraut
    (Gerät evtl. aus oder Teilnehmer/in fertig).
 5. **Geräte-Spalte**: Ist im zentralen Geräte-Inventar des Plugins (`etest_hosts`,
    Administration → Plugins → ExtendedTestSettings → Tab „Geräte", ab Plugin 2.0.1)
@@ -118,7 +121,8 @@ Eigene Tabellen: `exambattery_settings`, `exambattery_status`
 
 | Version | Datum | Änderung |
 |---|---|---|
-| 1.3.0 | 2026-07-03 | Spalten sortierbar (klickbare Köpfe, überlebt Auto-Refresh); neue Spalte „Restzeit (ca.)" aus der Battery-API (`dischargingTime`, neue DB-Spalte `discharging_min`, ≤ 30 min rot); `simulate(level, charging, restMin)` erweitert |
+| 1.3.1 | 2026-07-03 | Reports gedrosselt: nur bei fallendem Akkustand, Ladezustand-Wechsel oder 5-min-Heartbeat (sessionStorage überlebt Fragennavigation — kein Report mehr pro Fragenwechsel); Auto-Refresh der Aufsichts-Ansicht durch „Aktualisieren"-Button mit Stand-Anzeige ersetzt |
+| 1.3.0 | 2026-07-03 | Spalten sortierbar (klickbare Köpfe); neue Spalte „Restzeit (ca.)" aus der Battery-API (`dischargingTime`, neue DB-Spalte `discharging_min`, ≤ 30 min rot); `simulate(level, charging, restMin)` erweitert |
 | 1.2.0 | 2026-07-03 | Aufsichts-Ansicht als reguläre ILIAS-Seite: Brotkrumen-Pfad zum Test (Locator), Test-Icon, Seitentitel/-beschreibung, KS-Panel um die Tabelle, MessageBox bei „keine Daten", Akkustand als farbiger Fortschrittsbalken |
 | 1.1.0 | 2026-07-03 | Geräte-Spalte (Koffer · Gerät-Nr) aus dem zentralen Geräte-Inventar des Plugins (`etest_hosts`, Plugin ≥ 2.0.1), Guard bei fehlender Tabelle |
 | 1.0.1 | 2026-07-03 | Fix: Aufsichts-Ansicht war weiß (fehlendes printToStdout — der Proxy druckt das Template nicht selbst); Zurück-Link zum Test ergänzt |

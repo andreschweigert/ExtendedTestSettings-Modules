@@ -2,7 +2,7 @@
 
 **Modul-ID:** `exambattery`
 **Speicherort:** `modules/exambattery/` (externes Modul, nicht im Git-Repo)
-**Referenz-ZIP:** `modules-zip/modules/exambattery/ExamBattery_v1.3.0.zip`
+**Referenz-ZIP:** `modules-zip/modules/exambattery/ExamBattery_v1.3.1.zip`
 **Zuletzt aktualisiert:** 2026-07-03
 
 ---
@@ -79,8 +79,12 @@ Aufsicht (Schreibrecht)
   Netz getrennt wird und `levelchange` feuert.
 - Fehlgeschlagene Reports: `catch` verwirft still — kein Retry, der nächste Heartbeat
   kommt ohnehin.
-- Nach jeder Fragennavigation lädt ILIAS die Seite komplett neu → das IIFE initialisiert
-  sich neu und meldet nach 3 s erneut. Kein sessionStorage nötig (Upsert, kein Session-Begriff).
+- **Drosselung (ab 1.3.1):** Gemeldet wird nur bei fallendem Akkustand,
+  Ladezustand-Wechsel oder fälligem Heartbeat (5 min). Der letzte Report-Stand
+  (`{ts, level, charging}`) liegt in `sessionStorage` (`exambattery_last_<ref_id>`)
+  und überlebt so die komplette Seitenneuladung bei jeder Fragennavigation —
+  Fragenwechsel erzeugen keine eigenen Reports mehr. Ein Check-Tick pro Minute
+  prüft die Fälligkeit; `simulate()` umgeht die Drosselung.
 - `window.ExamBattery.simulate(levelPct, charging)`: löst einen Report mit simulierten
   Werten aus (klemmt auf 0–100, umgeht die Desktop-Erkennung). Entwickler-Werkzeug für
   Instanzen ohne Battery-API.
@@ -111,8 +115,10 @@ Aufsicht (Schreibrecht)
   `$f->messageBox()->info(...)`. Akkustand als Inline-Fortschrittsbalken (`levelBar()`,
   Farben #43a047/#f9a825/#e53935 wie examnetqos).
 - **Sortierung (ab 1.3.0):** Spaltenkopf-Links mit `sort`/`dir`-GET-Parametern
-  (Whitelist-Switch → ORDER BY, kein SQL aus Nutzereingaben); der 30-s-Reload behält
-  die URL und damit die Sortierung. Default: Akkustand aufsteigend.
+  (Whitelist-Switch → ORDER BY, kein SQL aus Nutzereingaben). Default: Akkustand
+  aufsteigend.
+- **Kein Auto-Refresh (ab 1.3.1):** Aktualisierung per KS-Button (URL inkl.
+  Sortierung wird wiederverwendet) plus „Stand: hh:mm:ss"-Anzeige.
 - **Restzeit (ab 1.3.0):** JS meldet `remaining` (Minuten aus
   `battery.dischargingTime`; Infinity/laden → -1). Server validiert -1–6000 hart,
   Spalte `discharging_min` (Update-Guard `tableColumnExists` in install.php).

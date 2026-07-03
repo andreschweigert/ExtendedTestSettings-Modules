@@ -7,11 +7,12 @@
  *   - Battery Status API (navigator.getBattery): nur Chromium + Secure Context.
  *     Fehlt die API (Firefox, HTTP-Dev-Instanz): lautlos nichts tun.
  *   - Desktop-Geräte ohne Akku (level=100 UND lädt): keine Reports.
- *   - Initial melden, danach auf levelchange/chargingchange reagieren (API pusht)
- *     plus Heartbeat alle 3 Minuten (selbst-reschedulendes setTimeout), damit
- *     die Aufsichts-Seite "zuletzt gemeldet" aktuell hält.
+ *   - Gemeldet wird NUR wenn nötig: Akkustand gefallen, Ladezustand gewechselt
+ *     oder Heartbeat fällig (5 min seit letztem Report). Der letzte Report-Stand
+ *     liegt im sessionStorage und überlebt so die Seitenneuladungen bei jeder
+ *     Fragennavigation — Fragenwechsel erzeugen dadurch KEINE eigenen Reports.
  *   - Fehlgeschlagene Reports still verwerfen — der nächste Heartbeat kommt ohnehin.
- *   - Entwickler-Helfer: window.ExamBattery.simulate(levelPct, charging).
+ *   - Entwickler-Helfer: window.ExamBattery.simulate(levelPct, charging, restMin).
  */
 (function () {
     'use strict';
@@ -23,7 +24,7 @@
         return {
             refId:            c.refId            || 0,
             reportUrl:        c.reportUrl        || '',
-            heartbeatSeconds: c.heartbeatSeconds || 180,
+            heartbeatSeconds: c.heartbeatSeconds || 300,
             debug:            !!c.debug,
         };
     }
@@ -36,6 +37,32 @@
     }
 
     var batteryRef = null;   // BatteryManager, sobald verfügbar
+
+    // ─── Letzter Report-Stand (überlebt Fragennavigation via sessionStorage) ──────
+
+    var _refFromUrl = (function () {
+        var m = window.location.search.match(/[?&]ref_id=(\d+)/);
+        return m ? m[1] : '0';
+    })();
+    var STORAGE_KEY = 'exambattery_last_' + _refFromUrl;
+
+    var memLast = null;   // Fallback, falls sessionStorage blockiert ist
+
+    function loadLast() {
+        try {
+            var raw = sessionStorage.getItem(STORAGE_KEY);
+            return raw ? JSON.parse(raw) : memLast;
+        } catch (e) {
+            return memLast;
+        }
+    }
+
+    function saveLast(state) {
+        memLast = state;
+        try {
+            sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (e) { /* Privacy-Modus o.ä. — in-memory reicht pro Seite */ }
+    }
 
     // ─── Report ──────────────────────────────────────────────────────────────────
 
@@ -79,18 +106,37 @@
         if (level === 100 && charging) {
             return;
         }
+
+        // Nur melden wenn nötig: erster Report, Akkustand gefallen,
+        // Ladezustand gewechselt oder Heartbeat fällig.
+        var last = loadLast();
+        var due = !last
+            || level < last.level
+            || charging !== last.charging
+            || (Date.now() - last.ts) >= cfg().heartbeatSeconds * 1000;
+        if (!due) {
+            return;
+        }
+
         sendReport(level, charging, remainingMinutes());
+        // Optimistisch merken — schlägt der Report fehl, holt ihn der
+        // nächste fällige Heartbeat nach (bewusst kein Retry).
+        saveLast({ ts: Date.now(), level: level, charging: charging });
     }
 
-    // ─── Heartbeat ───────────────────────────────────────────────────────────────
+    // ─── Check-Timer ─────────────────────────────────────────────────────────────
 
+    // Prüft jede Minute, ob der Heartbeat fällig ist (der Fälligkeits-Zeitpunkt
+    // liegt im sessionStorage und überlebt so die Fragennavigation).
     // Timer immer aufsetzen, auch wenn die Config beim ersten Tick noch leer ist —
     // cfg() wird bei jedem Tick live gelesen.
-    function scheduleHeartbeat() {
+    var CHECK_INTERVAL_MS = 60000;
+
+    function scheduleCheck() {
         setTimeout(function () {
             reportFromBattery();
-            scheduleHeartbeat();
-        }, (cfg().heartbeatSeconds || 180) * 1000);
+            scheduleCheck();
+        }, CHECK_INTERVAL_MS);
     }
 
     // ─── Public API (Entwickler-Helfer) ──────────────────────────────────────────
@@ -98,8 +144,8 @@
     window.ExamBattery        = window.ExamBattery || {};
     window.ExamBattery.config = window.ExamBattery.config || {};
 
-    // Simulierter Report für Tests ohne echtes Akku-Gerät (umgeht die Desktop-Erkennung).
-    // Drittes Argument optional: geschätzte Restzeit in Minuten (Default -1 = unbekannt).
+    // Simulierter Report für Tests ohne echtes Akku-Gerät (umgeht Desktop-Erkennung
+    // und Drosselung). Drittes Argument optional: Restzeit in Minuten (Default -1).
     window.ExamBattery.simulate = function (levelPct, charging, remainingMin) {
         var level     = Math.max(0, Math.min(100, Math.round(Number(levelPct) || 0)));
         var remaining = Math.max(-1, Math.min(6000, Math.round(Number(remainingMin))));
@@ -110,11 +156,11 @@
 
     // ─── Init ────────────────────────────────────────────────────────────────────
 
-    scheduleHeartbeat();
+    scheduleCheck();
 
     if (typeof navigator.getBattery !== 'function') {
         // Battery-API fehlt (Firefox, kein Secure Context): lautlos nichts tun.
-        // Heartbeat-Ticks laufen leer (batteryRef bleibt null) — keine Requests.
+        // Check-Ticks laufen leer (batteryRef bleibt null) — keine Requests.
         return;
     }
 
@@ -123,10 +169,10 @@
         battery.addEventListener('levelchange', reportFromBattery);
         battery.addEventListener('chargingchange', reportFromBattery);
 
-        // Initialer Report leicht verzögert — die Config wird erst per
-        // addOnLoadCode gesetzt und ist beim IIFE-Init noch leer.
+        // Initial-Check leicht verzögert — die Config wird erst per addOnLoadCode
+        // gesetzt. Meldet nur, wenn laut sessionStorage tatsächlich fällig.
         setTimeout(reportFromBattery, 3000);
-        log('started — initial report in 3 s, heartbeat live from cfg()');
+        log('started — throttled reporting (fall/charge-change/heartbeat), state via sessionStorage');
     }).catch(function () {
         // Lautlos — kein Fehler, kein Log-Spam.
     });
