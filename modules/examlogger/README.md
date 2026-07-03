@@ -25,7 +25,14 @@ Beide Ansichten bieten Filter nach Ereignis-Typ und Datumsbereich sowie CSV-Expo
 
 ## Datenbank
 
-Eigene Tabellen: `examlogger_events`, `examlogger_hosts`
+Eigene Tabelle: `examlogger_events`
+
+Die IP→Gerät-Übersetzung liest das Modul aus dem **zentralen Geräte-Inventar des
+Plugins** (`etest_hosts`, ab Plugin 2.0.1) — gepflegt über Administration → Plugins →
+ExtendedTestSettings → Tab „Geräte" (CSV-Import). Bis 1.3.0 lag sie als Modul-Tabelle
+`examlogger_hosts` hier; das Update auf 1.4.0 entfernt die alte Tabelle
+(Geräteliste danach einmalig neu importieren). **Deshalb: erst das Plugin auf 2.0.1
+aktualisieren, dann dieses Modul.**
 
 **`examlogger_events`** — zentrale Log-Tabelle:
 
@@ -41,7 +48,7 @@ Eigene Tabellen: `examlogger_events`, `examlogger_hosts`
 | `tstamp` | Unix-Timestamp |
 | `details` | Freitext (Antworten-Snapshot, Einstellungs-Snapshot) |
 
-**`examlogger_hosts`** — IP→Gerät-Übersetzungstabelle (CSV-Import):
+**`etest_hosts`** (Plugin-Tabelle, nur lesend) — IP→Gerät-Übersetzung:
 
 | Spalte | Bedeutung |
 |---|---|
@@ -62,7 +69,8 @@ und Navigation zwischen Fragen.
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
-| 1.3.0 | `ExamLogger_v1.3.0.zip` | 9 | i18n DE/EN der ViewGUI (Protokoll, Geräte, CSV-Export, Geräte-Import) |
+| 1.4.0 | `ExamLogger_v1.4.0.zip` | 9 | Geräte-Inventar ins Plugin verlagert (`etest_hosts`, Plugin ≥ 2.0.1): Modul liest nur noch, `examlogger_hosts` wird beim Update entfernt; JOINs defensiv (Guard bei fehlender Tabelle) |
+| 1.3.0 | `archive/ExamLogger_v1.3.0.zip` | 9 | i18n DE/EN der ViewGUI (Protokoll, Geräte, CSV-Export, Geräte-Import) |
 | 1.2.0 | `archive/ExamLogger_v1.2.0.zip` | 9 | Modul-i18n DE/EN (Handler/getInfo) |
 | 1.1.0 | `ExamLogger_v1.1.0.zip` | 9 | Frage-ID + Fragenname in Protokoll/CSV; Geräteverwaltung (examlogger_hosts); `test_submit` / `test_submit_confirmed` differenziert (GET vs. POST) |
 | 1.0.0 | `archive/ExamLogger_v1.0.0.zip` | 9 | Erstveröffentlichung |

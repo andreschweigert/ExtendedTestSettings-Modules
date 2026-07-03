@@ -177,14 +177,26 @@ class ilExamBatteryViewGUI
 
         $rows = [];
         try {
+            // Zentrales Geräte-Inventar des Plugins (etest_hosts, seit Plugin 2.0.1) —
+            // nur lesend, Guard falls das Plugin noch nicht aktualisiert ist
+            $hasHosts = $db->tableExists('etest_hosts');
+            $hostCols = $hasHosts
+                ? 'h.ili_nr, h.koffer, h.geraet_nr,'
+                : "'' AS ili_nr, '' AS koffer, '' AS geraet_nr,";
+            $hostJoin = $hasHosts
+                ? 'LEFT JOIN etest_hosts h ON h.ip_addr = s.ip_addr'
+                : '';
+
             // Aufsteigend nach Akkustand — kritische Geräte oben
             $result = $db->queryF(
-                'SELECT s.user_id, s.level_pct, s.charging, s.ip_addr, s.tstamp,
+                "SELECT s.user_id, s.level_pct, s.charging, s.ip_addr, s.tstamp,
+                        $hostCols
                         u.login, u.firstname, u.lastname
-                 FROM ' . self::TABLE_STATUS . ' s
+                 FROM " . self::TABLE_STATUS . " s
                  LEFT JOIN usr_data u ON u.usr_id = s.user_id
+                 $hostJoin
                  WHERE s.test_obj_id = %s
-                 ORDER BY s.level_pct ASC, s.tstamp ASC',
+                 ORDER BY s.level_pct ASC, s.tstamp ASC",
                 ['integer'],
                 [$obj_id]
             );
@@ -241,6 +253,7 @@ class ilExamBatteryViewGUI
                . '<th>' . $this->lng->txt('th_user') . '</th>'
                . '<th>' . $this->lng->txt('th_level') . '</th>'
                . '<th>' . $this->lng->txt('th_charging') . '</th>'
+               . '<th>' . $this->lng->txt('th_device') . '</th>'
                . '<th>' . $this->lng->txt('th_ip') . '</th>'
                . '<th>' . $this->lng->txt('th_last') . '</th>'
                . '</tr></thead><tbody>';
@@ -258,12 +271,28 @@ class ilExamBatteryViewGUI
 
             $rowStyle = $stale ? ' style="opacity:0.45;"' : '';
 
+            // Geräte-Zelle aus dem Plugin-Inventar (Darstellung wie im examlogger-Protokoll)
+            $koffer   = $row['koffer']    ?? '';
+            $geraetNr = $row['geraet_nr'] ?? '';
+            $iliNr    = $row['ili_nr']    ?? '';
+            if ($koffer !== '' && $geraetNr !== '') {
+                $tooltip    = htmlspecialchars(trim($iliNr . '  ' . ($row['ip_addr'] ?? '')));
+                $deviceCell = '<td title="' . $tooltip . '">'
+                            . htmlspecialchars($koffer) . ' &middot; ' . htmlspecialchars($geraetNr)
+                            . '</td>';
+            } elseif ($iliNr !== '') {
+                $deviceCell = '<td title="' . htmlspecialchars($row['ip_addr'] ?? '') . '">' . htmlspecialchars($iliNr) . '</td>';
+            } else {
+                $deviceCell = '<td class="text-muted">—</td>';
+            }
+
             $html .= '<tr' . $rowStyle . '>'
                    . '<td>' . htmlspecialchars($userName) . '</td>'
                    . '<td>' . $this->levelBadge($level, $warn, $crit) . '</td>'
                    . '<td>' . ($charging
                         ? '<span class="text-success">⚡ ' . $this->lng->txt('charging_yes') . '</span>'
                         : $this->lng->txt('charging_no')) . '</td>'
+                   . $deviceCell
                    . '<td>' . htmlspecialchars($row['ip_addr'] ?? '') . '</td>'
                    . '<td>' . date('d.m.Y H:i:s', $tstamp) . '</td>'
                    . '</tr>';

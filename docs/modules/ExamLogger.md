@@ -100,21 +100,26 @@ Zentrale Log-Tabelle. Ein Eintrag pro Ereignis, unbegrenzt viele Einträge pro T
 
 Schreiben via `$db->insert()` mit `$db->nextId('examlogger_events')` als PK.
 
-### `examlogger_hosts`
+### `etest_hosts` (Plugin-Tabelle, ab Modul 1.4.0 / Plugin 2.0.1)
 
-IP→Gerät-Übersetzungstabelle. Wird manuell per CSV-Import befüllt.
+IP→Gerät-Übersetzung — **zentrales Geräte-Inventar des Plugins** (angelegt vom
+Plugin-dbupdate, gepflegt im ConfigGUI-Tab „Geräte" per CSV-Import). Das Modul liest
+nur (LEFT JOIN über die IP), alle Zugriffe mit `tableExists()`-Guard, damit das Modul
+auch unter einem noch nicht aktualisierten Plugin lauffähig bleibt (Geräte-Spalten
+dann leer). Bis 1.3.0 hieß die Tabelle `examlogger_hosts` und gehörte dem Modul;
+das 1.4.0-Update droppt sie (Geräteliste einmalig neu importieren) —
+**Update-Reihenfolge: erst Plugin, dann Modul.**
 
 | Spalte | Typ | Beschreibung |
 |---|---|---|
 | `ip_addr` | text(45) PK | IP-Adresse des Geräts |
 | `hostname` | text(255) | FQDN / Hostname |
-| `ili_nr` | text(32) | ILI-Nummer (z.B. `ILI-042`) |
-| `koffer` | text(32) | Koffer-Bezeichnung (z.B. `K03`) |
-| `geraet_nr` | text(32) | Gerät-Nummer (z.B. `3/09`) |
+| `ili_nr` | text(20) | ILI-Nummer (z.B. `ILI-042`) |
+| `koffer` | text(20) | Koffer-Bezeichnung (z.B. `K03`) |
+| `geraet_nr` | text(20) | Gerät-Nummer (z.B. `3/09`) |
 | `import_note` | text(255) | Freitext-Hinweis aus der CSV |
 
-**Indizes:** `ili_nr`, `koffer`.  
-Befüllung via `$db->replace()` — Upsert, kein Duplikat-Problem.
+**Indizes:** `ili_nr`, `koffer`.
 
 ### Gelesene ILIAS-Tabellen (read-only, nur in ViewGUI)
 

@@ -2,7 +2,7 @@
 
 **Modul-ID:** `exambattery`
 **Speicherort:** `modules/exambattery/` (externes Modul, nicht im Git-Repo)
-**Referenz-ZIP:** `modules-zip/modules/exambattery/ExamBattery_v1.0.1.zip`
+**Referenz-ZIP:** `modules-zip/modules/exambattery/ExamBattery_v1.1.0.zip`
 **Zuletzt aktualisiert:** 2026-07-03
 
 ---
@@ -99,6 +99,11 @@ Aufsicht (Schreibrecht)
 - Upsert per `$db->replace()` auf PK `(test_obj_id, user_id)`.
 - Schwellwerte für die Einfärbung kommen aus `exambattery_settings` (Defaults 20/10,
   falls keine Zeile existiert).
+- **Geräte-Spalte (ab 1.1.0):** `showStatus()` joint lesend gegen das zentrale
+  Geräte-Inventar des Plugins (`etest_hosts`, Plugin ≥ 2.0.1, gepflegt im
+  ConfigGUI-Tab „Geräte") über die IP. Join und Spalten sind mit
+  `tableExists('etest_hosts')` geguarded — fehlt die Tabelle (Plugin noch nicht
+  aktualisiert), zeigt die Spalte „—". Keinerlei Code-Abhängigkeit zu examlogger.
 
 ## Handler-Details (`class.ilExamBatteryHandler.php`)
 

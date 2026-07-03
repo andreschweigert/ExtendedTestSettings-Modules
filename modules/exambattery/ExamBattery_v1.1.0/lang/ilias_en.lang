@@ -19,6 +19,7 @@ no_data#:#No battery reports for this test yet.
 th_user#:#Participant
 th_level#:#Battery level
 th_charging#:#Charging
+th_device#:#Device
 th_ip#:#IP address
 th_last#:#Last report
 charging_yes#:#yes

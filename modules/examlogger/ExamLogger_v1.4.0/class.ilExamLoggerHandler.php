@@ -49,7 +49,7 @@ class ilExamLoggerHandler implements ilExamModuleInterface
             'title'       => $this->lng->txt('title'),
             'icon'        => '',
             'description' => $this->lng->txt('description'),
-            'version'     => '1.1.0',
+            'version'     => '1.4.0',
         ];
     }
 

@@ -28,9 +28,13 @@ Geräte, bevor sie ausfallen.
 3. **Upsert**: Pro (Test, Teilnehmer) zählt nur der letzte Stand — keine Historie.
 4. **Aufsichts-Ansicht** (`cmd=showStatus`, Schreibrecht): Tabelle aller gemeldeten
    Geräte, aufsteigend nach Akkustand (kritische oben), farbig nach den Test-Schwellen
-   (grün/gelb/rot), mit Ladezustand, IP-Adresse und Zeitpunkt der letzten Meldung.
+   (grün/gelb/rot), mit Ladezustand, Gerät, IP-Adresse und Zeitpunkt der letzten Meldung.
    Auto-Refresh alle 30 s; Meldungen älter als 10 Minuten werden ausgegraut
    (Gerät evtl. aus oder Teilnehmer/in fertig).
+5. **Geräte-Spalte**: Ist im zentralen Geräte-Inventar des Plugins (`etest_hosts`,
+   Administration → Plugins → ExtendedTestSettings → Tab „Geräte", ab Plugin 2.0.1)
+   eine Zuordnung zur IP gepflegt, zeigt die Spalte „Koffer · Gerät-Nr" (Tooltip:
+   ILI-Nr + IP) — sonst „—".
 
 ## Voraussetzungen & bewusste Grenzen
 
@@ -111,5 +115,6 @@ Eigene Tabellen: `exambattery_settings`, `exambattery_status`
 
 | Version | Datum | Änderung |
 |---|---|---|
+| 1.1.0 | 2026-07-03 | Geräte-Spalte (Koffer · Gerät-Nr) aus dem zentralen Geräte-Inventar des Plugins (`etest_hosts`, Plugin ≥ 2.0.1), Guard bei fehlender Tabelle |
 | 1.0.1 | 2026-07-03 | Fix: Aufsichts-Ansicht war weiß (fehlendes printToStdout — der Proxy druckt das Template nicht selbst); Zurück-Link zum Test ergänzt |
 | 1.0.0 | 2026-07-03 | Erstversion: stille Akku-Reports (Events + 3-min-Heartbeat), Aufsichts-Ansicht mit Farb-Schwellen, Auto-Refresh und Veraltet-Markierung, simulate()-Helfer |

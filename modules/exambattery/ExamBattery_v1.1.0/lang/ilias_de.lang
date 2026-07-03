@@ -19,6 +19,7 @@ no_data#:#Noch keine Akku-Meldungen für diesen Test.
 th_user#:#Teilnehmer/in
 th_level#:#Akkustand
 th_charging#:#Lädt
+th_device#:#Gerät
 th_ip#:#IP-Adresse
 th_last#:#Letzte Meldung
 charging_yes#:#ja
