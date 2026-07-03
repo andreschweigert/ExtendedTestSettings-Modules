@@ -1,0 +1,114 @@
+# ExamBattery
+
+Externes Modul für das ILIAS-Plugin **ExtendedTestSettings**.
+
+**Stiller Akku-Monitor für Prüfungsgeräte:** meldet Akkustände der Geräte im Testplayer
+still an den Server und zeigt sie der Aufsicht in einer Live-Tabelle. **Beim Studierenden
+erscheint niemals eine Meldung oder ein UI-Element** — das ist eine bewusste
+Design-Entscheidung: die Aufsicht erkennt kritische Geräte und entscheidet selbst, ob sie
+eingreift (Ladegerät bringen, Gerät tauschen), ohne Studierende während der Prüfung zu
+beunruhigen.
+
+## Anwendungsfall
+
+Prüfungen im Hörsaal mit ChromeOS-Koffergeräten, die ohne Steckdose auf Akku laufen.
+Ein leerlaufender Akku mitten in der Prüfung ist ein echter Prüfungsvorfall — bisher
+merkte es niemand, bevor das Gerät ausging. Mit ExamBattery sieht die Aufsicht kritische
+Geräte, bevor sie ausfallen.
+
+## Funktionsweise
+
+1. **Battery Status API** (`navigator.getBattery()`): Das JS liest den Akkustand rein
+   passiv aus. Initial wird gemeldet, danach bei jeder Änderung (`levelchange`,
+   `chargingchange` — die API pusht) plus ein Heartbeat höchstens alle 3 Minuten,
+   damit „letzte Meldung" in der Aufsichts-Ansicht aktuell bleibt.
+2. **Report**: `fetch` POST an den Modul-Proxy (`cmd=report`), Payload
+   `{level: 0–100, charging: 0|1}`. Fehlgeschlagene Reports werden still verworfen
+   (kein Retry-Sturm — der nächste Heartbeat kommt ohnehin).
+3. **Upsert**: Pro (Test, Teilnehmer) zählt nur der letzte Stand — keine Historie.
+4. **Aufsichts-Ansicht** (`cmd=showStatus`, Schreibrecht): Tabelle aller gemeldeten
+   Geräte, aufsteigend nach Akkustand (kritische oben), farbig nach den Test-Schwellen
+   (grün/gelb/rot), mit Ladezustand, IP-Adresse und Zeitpunkt der letzten Meldung.
+   Auto-Refresh alle 30 s; Meldungen älter als 10 Minuten werden ausgegraut
+   (Gerät evtl. aus oder Teilnehmer/in fertig).
+
+## Voraussetzungen & bewusste Grenzen
+
+- **HTTPS erforderlich:** `navigator.getBattery()` gibt es nur im Secure Context.
+  Auf der HTTP-Dev-Instanz liefert die API nichts — das Modul bleibt dort stumm
+  (keine Fehler, keine Requests). Zum Testen dort `simulate()` verwenden (s. u.).
+- **Nur Chromium-Browser** (Chrome, Edge, ChromeOS): Firefox hat die API entfernt —
+  das Modul bleibt dort komplett stumm.
+- **Desktop-Erkennung:** Geräte ohne Akku melden `level = 100 %` und „lädt" — solche
+  Stände werden clientseitig verworfen. Bei normalen Tests am Arbeitsplatz-PC entfaltet
+  das Modul keinerlei Aktivität.
+- **Keinerlei Anzeige für Studierende:** kein Banner, kein Button, kein DOM-Element —
+  auch nicht bei 5 % Akku. Warnungen an Studierende sind bewusst nicht vorgesehen.
+
+## Entwickler-Helfer: simulate()
+
+Für Tests ohne echtes Akku-Gerät steht in der Browser-Konsole des Testplayers bereit:
+
+```js
+window.ExamBattery.simulate(15, false);  // meldet 15 %, lädt nicht → gelb
+window.ExamBattery.simulate(8, false);   // meldet 8 %  → rot, ganz oben
+window.ExamBattery.simulate(80, true);   // meldet 80 %, lädt → grün
+```
+
+`simulate()` löst einen echten Report mit den angegebenen Werten aus und umgeht die
+Desktop-Erkennung.
+
+## Konfiguration pro Test
+
+In den Erweiterten Test-Einstellungen des Tests:
+
+| Einstellung | POST-Key | Default |
+|---|---|---|
+| Akku-Monitor aktivieren | `exambattery_enabled` | — |
+| Gelb-Schwelle (%) | `exambattery_warn_pct` | 20 (5–50) |
+| Rot-Schwelle (%) | `exambattery_crit_pct` | 10 (5–30) |
+
+Die Schwellen steuern **nur die Einfärbung der Aufsichts-Ansicht**. Beim Speichern wird
+erzwungen: Rot-Schwelle < Gelb-Schwelle, sonst fallen beide auf die Defaults zurück.
+
+Der Formular-Abschnitt enthält außerdem den Link **„Gerätestände anzeigen"** zur
+Aufsichts-Ansicht.
+
+## Datenbank
+
+Eigene Tabellen: `exambattery_settings`, `exambattery_status`
+
+**`exambattery_settings`** — Konfiguration je Test:
+
+| Spalte | Bedeutung |
+|---|---|
+| `test_id` (PK) | ILIAS obj_id des Tests |
+| `enabled` | 1 = aktiv |
+| `warn_pct` | Gelb-Schwelle in % (Anzeige) |
+| `crit_pct` | Rot-Schwelle in % (Anzeige) |
+| `updated_at` | letzte Änderung |
+
+**`exambattery_status`** — letzter gemeldeter Stand je Gerät (Upsert, keine Historie):
+
+| Spalte | Bedeutung |
+|---|---|
+| `test_obj_id` (PK) | ILIAS obj_id des Tests |
+| `user_id` (PK) | Teilnehmer/in |
+| `level_pct` | Akkustand 0–100 |
+| `charging` | 1 = lädt gerade |
+| `ip_addr` | Client-IP |
+| `test_ref_id` | ref_id des Tests |
+| `tstamp` | Zeitpunkt der letzten Meldung (Unix) |
+
+## Sicherheit
+
+- `cmd=report` (POST, `allow_student_access`): zusätzlich zur Proxy-Prüfung wird eine
+  aktive Test-Session (`tst_active`) oder Schreibrecht verlangt. Payload wird hart
+  validiert: `level` ganzzahlig 0–100, `charging` exakt 0/1 — alles andere → HTTP 400.
+- `cmd=showStatus`: nur mit Schreibrecht auf den Test erreichbar.
+
+## Versionshistorie
+
+| Version | Datum | Änderung |
+|---|---|---|
+| 1.0.0 | 2026-07-03 | Erstversion: stille Akku-Reports (Events + 3-min-Heartbeat), Aufsichts-Ansicht mit Farb-Schwellen, Auto-Refresh und Veraltet-Markierung, simulate()-Helfer |

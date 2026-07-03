@@ -24,6 +24,7 @@ Jeder Branch entspricht einer ILIAS-Hauptversion:
 |---|---|
 | [examalert](modules/examalert/) | Zeit-Warnung kurz vor Testende, konfigurierbare Nachricht mit HTML-Formatierung |
 | [examarchiver](modules/examarchiver/) | Test-Archivierung: Antworten, Punkte, Noten und Einstellungen als selbsttragendes ZIP (HTML + PDF + JSON/CSV) mit SHA-256-Manifest und Zugriffsprotokoll |
+| [exambattery](modules/exambattery/) | Stiller Akku-Monitor für Prüfungsgeräte: meldet Akkustände an eine Aufsichts-Ansicht, keinerlei Anzeige für Studierende |
 | [examcalc](modules/examcalc/) | Taschenrechner während der Prüfung (einfach oder wissenschaftlich), Shortcut Alt + R |
 | [examchecker](modules/examchecker/) | Prüft Test-Einstellungen gegen konfigurierbare Standards (Präsenz-/Fernprüfung) |
 | [examconnguard](modules/examconnguard/) | Verbindungs-Schutz: On-Demand-Probe bei Submit/Klick, Overlay + Auto-Replay bei WLAN-Ausfall |
