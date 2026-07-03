@@ -64,6 +64,13 @@ if (!$db->tableExists('exambattery_status')) {
             'notnull' => true,
             'default' => 0,
         ],
+        // Geschätzte Restzeit in Minuten (Battery-API dischargingTime); -1 = unbekannt
+        'discharging_min' => [
+            'type'    => 'integer',
+            'length'  => 4,
+            'notnull' => true,
+            'default' => -1,
+        ],
         'ip_addr' => [
             'type'    => 'text',
             'length'  => 45,
@@ -83,4 +90,14 @@ if (!$db->tableExists('exambattery_status')) {
         ],
     ]);
     $db->addPrimaryKey('exambattery_status', ['test_obj_id', 'user_id']);
+}
+
+if ($db->tableExists('exambattery_status')
+    && !$db->tableColumnExists('exambattery_status', 'discharging_min')) {
+    $db->addTableColumn('exambattery_status', 'discharging_min', [
+        'type'    => 'integer',
+        'length'  => 4,
+        'notnull' => true,
+        'default' => -1,
+    ]);
 }

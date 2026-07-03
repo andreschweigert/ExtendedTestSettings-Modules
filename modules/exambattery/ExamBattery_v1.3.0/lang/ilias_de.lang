@@ -15,9 +15,11 @@ legend#:#Anzeige-Schwellen: gelb ≤ %1$d %%, rot ≤ %2$d %%
 devices_reported#:#%d Geräte gemeldet
 refresh_hint#:#Die Ansicht aktualisiert sich automatisch alle 30 Sekunden.
 stale_hint#:#Ausgegraute Zeilen: letzte Meldung älter als 10 Minuten (Gerät evtl. aus oder Teilnehmer/in fertig).
+remaining_hint#:#Restzeit = Schätzung des Geräts, nur beim Entladen verfügbar.
 no_data#:#Noch keine Akku-Meldungen für diesen Test.
 th_user#:#Teilnehmer/in
 th_level#:#Akkustand
+th_remaining#:#Restzeit (ca.)
 th_charging#:#Lädt
 th_device#:#Gerät
 th_ip#:#IP-Adresse

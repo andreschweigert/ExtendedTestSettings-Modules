@@ -2,7 +2,7 @@
 
 **Modul-ID:** `exambattery`
 **Speicherort:** `modules/exambattery/` (externes Modul, nicht im Git-Repo)
-**Referenz-ZIP:** `modules-zip/modules/exambattery/ExamBattery_v1.2.0.zip`
+**Referenz-ZIP:** `modules-zip/modules/exambattery/ExamBattery_v1.3.0.zip`
 **Zuletzt aktualisiert:** 2026-07-03
 
 ---
@@ -110,6 +110,15 @@ Aufsicht (Schreibrecht)
   (`$f->panel()->standard(...)` mit `$f->legacy($tableHtml)`), leerer Zustand als
   `$f->messageBox()->info(...)`. Akkustand als Inline-Fortschrittsbalken (`levelBar()`,
   Farben #43a047/#f9a825/#e53935 wie examnetqos).
+- **Sortierung (ab 1.3.0):** Spaltenkopf-Links mit `sort`/`dir`-GET-Parametern
+  (Whitelist-Switch → ORDER BY, kein SQL aus Nutzereingaben); der 30-s-Reload behält
+  die URL und damit die Sortierung. Default: Akkustand aufsteigend.
+- **Restzeit (ab 1.3.0):** JS meldet `remaining` (Minuten aus
+  `battery.dischargingTime`; Infinity/laden → -1). Server validiert -1–6000 hart,
+  Spalte `discharging_min` (Update-Guard `tableColumnExists` in install.php).
+  Anzeige `formatRemaining()`: „—" bei unbekannt/laden, ≤ 30 min rot. Achtung:
+  Die API liefert die Schätzung erst nach etwas Beobachtungszeit (anfangs Infinity),
+  Werte sind OS-Schätzungen.
 
 ## Handler-Details (`class.ilExamBatteryHandler.php`)
 

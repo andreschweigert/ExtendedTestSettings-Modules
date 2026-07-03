@@ -39,20 +39,33 @@
 
     // ─── Report ──────────────────────────────────────────────────────────────────
 
-    function sendReport(levelPct, charging) {
+    function sendReport(levelPct, charging, remainingMin) {
         var c = cfg();
         if (!c.reportUrl) { return; }
 
         window.fetch(c.reportUrl, {
             method:      'POST',
             headers:     { 'Content-Type': 'application/json' },
-            body:        JSON.stringify({ level: levelPct, charging: charging ? 1 : 0 }),
+            body:        JSON.stringify({
+                level:     levelPct,
+                charging:  charging ? 1 : 0,
+                remaining: typeof remainingMin === 'number' ? remainingMin : -1,
+            }),
             credentials: 'same-origin',
         }).then(function () {
-            log('reported level=' + levelPct + '% charging=' + (charging ? 1 : 0));
+            log('reported level=' + levelPct + '% charging=' + (charging ? 1 : 0) + ' remaining=' + remainingMin + 'min');
         }).catch(function () {
             // Still verwerfen — kein Retry-Sturm, nächster Heartbeat kommt ohnehin.
         });
+    }
+
+    // Geschätzte Restzeit in Minuten aus der Battery-API; -1 = unbekannt.
+    // dischargingTime ist beim Laden bzw. kurz nach Statuswechseln Infinity.
+    function remainingMinutes() {
+        if (!batteryRef || batteryRef.charging) { return -1; }
+        var t = batteryRef.dischargingTime;
+        if (typeof t !== 'number' || !isFinite(t) || t <= 0) { return -1; }
+        return Math.min(6000, Math.round(t / 60));
     }
 
     function reportFromBattery() {
@@ -66,7 +79,7 @@
         if (level === 100 && charging) {
             return;
         }
-        sendReport(level, charging);
+        sendReport(level, charging, remainingMinutes());
     }
 
     // ─── Heartbeat ───────────────────────────────────────────────────────────────
@@ -86,10 +99,13 @@
     window.ExamBattery.config = window.ExamBattery.config || {};
 
     // Simulierter Report für Tests ohne echtes Akku-Gerät (umgeht die Desktop-Erkennung).
-    window.ExamBattery.simulate = function (levelPct, charging) {
-        var level = Math.max(0, Math.min(100, Math.round(Number(levelPct) || 0)));
-        sendReport(level, !!charging);
-        console.log('[ExamBattery] simulate: level=' + level + '% charging=' + (charging ? 1 : 0));
+    // Drittes Argument optional: geschätzte Restzeit in Minuten (Default -1 = unbekannt).
+    window.ExamBattery.simulate = function (levelPct, charging, remainingMin) {
+        var level     = Math.max(0, Math.min(100, Math.round(Number(levelPct) || 0)));
+        var remaining = Math.max(-1, Math.min(6000, Math.round(Number(remainingMin))));
+        if (isNaN(remaining)) { remaining = -1; }
+        sendReport(level, !!charging, remaining);
+        console.log('[ExamBattery] simulate: level=' + level + '% charging=' + (charging ? 1 : 0) + ' remaining=' + remaining + 'min');
     };
 
     // ─── Init ────────────────────────────────────────────────────────────────────

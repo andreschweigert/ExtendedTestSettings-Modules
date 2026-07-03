@@ -54,13 +54,15 @@ Geräte, bevor sie ausfallen.
 Für Tests ohne echtes Akku-Gerät steht in der Browser-Konsole des Testplayers bereit:
 
 ```js
-window.ExamBattery.simulate(15, false);  // meldet 15 %, lädt nicht → gelb
-window.ExamBattery.simulate(8, false);   // meldet 8 %  → rot, ganz oben
-window.ExamBattery.simulate(80, true);   // meldet 80 %, lädt → grün
+window.ExamBattery.simulate(15, false);      // meldet 15 %, lädt nicht → gelb
+window.ExamBattery.simulate(8, false);       // meldet 8 %  → rot, ganz oben
+window.ExamBattery.simulate(80, true);       // meldet 80 %, lädt → grün
+window.ExamBattery.simulate(25, false, 45);  // 25 %, Restzeit ~45 min (≤ 30 min → rot)
 ```
 
 `simulate()` löst einen echten Report mit den angegebenen Werten aus und umgeht die
-Desktop-Erkennung.
+Desktop-Erkennung. Das dritte Argument (Restzeit in Minuten) ist optional, Default -1
+(unbekannt).
 
 ## Konfiguration pro Test
 
@@ -100,6 +102,7 @@ Eigene Tabellen: `exambattery_settings`, `exambattery_status`
 | `user_id` (PK) | Teilnehmer/in |
 | `level_pct` | Akkustand 0–100 |
 | `charging` | 1 = lädt gerade |
+| `discharging_min` | Geschätzte Restzeit in Minuten (Battery-API), -1 = unbekannt |
 | `ip_addr` | Client-IP |
 | `test_ref_id` | ref_id des Tests |
 | `tstamp` | Zeitpunkt der letzten Meldung (Unix) |
@@ -115,6 +118,7 @@ Eigene Tabellen: `exambattery_settings`, `exambattery_status`
 
 | Version | Datum | Änderung |
 |---|---|---|
+| 1.3.0 | 2026-07-03 | Spalten sortierbar (klickbare Köpfe, überlebt Auto-Refresh); neue Spalte „Restzeit (ca.)" aus der Battery-API (`dischargingTime`, neue DB-Spalte `discharging_min`, ≤ 30 min rot); `simulate(level, charging, restMin)` erweitert |
 | 1.2.0 | 2026-07-03 | Aufsichts-Ansicht als reguläre ILIAS-Seite: Brotkrumen-Pfad zum Test (Locator), Test-Icon, Seitentitel/-beschreibung, KS-Panel um die Tabelle, MessageBox bei „keine Daten", Akkustand als farbiger Fortschrittsbalken |
 | 1.1.0 | 2026-07-03 | Geräte-Spalte (Koffer · Gerät-Nr) aus dem zentralen Geräte-Inventar des Plugins (`etest_hosts`, Plugin ≥ 2.0.1), Guard bei fehlender Tabelle |
 | 1.0.1 | 2026-07-03 | Fix: Aufsichts-Ansicht war weiß (fehlendes printToStdout — der Proxy druckt das Template nicht selbst); Zurück-Link zum Test ergänzt |

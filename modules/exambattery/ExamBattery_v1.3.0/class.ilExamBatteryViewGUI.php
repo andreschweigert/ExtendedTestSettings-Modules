@@ -89,12 +89,15 @@ class ilExamBatteryViewGUI
         $raw  = (string)file_get_contents('php://input');
         $data = json_decode($raw, true);
 
-        // Harte Validierung: level ganzzahlig 0–100, charging exakt 0 oder 1
-        $level    = is_array($data) ? ($data['level'] ?? null) : null;
-        $charging = is_array($data) ? ($data['charging'] ?? null) : null;
+        // Harte Validierung: level ganzzahlig 0–100, charging exakt 0 oder 1,
+        // remaining (geschätzte Restzeit in Minuten) ganzzahlig -1–6000 (-1 = unbekannt)
+        $level     = is_array($data) ? ($data['level'] ?? null) : null;
+        $charging  = is_array($data) ? ($data['charging'] ?? null) : null;
+        $remaining = is_array($data) ? ($data['remaining'] ?? -1) : -1;
 
         if (!is_int($level) || $level < 0 || $level > 100
-            || ($charging !== 0 && $charging !== 1)) {
+            || ($charging !== 0 && $charging !== 1)
+            || !is_int($remaining) || $remaining < -1 || $remaining > 6000) {
             http_response_code(400);
             echo json_encode(['error' => 'invalid payload']);
             exit;
@@ -112,11 +115,12 @@ class ilExamBatteryViewGUI
                     'user_id'     => ['integer', $user_id],
                 ],
                 [
-                    'level_pct'   => ['integer', $level],
-                    'charging'    => ['integer', $charging],
-                    'ip_addr'     => ['text',    $this->getClientIp()],
-                    'test_ref_id' => ['integer', $ref_id],
-                    'tstamp'      => ['integer', time()],
+                    'level_pct'       => ['integer', $level],
+                    'charging'        => ['integer', $charging],
+                    'discharging_min' => ['integer', $remaining],
+                    'ip_addr'         => ['text',    $this->getClientIp()],
+                    'test_ref_id'     => ['integer', $ref_id],
+                    'tstamp'          => ['integer', time()],
                 ]
             );
         } catch (Exception $e) {
@@ -175,6 +179,10 @@ class ilExamBatteryViewGUI
         $warn     = (int)$settings['warn_pct'];
         $crit     = (int)$settings['crit_pct'];
 
+        // Sortierung über Spaltenkopf-Links (Whitelist), Default: Akkustand aufsteigend
+        $sort = strtolower((string)($_GET['sort'] ?? 'level'));
+        $dir  = strtolower((string)($_GET['dir'] ?? 'asc')) === 'desc' ? 'DESC' : 'ASC';
+
         $rows = [];
         try {
             // Zentrales Geräte-Inventar des Plugins (etest_hosts, seit Plugin 2.0.1) —
@@ -187,16 +195,40 @@ class ilExamBatteryViewGUI
                 ? 'LEFT JOIN etest_hosts h ON h.ip_addr = s.ip_addr'
                 : '';
 
-            // Aufsteigend nach Akkustand — kritische Geräte oben
+            switch ($sort) {
+                case 'user':
+                    $order = "u.lastname $dir, u.firstname $dir, u.login $dir";
+                    break;
+                case 'charging':
+                    $order = "s.charging $dir, s.level_pct ASC";
+                    break;
+                case 'device':
+                    $order = $hasHosts ? "h.koffer $dir, h.geraet_nr $dir" : "s.ip_addr $dir";
+                    break;
+                case 'ip':
+                    $order = "s.ip_addr $dir";
+                    break;
+                case 'last':
+                    $order = "s.tstamp $dir";
+                    break;
+                case 'remaining':
+                    // Unbekannte Restzeit (-1) immer ans Ende
+                    $order = "(s.discharging_min < 0) ASC, s.discharging_min $dir";
+                    break;
+                default:
+                    $sort  = 'level';
+                    $order = "s.level_pct $dir, s.tstamp ASC";
+            }
+
             $result = $db->queryF(
-                "SELECT s.user_id, s.level_pct, s.charging, s.ip_addr, s.tstamp,
+                "SELECT s.user_id, s.level_pct, s.charging, s.discharging_min, s.ip_addr, s.tstamp,
                         $hostCols
                         u.login, u.firstname, u.lastname
                  FROM " . self::TABLE_STATUS . " s
                  LEFT JOIN usr_data u ON u.usr_id = s.user_id
                  $hostJoin
                  WHERE s.test_obj_id = %s
-                 ORDER BY s.level_pct ASC, s.tstamp ASC",
+                 ORDER BY $order",
                 ['integer'],
                 [$obj_id]
             );
@@ -216,7 +248,7 @@ class ilExamBatteryViewGUI
         } else {
             $panel = $f->panel()->standard(
                 sprintf($this->lng->txt('devices_reported'), count($rows)),
-                $f->legacy($this->renderStatusTable($rows, $warn, $crit))
+                $f->legacy($this->renderStatusTable($rows, $warn, $crit, $sort, $dir))
             );
             $content = $r->render($panel);
         }
@@ -256,7 +288,7 @@ class ilExamBatteryViewGUI
         }
     }
 
-    private function renderStatusTable(array $rows, int $warn, int $crit): string
+    private function renderStatusTable(array $rows, int $warn, int $crit, string $sort, string $dir): string
     {
         $now = time();
 
@@ -264,16 +296,18 @@ class ilExamBatteryViewGUI
                . sprintf($this->lng->txt('legend'), $warn, $crit)
                . ' &nbsp;|&nbsp; ' . $this->lng->txt('refresh_hint')
                . '<br>' . $this->lng->txt('stale_hint')
+               . ' ' . $this->lng->txt('remaining_hint')
                . '</p>';
 
         $html .= '<table class="table table-striped table-condensed table-hover" style="font-size:13px;">';
         $html .= '<thead><tr>'
-               . '<th>' . $this->lng->txt('th_user') . '</th>'
-               . '<th>' . $this->lng->txt('th_level') . '</th>'
-               . '<th>' . $this->lng->txt('th_charging') . '</th>'
-               . '<th>' . $this->lng->txt('th_device') . '</th>'
-               . '<th>' . $this->lng->txt('th_ip') . '</th>'
-               . '<th>' . $this->lng->txt('th_last') . '</th>'
+               . '<th>' . $this->sortLink('user', $this->lng->txt('th_user'), $sort, $dir) . '</th>'
+               . '<th>' . $this->sortLink('level', $this->lng->txt('th_level'), $sort, $dir) . '</th>'
+               . '<th>' . $this->sortLink('remaining', $this->lng->txt('th_remaining'), $sort, $dir) . '</th>'
+               . '<th>' . $this->sortLink('charging', $this->lng->txt('th_charging'), $sort, $dir) . '</th>'
+               . '<th>' . $this->sortLink('device', $this->lng->txt('th_device'), $sort, $dir) . '</th>'
+               . '<th>' . $this->sortLink('ip', $this->lng->txt('th_ip'), $sort, $dir) . '</th>'
+               . '<th>' . $this->sortLink('last', $this->lng->txt('th_last'), $sort, $dir) . '</th>'
                . '</tr></thead><tbody>';
 
         foreach ($rows as $row) {
@@ -307,6 +341,7 @@ class ilExamBatteryViewGUI
             $html .= '<tr' . $rowStyle . '>'
                    . '<td>' . htmlspecialchars($userName) . '</td>'
                    . '<td>' . $this->levelBar($level, $warn, $crit) . '</td>'
+                   . '<td>' . $this->formatRemaining((int)($row['discharging_min'] ?? -1), $charging) . '</td>'
                    . '<td>' . ($charging
                         ? '<span class="text-success">⚡ ' . $this->lng->txt('charging_yes') . '</span>'
                         : $this->lng->txt('charging_no')) . '</td>'
@@ -318,6 +353,35 @@ class ilExamBatteryViewGUI
 
         $html .= '</tbody></table>';
         return $html;
+    }
+
+    private function sortLink(string $key, string $label, string $sort, string $dir): string
+    {
+        $params = $_GET;
+        $params['sort'] = $key;
+        $params['dir']  = ($sort === $key && $dir === 'ASC') ? 'desc' : 'asc';
+        $url   = 'ilias.php?' . http_build_query($params);
+        $arrow = ($sort === $key) ? ($dir === 'ASC' ? ' ▲' : ' ▼') : '';
+        return '<a href="' . htmlspecialchars($url) . '" style="white-space:nowrap;color:inherit;">'
+             . htmlspecialchars($label) . $arrow . '</a>';
+    }
+
+    /**
+     * Geschätzte Restzeit (Minuten aus der Battery-API); -1 = unbekannt.
+     * Beim Laden zeigt die API keine Entlade-Restzeit — dann "—".
+     */
+    private function formatRemaining(int $min, bool $charging): string
+    {
+        if ($min < 0 || $charging) {
+            return '<span class="text-muted">—</span>';
+        }
+        $txt = $min < 60
+            ? '~' . $min . ' min'
+            : '~' . intdiv($min, 60) . ' h ' . str_pad((string)($min % 60), 2, '0', STR_PAD_LEFT) . ' min';
+        if ($min <= 30) {
+            return '<strong style="color:#e53935;">' . $txt . '</strong>';
+        }
+        return $txt;
     }
 
     private function levelBar(int $level, int $warn, int $crit): string
