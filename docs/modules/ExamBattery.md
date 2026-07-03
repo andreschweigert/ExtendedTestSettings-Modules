@@ -2,7 +2,7 @@
 
 **Modul-ID:** `exambattery`
 **Speicherort:** `modules/exambattery/` (externes Modul, nicht im Git-Repo)
-**Referenz-ZIP:** `modules-zip/modules/exambattery/ExamBattery_v1.3.1.zip`
+**Referenz-ZIP:** `modules-zip/modules/exambattery/ExamBattery_v1.3.2.zip`
 **Zuletzt aktualisiert:** 2026-07-03
 
 ---
@@ -119,6 +119,14 @@ Aufsicht (Schreibrecht)
   aufsteigend.
 - **Kein Auto-Refresh (ab 1.3.1):** Aktualisierung per KS-Button (URL inkl.
   Sortierung wird wiederverwendet) plus „Stand: hh:mm:ss"-Anzeige.
+- **Restzeit-Fallback (ab 1.3.2):** Viele Geräte melden `dischargingTime`
+  dauerhaft `Infinity` → `discharging_min` bleibt -1. Deshalb pflegt
+  `handleReport()` einen Referenzpunkt (`ref_level`/`ref_tstamp` = Akkustand +
+  Zeit beim Beginn des Entladens; Reset bei `charging=1` oder wenn der Stand
+  über die Referenz steigt). Die Ansicht berechnet `eff_remaining` direkt im
+  SQL (`CASE`: API-Wert, sonst `level / Entladerate`, frühestens nach 5 min und
+  2 % Abfall) — derselbe Ausdruck dient als Sortier-Schlüssel. Berechnete Werte
+  sind mit `*` und Tooltip markiert.
 - **Restzeit (ab 1.3.0):** JS meldet `remaining` (Minuten aus
   `battery.dischargingTime`; Infinity/laden → -1). Server validiert -1–6000 hart,
   Spalte `discharging_min` (Update-Guard `tableColumnExists` in install.php).

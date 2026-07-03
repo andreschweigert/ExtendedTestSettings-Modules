@@ -16,7 +16,9 @@ devices_reported#:#%d Geräte gemeldet
 btn_refresh#:#Aktualisieren
 last_loaded#:#Stand: %s Uhr — über „Aktualisieren" neu laden
 stale_hint#:#Ausgegraute Zeilen: letzte Meldung älter als 10 Minuten (Gerät evtl. aus oder Teilnehmer/in fertig).
-remaining_hint#:#Restzeit = Schätzung des Geräts, nur beim Entladen verfügbar.
+remaining_hint#:#Restzeit = Schätzung des Geräts; liefert es keine (*), wird sie aus der bisherigen Entladerate gerechnet (braucht ≥ 5 min und ≥ 2 % Abfall). Nur beim Entladen verfügbar.
+remaining_src_api#:#Schätzung des Geräts (Battery-API)
+remaining_src_calc#:#Aus der bisherigen Entladerate berechnet
 no_data#:#Noch keine Akku-Meldungen für diesen Test.
 th_user#:#Teilnehmer/in
 th_level#:#Akkustand

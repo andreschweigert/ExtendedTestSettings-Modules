@@ -102,8 +102,30 @@ class ilExamBatteryViewGUI
 
         $obj_id = (int)ilObject::_lookupObjectId($ref_id);
         $db     = $DIC->database();
+        $now    = time();
 
         try {
+            // Referenzpunkt für die serverseitige Restzeit-Berechnung (Fallback,
+            // wenn die Battery-API keine Schätzung liefert): Akkustand + Zeitpunkt
+            // beim Beginn des Entladens. Zurückgesetzt beim Laden oder wenn der
+            // Akkustand über die Referenz steigt.
+            $ref_level = $level;
+            $ref_ts    = $now;
+            if ($charging === 0) {
+                $res = $db->queryF(
+                    'SELECT ref_level, ref_tstamp FROM ' . self::TABLE_STATUS
+                    . ' WHERE test_obj_id = %s AND user_id = %s',
+                    ['integer', 'integer'],
+                    [$obj_id, $user_id]
+                );
+                if (($row = $db->fetchAssoc($res))
+                    && (int)$row['ref_tstamp'] > 0
+                    && (int)$row['ref_level'] >= $level) {
+                    $ref_level = (int)$row['ref_level'];
+                    $ref_ts    = (int)$row['ref_tstamp'];
+                }
+            }
+
             // Upsert — es zählt nur der letzte Stand pro (Test, Nutzer)
             $db->replace(
                 self::TABLE_STATUS,
@@ -115,9 +137,11 @@ class ilExamBatteryViewGUI
                     'level_pct'       => ['integer', $level],
                     'charging'        => ['integer', $charging],
                     'discharging_min' => ['integer', $remaining],
+                    'ref_level'       => ['integer', $ref_level],
+                    'ref_tstamp'      => ['integer', $ref_ts],
                     'ip_addr'         => ['text',    $this->getClientIp()],
                     'test_ref_id'     => ['integer', $ref_id],
-                    'tstamp'          => ['integer', time()],
+                    'tstamp'          => ['integer', $now],
                 ]
             );
         } catch (Exception $e) {
@@ -210,15 +234,28 @@ class ilExamBatteryViewGUI
                     break;
                 case 'remaining':
                     // Unbekannte Restzeit (-1) immer ans Ende
-                    $order = "(s.discharging_min < 0) ASC, s.discharging_min $dir";
+                    $order = "(eff_remaining < 0) ASC, eff_remaining $dir";
                     break;
                 default:
                     $sort  = 'level';
                     $order = "s.level_pct $dir, s.tstamp ASC";
             }
 
+            // eff_remaining: Battery-API-Wert, sonst serverseitig aus der Entladerate
+            // seit dem Referenzpunkt gerechnet (frühestens nach 5 min und 2 % Abfall,
+            // sonst ist die Rate zu verrauscht); -1 = keine Aussage möglich
+            $effRemainingSql = "CASE
+                    WHEN s.discharging_min >= 0 THEN s.discharging_min
+                    WHEN s.charging = 0 AND s.ref_tstamp > 0
+                         AND s.ref_level - s.level_pct >= 2
+                         AND s.tstamp - s.ref_tstamp >= 300
+                    THEN LEAST(6000, ROUND(s.level_pct * (s.tstamp - s.ref_tstamp) / ((s.ref_level - s.level_pct) * 60.0)))
+                    ELSE -1
+                END";
+
             $result = $db->queryF(
                 "SELECT s.user_id, s.level_pct, s.charging, s.discharging_min, s.ip_addr, s.tstamp,
+                        $effRemainingSql AS eff_remaining,
                         $hostCols
                         u.login, u.firstname, u.lastname
                  FROM " . self::TABLE_STATUS . " s
@@ -346,7 +383,11 @@ class ilExamBatteryViewGUI
             $html .= '<tr' . $rowStyle . '>'
                    . '<td>' . htmlspecialchars($userName) . '</td>'
                    . '<td>' . $this->levelBar($level, $warn, $crit) . '</td>'
-                   . '<td>' . $this->formatRemaining((int)($row['discharging_min'] ?? -1), $charging) . '</td>'
+                   . '<td>' . $this->formatRemaining(
+                        (int)($row['eff_remaining'] ?? -1),
+                        $charging,
+                        (int)($row['discharging_min'] ?? -1) < 0
+                     ) . '</td>'
                    . '<td>' . ($charging
                         ? '<span class="text-success">⚡ ' . $this->lng->txt('charging_yes') . '</span>'
                         : $this->lng->txt('charging_no')) . '</td>'
@@ -372,10 +413,12 @@ class ilExamBatteryViewGUI
     }
 
     /**
-     * Geschätzte Restzeit (Minuten aus der Battery-API); -1 = unbekannt.
-     * Beim Laden zeigt die API keine Entlade-Restzeit — dann "—".
+     * Geschätzte Restzeit in Minuten; -1 = keine Aussage möglich.
+     * $isCalc = true, wenn der Wert serverseitig aus der Entladerate gerechnet
+     * wurde (Fallback, weil die Battery-API keine Schätzung liefert).
+     * Beim Laden gibt es keine Entlade-Restzeit — dann "—".
      */
-    private function formatRemaining(int $min, bool $charging): string
+    private function formatRemaining(int $min, bool $charging, bool $isCalc = false): string
     {
         if ($min < 0 || $charging) {
             return '<span class="text-muted">—</span>';
@@ -384,9 +427,10 @@ class ilExamBatteryViewGUI
             ? '~' . $min . ' min'
             : '~' . intdiv($min, 60) . ' h ' . str_pad((string)($min % 60), 2, '0', STR_PAD_LEFT) . ' min';
         if ($min <= 30) {
-            return '<strong style="color:#e53935;">' . $txt . '</strong>';
+            $txt = '<strong style="color:#e53935;">' . $txt . '</strong>';
         }
-        return $txt;
+        $title = $this->lng->txt($isCalc ? 'remaining_src_calc' : 'remaining_src_api');
+        return '<span title="' . htmlspecialchars($title) . '">' . $txt . ($isCalc ? ' *' : '') . '</span>';
     }
 
     private function levelBar(int $level, int $warn, int $crit): string

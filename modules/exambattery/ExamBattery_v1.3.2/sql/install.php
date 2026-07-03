@@ -71,6 +71,20 @@ if (!$db->tableExists('exambattery_status')) {
             'notnull' => true,
             'default' => -1,
         ],
+        // Referenzpunkt für die serverseitige Restzeit-Berechnung: Akkustand
+        // und Zeitpunkt beim Beginn des Entladens (-1/0 = noch keiner)
+        'ref_level' => [
+            'type'    => 'integer',
+            'length'  => 2,
+            'notnull' => true,
+            'default' => -1,
+        ],
+        'ref_tstamp' => [
+            'type'    => 'integer',
+            'length'  => 4,
+            'notnull' => true,
+            'default' => 0,
+        ],
         'ip_addr' => [
             'type'    => 'text',
             'length'  => 45,
@@ -99,5 +113,21 @@ if ($db->tableExists('exambattery_status')
         'length'  => 4,
         'notnull' => true,
         'default' => -1,
+    ]);
+}
+
+if ($db->tableExists('exambattery_status')
+    && !$db->tableColumnExists('exambattery_status', 'ref_level')) {
+    $db->addTableColumn('exambattery_status', 'ref_level', [
+        'type'    => 'integer',
+        'length'  => 2,
+        'notnull' => true,
+        'default' => -1,
+    ]);
+    $db->addTableColumn('exambattery_status', 'ref_tstamp', [
+        'type'    => 'integer',
+        'length'  => 4,
+        'notnull' => true,
+        'default' => 0,
     ]);
 }
