@@ -111,4 +111,5 @@ Eigene Tabellen: `exambattery_settings`, `exambattery_status`
 
 | Version | Datum | Änderung |
 |---|---|---|
+| 1.0.1 | 2026-07-03 | Fix: Aufsichts-Ansicht war weiß (fehlendes printToStdout — der Proxy druckt das Template nicht selbst); Zurück-Link zum Test ergänzt |
 | 1.0.0 | 2026-07-03 | Erstversion: stille Akku-Reports (Events + 3-min-Heartbeat), Aufsichts-Ansicht mit Farb-Schwellen, Auto-Refresh und Veraltet-Markierung, simulate()-Helfer |

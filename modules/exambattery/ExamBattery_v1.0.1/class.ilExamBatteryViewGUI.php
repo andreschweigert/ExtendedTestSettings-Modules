@@ -165,7 +165,10 @@ class ilExamBatteryViewGUI
     private function showStatus(int $ref_id): void
     {
         global $DIC;
-        $db = $DIC->database();
+        $db  = $DIC->database();
+        $tpl = $DIC->ui()->mainTemplate();
+
+        $this->setupNavigation($ref_id);
 
         $obj_id   = (int)ilObject::_lookupObjectId($ref_id);
         $settings = $this->getTestSettings($obj_id);
@@ -192,7 +195,26 @@ class ilExamBatteryViewGUI
             error_log('[ExamBattery] showStatus Fehler: ' . $e->getMessage());
         }
 
-        $DIC['tpl']->setContent($this->renderStatusTable($rows, $obj_id, $warn, $crit));
+        $tpl->setContent($this->renderStatusTable($rows, $obj_id, $warn, $crit));
+        // Proxy druckt das Template nicht selbst — ohne printToStdout bleibt die Seite weiß.
+        $tpl->printToStdout();
+    }
+
+    private function setupNavigation(int $ref_id): void
+    {
+        global $DIC;
+        try {
+            $test_title = ilObject::_lookupTitle(ilObject::_lookupObjectId($ref_id));
+            $tabs = $DIC->offsetExists('ilTabs') ? $DIC['ilTabs'] : null;
+            if ($tabs) {
+                $tabs->setBackTarget(
+                    '← ' . $test_title,
+                    'ilias.php?ref_id=' . $ref_id . '&baseClass=ilRepositoryGUI'
+                );
+            }
+        } catch (Exception $e) {
+            // Navigation-Setup ist nicht kritisch
+        }
     }
 
     private function renderStatusTable(array $rows, int $obj_id, int $warn, int $crit): string

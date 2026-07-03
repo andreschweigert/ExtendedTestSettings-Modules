@@ -166,7 +166,7 @@ class ilExamBatteryHandler implements ilExamModuleInterface
             'title'       => $this->lng->txt('title'),
             'icon'        => '🔋',
             'description' => $this->lng->txt('description'),
-            'version'     => '1.0.0',
+            'version'     => '1.0.1',
             'features'    => [
                 'Rein passive Akku-Überwachung via Battery Status API (navigator.getBattery)',
                 'Keinerlei Anzeige beim Studierenden — kein Banner, kein Button, kein DOM-Element',

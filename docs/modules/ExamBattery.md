@@ -2,7 +2,7 @@
 
 **Modul-ID:** `exambattery`
 **Speicherort:** `modules/exambattery/` (externes Modul, nicht im Git-Repo)
-**Referenz-ZIP:** `modules-zip/modules/exambattery/ExamBattery_v1.0.0.zip`
+**Referenz-ZIP:** `modules-zip/modules/exambattery/ExamBattery_v1.0.1.zip`
 **Zuletzt aktualisiert:** 2026-07-03
 
 ---
@@ -89,6 +89,9 @@ Aufsicht (Schreibrecht)
 
 - `executeCommand()`: `cmd=report` → `handleReport()` (Studierenden-Zugriff über
   `allow_student_access`); alles andere verlangt Schreibrecht und rendert `showStatus`.
+- **Wichtig:** Der Modul-Proxy druckt das Template NICHT selbst — `showStatus()` muss
+  nach `setContent()` selbst `printToStdout()` aufrufen (Muster exampreflight), sonst
+  bleibt die Seite weiß (war Bug in 1.0.0).
 - `handleReport()` validiert hart: `$data['level']` muss `is_int` und 0–100 sein,
   `$data['charging']` exakt `0` oder `1` (strikte Typprüfung nach `json_decode`) —
   `level=999`, Floats oder Strings → HTTP 400. Zusätzlich `canReport()`:
