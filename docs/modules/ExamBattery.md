@@ -2,7 +2,7 @@
 
 **Modul-ID:** `exambattery`
 **Speicherort:** `modules/exambattery/` (externes Modul, nicht im Git-Repo)
-**Referenz-ZIP:** `modules-zip/modules/exambattery/ExamBattery_v1.1.0.zip`
+**Referenz-ZIP:** `modules-zip/modules/exambattery/ExamBattery_v1.2.0.zip`
 **Zuletzt aktualisiert:** 2026-07-03
 
 ---
@@ -104,6 +104,12 @@ Aufsicht (Schreibrecht)
   ConfigGUI-Tab „Geräte") über die IP. Join und Spalten sind mit
   `tableExists('etest_hosts')` geguarded — fehlt die Tabelle (Plugin noch nicht
   aktualisiert), zeigt die Spalte „—". Keinerlei Code-Abhängigkeit zu examlogger.
+- **Seitenrahmen (ab 1.2.0):** `setupNavigation()` setzt Back-Target, Brotkrumen-Pfad
+  (`$DIC['ilLocator']->addRepositoryItems($ref_id)` + `$tpl->setLocator()`), Test-Icon
+  (`ilObject::_getIcon`), Seitentitel und -beschreibung. Der Inhalt ist ein KS-Panel
+  (`$f->panel()->standard(...)` mit `$f->legacy($tableHtml)`), leerer Zustand als
+  `$f->messageBox()->info(...)`. Akkustand als Inline-Fortschrittsbalken (`levelBar()`,
+  Farben #43a047/#f9a825/#e53935 wie examnetqos).
 
 ## Handler-Details (`class.ilExamBatteryHandler.php`)
 

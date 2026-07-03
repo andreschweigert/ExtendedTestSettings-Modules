@@ -115,6 +115,7 @@ Eigene Tabellen: `exambattery_settings`, `exambattery_status`
 
 | Version | Datum | Änderung |
 |---|---|---|
+| 1.2.0 | 2026-07-03 | Aufsichts-Ansicht als reguläre ILIAS-Seite: Brotkrumen-Pfad zum Test (Locator), Test-Icon, Seitentitel/-beschreibung, KS-Panel um die Tabelle, MessageBox bei „keine Daten", Akkustand als farbiger Fortschrittsbalken |
 | 1.1.0 | 2026-07-03 | Geräte-Spalte (Koffer · Gerät-Nr) aus dem zentralen Geräte-Inventar des Plugins (`etest_hosts`, Plugin ≥ 2.0.1), Guard bei fehlender Tabelle |
 | 1.0.1 | 2026-07-03 | Fix: Aufsichts-Ansicht war weiß (fehlendes printToStdout — der Proxy druckt das Template nicht selbst); Zurück-Link zum Test ergänzt |
 | 1.0.0 | 2026-07-03 | Erstversion: stille Akku-Reports (Events + 3-min-Heartbeat), Aufsichts-Ansicht mit Farb-Schwellen, Auto-Refresh und Veraltet-Markierung, simulate()-Helfer |

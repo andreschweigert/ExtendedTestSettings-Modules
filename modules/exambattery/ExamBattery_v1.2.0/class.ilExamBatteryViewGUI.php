@@ -207,7 +207,21 @@ class ilExamBatteryViewGUI
             error_log('[ExamBattery] showStatus Fehler: ' . $e->getMessage());
         }
 
-        $tpl->setContent($this->renderStatusTable($rows, $obj_id, $warn, $crit));
+        // KS-Komponenten: Panel um die Tabelle, MessageBox für den Leer-Zustand
+        $f = $DIC->ui()->factory();
+        $r = $DIC->ui()->renderer();
+
+        if (empty($rows)) {
+            $content = $r->render($f->messageBox()->info($this->lng->txt('no_data')));
+        } else {
+            $panel = $f->panel()->standard(
+                sprintf($this->lng->txt('devices_reported'), count($rows)),
+                $f->legacy($this->renderStatusTable($rows, $warn, $crit))
+            );
+            $content = $r->render($panel);
+        }
+
+        $tpl->setContent($content . $this->refreshScript());
         // Proxy druckt das Template nicht selbst — ohne printToStdout bleibt die Seite weiß.
         $tpl->printToStdout();
     }
@@ -216,7 +230,10 @@ class ilExamBatteryViewGUI
     {
         global $DIC;
         try {
-            $test_title = ilObject::_lookupTitle(ilObject::_lookupObjectId($ref_id));
+            $obj_id     = (int)ilObject::_lookupObjectId($ref_id);
+            $test_title = ilObject::_lookupTitle($obj_id);
+            $tpl        = $DIC->ui()->mainTemplate();
+
             $tabs = $DIC->offsetExists('ilTabs') ? $DIC['ilTabs'] : null;
             if ($tabs) {
                 $tabs->setBackTarget(
@@ -224,29 +241,30 @@ class ilExamBatteryViewGUI
                     'ilias.php?ref_id=' . $ref_id . '&baseClass=ilRepositoryGUI'
                 );
             }
+
+            // Brotkrumen-Pfad zum Test (wie auf regulären Repository-Seiten)
+            if ($DIC->offsetExists('ilLocator')) {
+                $DIC['ilLocator']->addRepositoryItems($ref_id);
+                $tpl->setLocator();
+            }
+
+            $tpl->setTitleIcon(ilObject::_getIcon($obj_id, 'big', 'tst'));
+            $tpl->setTitle(sprintf($this->lng->txt('status_title'), $test_title));
+            $tpl->setDescription($this->lng->txt('description'));
         } catch (Exception $e) {
             // Navigation-Setup ist nicht kritisch
         }
     }
 
-    private function renderStatusTable(array $rows, int $obj_id, int $warn, int $crit): string
+    private function renderStatusTable(array $rows, int $warn, int $crit): string
     {
-        $now   = time();
-        $title = ilObject::_lookupTitle($obj_id);
+        $now = time();
 
-        $html  = '<h3>' . sprintf($this->lng->txt('status_title'), htmlspecialchars($title)) . '</h3>';
-        $html .= '<p style="font-size:13px;color:#555;">'
+        $html  = '<p style="font-size:13px;color:#555;margin:0 0 12px;">'
                . sprintf($this->lng->txt('legend'), $warn, $crit)
-               . ' &nbsp;|&nbsp; ' . sprintf($this->lng->txt('devices_reported'), count($rows))
                . ' &nbsp;|&nbsp; ' . $this->lng->txt('refresh_hint')
                . '<br>' . $this->lng->txt('stale_hint')
                . '</p>';
-
-        if (empty($rows)) {
-            $html .= '<div class="alert alert-info">' . $this->lng->txt('no_data') . '</div>';
-            $html .= $this->refreshScript();
-            return $html;
-        }
 
         $html .= '<table class="table table-striped table-condensed table-hover" style="font-size:13px;">';
         $html .= '<thead><tr>'
@@ -288,7 +306,7 @@ class ilExamBatteryViewGUI
 
             $html .= '<tr' . $rowStyle . '>'
                    . '<td>' . htmlspecialchars($userName) . '</td>'
-                   . '<td>' . $this->levelBadge($level, $warn, $crit) . '</td>'
+                   . '<td>' . $this->levelBar($level, $warn, $crit) . '</td>'
                    . '<td>' . ($charging
                         ? '<span class="text-success">⚡ ' . $this->lng->txt('charging_yes') . '</span>'
                         : $this->lng->txt('charging_no')) . '</td>'
@@ -299,20 +317,24 @@ class ilExamBatteryViewGUI
         }
 
         $html .= '</tbody></table>';
-        $html .= $this->refreshScript();
         return $html;
     }
 
-    private function levelBadge(int $level, int $warn, int $crit): string
+    private function levelBar(int $level, int $warn, int $crit): string
     {
         if ($level <= $crit) {
-            $cls = 'danger';
+            $col = '#e53935';
         } elseif ($level <= $warn) {
-            $cls = 'warning';
+            $col = '#f9a825';
         } else {
-            $cls = 'success';
+            $col = '#43a047';
         }
-        return '<span class="label label-' . $cls . '" style="font-size:12px;">' . $level . ' %</span>';
+        return '<div style="display:flex;align-items:center;gap:8px;min-width:160px;">'
+             . '<div style="flex:1;background:#eceff1;border-radius:4px;height:14px;overflow:hidden;">'
+             . '<div style="width:' . $level . '%;height:100%;background:' . $col . ';"></div>'
+             . '</div>'
+             . '<strong style="min-width:44px;text-align:right;color:' . $col . ';">' . $level . '&nbsp;%</strong>'
+             . '</div>';
     }
 
     private function refreshScript(): string
