@@ -84,7 +84,9 @@ form_assign_pools_title#:#Assign question pools: "%s"
 select_pools_section#:#Select pools (multiple possible)
 pool_intro#:#Random test: groups are assigned to question pools. The max points vary per participant (depending on the drawn questions).
 csv_name#:#Name
+csv_matriculation#:#Matriculation no.
 csv_login#:#Login
+csv_total_points#:#Total points
 csv_pass#:#Run
 csv_date#:#Date
 csv_total_col#:#Total

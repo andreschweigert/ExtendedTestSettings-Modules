@@ -1482,64 +1482,26 @@ class ilExamGroupingGUI
         $passes     = $this->getSubmittedPasses($obj_id);
         $test_title = ilObject::_lookupTitle($obj_id);
 
-        // Maximalpunkte des gesamten Tests (jede Frage einmal, unabhängig von Gruppen)
-        $test_total_max = 0.0;
-        foreach ($questions as $q) {
-            $test_total_max += (float) $q['points'];
-        }
+        // Eine Zeile pro Kandidat: nur der letzte Durchlauf zählt
+        $last_passes = $this->getLastPassPerParticipant($passes);
 
         // ── CSV-Header aufbauen ──────────────────────────────────────────────
-        // Struktur je Gruppe:
-        //   [Gruppe] F1: Titel (Pkt) | F1 Max | ... | Gruppe Gesamt | Max | % | Bestanden
-        // Danach "Nicht zugeordnet" (falls vorhanden), dann Gesamt-Test-Spalten.
+        // Name | Matrikelnummer | Kennung | je Gruppe: Punkte + % | Gesamtpunktzahl
 
-        $header = [$this->txt('csv_name'), $this->txt('csv_login'), $this->txt('csv_pass'), $this->txt('csv_date')];
+        $header = [$this->txt('csv_name'), $this->txt('csv_matriculation'), $this->txt('csv_login')];
 
         foreach ($active_groups as $ag) {
-            $gname = $ag['group']['name'];
-            // Einzelfragen dieser Gruppe (sortiert nach Sequence)
-            $ag_questions = [];
-            foreach ($ag['qids'] as $qid) {
-                if (isset($questions[$qid])) {
-                    $ag_questions[$qid] = $questions[$qid];
-                }
-            }
-            uasort($ag_questions, fn($a, $b) => $a['sequence'] <=> $b['sequence']);
-
-            foreach ($ag_questions as $qid => $q) {
-                $label    = 'F' . $q['sequence'] . ': ' . $q['title'];
-                $header[] = '[' . $gname . '] ' . $label . ' (' . $this->txt('unit_pts') . ')';
-                $header[] = '[' . $gname . '] ' . $label . ' (' . $this->txt('csv_max_col') . ' ' . number_format((float)$q['points'], 2, ',', '') . ')';
-            }
-            // Gruppen-Summe
-            $header[] = '[' . $gname . '] ' . $this->txt('csv_total_col') . ' (' . $this->txt('unit_pts') . ')';
-            $header[] = '[' . $gname . '] ' . $this->txt('csv_total_max_col') . ' (' . number_format($group_max[$ag['group']['id']], 2, ',', '') . ')';
-            $header[] = '[' . $gname . '] ' . $this->txt('csv_total_col') . ' (%)';
-            $header[] = '[' . $gname . '] ' . $this->txt('csv_passed_col');
+            $gname    = $ag['group']['name'];
+            $header[] = $gname . ' (' . $this->txt('unit_pts') . ')';
+            $header[] = $gname . ' (%)';
         }
 
         if ($has_ungrouped) {
-            $ug_questions = [];
-            foreach ($ungrouped_qids as $qid) {
-                if (isset($questions[$qid])) {
-                    $ug_questions[$qid] = $questions[$qid];
-                }
-            }
-            uasort($ug_questions, fn($a, $b) => $a['sequence'] <=> $b['sequence']);
-
-            foreach ($ug_questions as $qid => $q) {
-                $label    = 'F' . $q['sequence'] . ': ' . $q['title'];
-                $header[] = '[' . $this->txt('ungrouped') . '] ' . $label . ' (' . $this->txt('unit_pts') . ')';
-                $header[] = '[' . $this->txt('ungrouped') . '] ' . $label . ' (' . $this->txt('csv_max_col') . ' ' . number_format((float)$q['points'], 2, ',', '') . ')';
-            }
-            $header[] = '[' . $this->txt('ungrouped') . '] ' . $this->txt('csv_total_col') . ' (' . $this->txt('unit_pts') . ')';
-            $header[] = '[' . $this->txt('ungrouped') . '] ' . $this->txt('csv_total_max_col') . ' (' . number_format($ungrouped_max, 2, ',', '') . ')';
-            $header[] = '[' . $this->txt('ungrouped') . '] ' . $this->txt('csv_total_col') . ' (%)';
+            $header[] = $this->txt('ungrouped') . ' (' . $this->txt('unit_pts') . ')';
+            $header[] = $this->txt('ungrouped') . ' (%)';
         }
 
-        $header[] = $this->txt('csv_total_test_pts');
-        $header[] = $this->txt('csv_total_test_max');
-        $header[] = $this->txt('csv_total_test_pct');
+        $header[] = $this->txt('csv_total_points');
 
         // ── HTTP-Download-Header ─────────────────────────────────────────────
         $safe_title = preg_replace('/[^a-zA-Z0-9_-]/', '_', $test_title);
@@ -1555,75 +1517,37 @@ class ilExamGroupingGUI
         fputcsv($out, $header, ';');
 
         // ── Datenzeilen ──────────────────────────────────────────────────────
-        foreach ($passes as $pass) {
+        foreach ($last_passes as $pass) {
             $q_results = $this->getQuestionResults($pass['active_id'], $pass['pass']);
 
-            $name     = trim(($pass['firstname'] ?? '') . ' ' . ($pass['lastname'] ?? ''));
-            $login    = $pass['login'] ?? '';
-            $pass_nr  = $pass['pass'] + 1;
-            $date_str = '';
-            if (!empty($pass['submitted_at'])) {
-                $ts = strtotime($pass['submitted_at']);
-                if ($ts) {
-                    $date_str = date('d.m.Y H:i', $ts);
-                }
-            }
-            $row = [$name ?: $login, $login, $pass_nr, $date_str];
+            $name  = trim(($pass['firstname'] ?? '') . ' ' . ($pass['lastname'] ?? ''));
+            $login = $pass['login'] ?? '';
+            // Name inkl. Anmeldename, z.B. "Max Mustermann (mmustermann)"
+            $display_name = $name !== '' ? $name . ' (' . $login . ')' : $login;
+            $row   = [$display_name, $pass['matriculation'] ?? '', $login];
 
             foreach ($active_groups as $ag) {
-                $gid      = $ag['group']['id'];
-                $max      = $group_max[$gid];
-                $reached  = 0.0;
-
-                // Einzelfragen (gleiche Sortierung wie Header)
-                $ag_questions = [];
+                $max     = $group_max[$ag['group']['id']];
+                $reached = 0.0;
                 foreach ($ag['qids'] as $qid) {
                     if (isset($questions[$qid])) {
-                        $ag_questions[$qid] = $questions[$qid];
+                        $reached += (float) ($q_results[$qid] ?? 0.0);
                     }
                 }
-                uasort($ag_questions, fn($a, $b) => $a['sequence'] <=> $b['sequence']);
 
-                foreach ($ag_questions as $qid => $q) {
-                    $q_reached = (float) ($q_results[$qid] ?? 0.0);
-                    $reached  += $q_reached;
-                    $row[]     = number_format($q_reached,      2, ',', '');
-                    $row[]     = number_format((float)$q['points'], 2, ',', '');
-                }
-
-                $pct    = $max > 0 ? ($reached / $max) * 100 : 0;
-                $ttype  = $ag['group']['threshold_type']  ?? 'percent';
-                $tval   = (float) ($ag['group']['threshold_value'] ?? 50);
-                $passed = $ttype === 'points' ? $reached >= $tval : $pct >= $tval;
-
+                $pct   = $max > 0 ? ($reached / $max) * 100 : 0;
                 $row[] = number_format($reached, 2, ',', '');
-                $row[] = number_format($max,     2, ',', '');
                 $row[] = number_format($pct,     1, ',', '');
-                $row[] = $passed ? $this->txt('csv_yes') : $this->txt('csv_no');
             }
 
             if ($has_ungrouped) {
-                $ug_questions = [];
-                foreach ($ungrouped_qids as $qid) {
-                    if (isset($questions[$qid])) {
-                        $ug_questions[$qid] = $questions[$qid];
-                    }
-                }
-                uasort($ug_questions, fn($a, $b) => $a['sequence'] <=> $b['sequence']);
-
                 $ug_reached = 0.0;
-                foreach ($ug_questions as $qid => $q) {
-                    $q_reached   = (float) ($q_results[$qid] ?? 0.0);
-                    $ug_reached += $q_reached;
-                    $row[]       = number_format($q_reached,         2, ',', '');
-                    $row[]       = number_format((float)$q['points'], 2, ',', '');
+                foreach ($ungrouped_qids as $qid) {
+                    $ug_reached += (float) ($q_results[$qid] ?? 0.0);
                 }
-
                 $ug_pct = $ungrouped_max > 0 ? ($ug_reached / $ungrouped_max) * 100 : 0;
-
-                $row[] = number_format($ug_reached,    2, ',', '');
-                $row[] = number_format($ungrouped_max, 2, ',', '');
-                $row[] = number_format($ug_pct,        1, ',', '');
+                $row[]  = number_format($ug_reached, 2, ',', '');
+                $row[]  = number_format($ug_pct,     1, ',', '');
             }
 
             // Gesamt: jede Frage einmal zählen (nicht Gruppen-Summen, da Fragen in mehreren Gruppen sein können)
@@ -1631,10 +1555,7 @@ class ilExamGroupingGUI
             foreach ($questions as $qid => $q) {
                 $total_reached += (float) ($q_results[$qid] ?? 0.0);
             }
-            $total_pct = $test_total_max > 0 ? ($total_reached / $test_total_max) * 100 : 0;
-            $row[] = number_format($total_reached,  2, ',', '');
-            $row[] = number_format($test_total_max, 2, ',', '');
-            $row[] = number_format($total_pct,      1, ',', '');
+            $row[] = number_format($total_reached, 2, ',', '');
 
             fputcsv($out, $row, ';');
         }
@@ -1668,29 +1589,21 @@ class ilExamGroupingGUI
         $passes     = $this->getSubmittedPassesRandom($obj_id);
         $test_title = ilObject::_lookupTitle($obj_id);
 
-        $header = [$this->txt('csv_name'), $this->txt('csv_login'), $this->txt('csv_pass'), $this->txt('csv_date')];
+        // Eine Zeile pro Kandidat: nur der letzte Durchlauf zählt
+        $last_passes = $this->getLastPassPerParticipant($passes);
+
+        // Name | Matrikelnummer | Kennung | je Gruppe: Punkte + % | Gesamtpunktzahl
+        $header = [$this->txt('csv_name'), $this->txt('csv_matriculation'), $this->txt('csv_login')];
         foreach ($active_groups as $ag) {
-            $gname = $ag['group']['name'];
-            $pool_names = [];
-            foreach ($ag['pool_ids'] as $pid) {
-                if (isset($pools[$pid])) {
-                    $pool_names[] = $pools[$pid]['title'];
-                }
-            }
-            $header[] = '[' . $gname . '] ' . $this->txt('csv_pools_col') . ': ' . implode(', ', $pool_names);
-            $header[] = '[' . $gname . '] ' . $this->txt('csv_reached_col') . ' (' . $this->txt('unit_pts') . ')';
-            $header[] = '[' . $gname . '] ' . $this->txt('csv_max_col') . ' (' . $this->txt('unit_pts') . ')';
-            $header[] = '[' . $gname . '] (%)';
-            $header[] = '[' . $gname . '] ' . $this->txt('csv_passed_col');
+            $gname    = $ag['group']['name'];
+            $header[] = $gname . ' (' . $this->txt('unit_pts') . ')';
+            $header[] = $gname . ' (%)';
         }
         if ($has_ungrouped) {
-            $header[] = '[' . $this->txt('ungrouped') . '] ' . $this->txt('csv_reached_col') . ' (' . $this->txt('unit_pts') . ')';
-            $header[] = '[' . $this->txt('ungrouped') . '] ' . $this->txt('csv_max_col') . ' (' . $this->txt('unit_pts') . ')';
-            $header[] = '[' . $this->txt('ungrouped') . '] (%)';
+            $header[] = $this->txt('ungrouped') . ' (' . $this->txt('unit_pts') . ')';
+            $header[] = $this->txt('ungrouped') . ' (%)';
         }
-        $header[] = $this->txt('csv_total_col') . ' (' . $this->txt('unit_pts') . ')';
-        $header[] = $this->txt('csv_total_max_col') . ' (' . $this->txt('unit_pts') . ')';
-        $header[] = $this->txt('csv_total_col') . ' (%)';
+        $header[] = $this->txt('csv_total_points');
 
         $safe_title = preg_replace('/[^a-zA-Z0-9_-]/', '_', $test_title);
         $filename   = 'fragengruppierung_' . $safe_title . '_' . date('Ymd_His') . '.csv';
@@ -1704,57 +1617,49 @@ class ilExamGroupingGUI
         fputs($out, "\xEF\xBB\xBF");
         fputcsv($out, $header, ';');
 
-        foreach ($passes as $pass) {
-            $name    = trim(($pass['firstname'] ?? '') . ' ' . ($pass['lastname'] ?? ''));
-            $login   = $pass['login'] ?? '';
-            $pass_nr = $pass['pass'] + 1;
-            $date_str = '';
-            if (!empty($pass['submitted_at'])) {
-                $ts = strtotime($pass['submitted_at']);
-                if ($ts) {
-                    $date_str = date('d.m.Y H:i', $ts);
-                }
-            }
-            $row = [$name ?: $login, $login, $pass_nr, $date_str];
+        foreach ($last_passes as $pass) {
+            $name  = trim(($pass['firstname'] ?? '') . ' ' . ($pass['lastname'] ?? ''));
+            $login = $pass['login'] ?? '';
+            // Name inkl. Anmeldename, z.B. "Max Mustermann (mmustermann)"
+            $display_name = $name !== '' ? $name . ' (' . $login . ')' : $login;
+            $row   = [$display_name, $pass['matriculation'] ?? '', $login];
 
             foreach ($active_groups as $ag) {
-                $res    = $this->getRandomGroupResults($pass['active_id'], $pass['pass'], $ag['pool_ids']);
-                $pct    = $res['max'] > 0 ? ($res['reached'] / $res['max']) * 100 : 0;
-                $ttype  = $ag['group']['threshold_type']  ?? 'percent';
-                $tval   = (float) ($ag['group']['threshold_value'] ?? 50);
-                $passed = $ttype === 'points' ? $res['reached'] >= $tval : ($res['max'] > 0 && $pct >= $tval);
-                $pool_names = [];
-                foreach ($ag['pool_ids'] as $pid) {
-                    if (isset($pools[$pid])) {
-                        $pool_names[] = $pools[$pid]['title'];
-                    }
-                }
-                $row[] = implode(', ', $pool_names);
+                $res   = $this->getRandomGroupResults($pass['active_id'], $pass['pass'], $ag['pool_ids']);
+                $pct   = $res['max'] > 0 ? ($res['reached'] / $res['max']) * 100 : 0;
                 $row[] = number_format($res['reached'], 2, ',', '');
-                $row[] = number_format($res['max'],     2, ',', '');
                 $row[] = number_format($pct,            1, ',', '');
-                $row[] = $passed ? $this->txt('csv_yes') : $this->txt('csv_no');
             }
 
             if ($has_ungrouped) {
                 $ug_res = $this->getRandomGroupResults($pass['active_id'], $pass['pass'], $ungrouped_pool_ids);
                 $ug_pct = $ug_res['max'] > 0 ? ($ug_res['reached'] / $ug_res['max']) * 100 : 0;
                 $row[] = number_format($ug_res['reached'], 2, ',', '');
-                $row[] = number_format($ug_res['max'],     2, ',', '');
                 $row[] = number_format($ug_pct,            1, ',', '');
             }
 
             $total = $this->getRandomGroupResults($pass['active_id'], $pass['pass'], array_keys($pools));
-            $total_pct = $total['max'] > 0 ? ($total['reached'] / $total['max']) * 100 : 0;
             $row[] = number_format($total['reached'], 2, ',', '');
-            $row[] = number_format($total['max'],     2, ',', '');
-            $row[] = number_format($total_pct,        1, ',', '');
 
             fputcsv($out, $row, ';');
         }
 
         fclose($out);
         exit();
+    }
+
+    /**
+     * Reduziert eine Pass-Liste auf den letzten Durchlauf je Teilnehmer (active_id).
+     * Voraussetzung: Passes sind je Teilnehmer aufsteigend nach Pass-Nr sortiert
+     * (wie von getSubmittedPasses/getSubmittedPassesRandom geliefert).
+     */
+    private function getLastPassPerParticipant(array $passes): array
+    {
+        $last = [];
+        foreach ($passes as $pass) {
+            $last[$pass['active_id']] = $pass;
+        }
+        return array_values($last);
     }
 
     // =========================================================================
@@ -1995,7 +1900,7 @@ class ilExamGroupingGUI
         // Alle Passes mit Ergebnissen laden (nicht nur letzten)
         $result = $this->db->queryF(
             "SELECT ta.active_id, ta.user_fi, ta.submittimestamp,
-                    ud.login, ud.firstname, ud.lastname,
+                    ud.login, ud.firstname, ud.lastname, ud.matriculation,
                     tr.pass
              FROM tst_active ta
              LEFT JOIN usr_data ud ON ta.user_fi = ud.usr_id
@@ -2014,13 +1919,14 @@ class ilExamGroupingGUI
         $passes = [];
         while ($row = $this->db->fetchAssoc($result)) {
             $passes[] = [
-                'active_id'    => (int) $row['active_id'],
-                'user_fi'      => (int) $row['user_fi'],
-                'login'        =>       $row['login']          ?? '',
-                'firstname'    =>       $row['firstname']      ?? '',
-                'lastname'     =>       $row['lastname']       ?? '',
-                'pass'         => (int) $row['pass'],
-                'submitted_at' =>       $row['submittimestamp'] ?? '',
+                'active_id'     => (int) $row['active_id'],
+                'user_fi'       => (int) $row['user_fi'],
+                'login'         =>       $row['login']           ?? '',
+                'firstname'     =>       $row['firstname']       ?? '',
+                'lastname'      =>       $row['lastname']        ?? '',
+                'matriculation' =>       $row['matriculation']   ?? '',
+                'pass'          => (int) $row['pass'],
+                'submitted_at'  =>       $row['submittimestamp'] ?? '',
             ];
         }
 
@@ -2047,7 +1953,7 @@ class ilExamGroupingGUI
 
         $result = $this->db->queryF(
             "SELECT ta.active_id, ta.user_fi, ta.submittimestamp,
-                    ud.login, ud.firstname, ud.lastname,
+                    ud.login, ud.firstname, ud.lastname, ud.matriculation,
                     rq.pass
              FROM tst_active ta
              LEFT JOIN usr_data ud ON ta.user_fi = ud.usr_id
@@ -2064,13 +1970,14 @@ class ilExamGroupingGUI
         $passes = [];
         while ($row = $this->db->fetchAssoc($result)) {
             $passes[] = [
-                'active_id'    => (int) $row['active_id'],
-                'user_fi'      => (int) $row['user_fi'],
-                'login'        =>       $row['login']          ?? '',
-                'firstname'    =>       $row['firstname']      ?? '',
-                'lastname'     =>       $row['lastname']       ?? '',
-                'pass'         => (int) $row['pass'],
-                'submitted_at' =>       $row['submittimestamp'] ?? '',
+                'active_id'     => (int) $row['active_id'],
+                'user_fi'       => (int) $row['user_fi'],
+                'login'         =>       $row['login']           ?? '',
+                'firstname'     =>       $row['firstname']       ?? '',
+                'lastname'      =>       $row['lastname']        ?? '',
+                'matriculation' =>       $row['matriculation']   ?? '',
+                'pass'          => (int) $row['pass'],
+                'submitted_at'  =>       $row['submittimestamp'] ?? '',
             ];
         }
 

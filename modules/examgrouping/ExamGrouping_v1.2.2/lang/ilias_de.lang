@@ -84,7 +84,9 @@ form_assign_pools_title#:#Fragenpools zuordnen: „%s"
 select_pools_section#:#Pools auswählen (mehrere möglich)
 pool_intro#:#Zufallstest: Gruppen werden Fragenpools zugeordnet. Die Max-Punkte variieren je Teilnehmer (abhängig von den gezogenen Fragen).
 csv_name#:#Name
-csv_login#:#Login
+csv_matriculation#:#Matrikelnummer
+csv_login#:#Kennung
+csv_total_points#:#Gesamtpunktzahl
 csv_pass#:#Durchlauf
 csv_date#:#Datum
 csv_total_col#:#Gesamt

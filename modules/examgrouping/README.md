@@ -14,7 +14,7 @@ Unterstützt sowohl **Tests mit fixer Fragenliste** als auch **Tests mit Fragenp
 - Ergebnistabelle mit allen Teilnehmern und Durchläufen (inkl. Trendpfeile ▲▼→)
 - Spalte "Nicht zugeordnet" für Fragen/Pools ohne Gruppe
 - Bestehensschwellenwert pro Gruppe (Prozent oder Punkte)
-- CSV-Export (Semikolon, UTF-8 mit BOM, alle Durchläufe)
+- CSV-Export (Semikolon, UTF-8 mit BOM): eine Zeile pro Kandidat (letzter Durchlauf) mit Name, Matrikelnummer, Kennung, Punkte + % je Gruppe und Gesamtpunktzahl
 
 ## Konfiguration
 
@@ -53,7 +53,9 @@ Alle URL/Redirect-Generierungen laufen über `proxyLink()` / `proxyFormAction()`
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
-| 1.2.0 | `ExamGrouping_v1.2.0.zip` | 9 | i18n DE/EN der Verwaltungs-GUI (Gruppen, Ergebnis-Tabellen Fix+Zufall, beide CSV-Exporte) |
+| 1.2.2 | `ExamGrouping_v1.2.2.zip` | 9 | CSV-Export: Name-Spalte enthält zusätzlich den Anmeldenamen, z.B. „Max Mustermann (mmustermann)" |
+| 1.2.1 | `archive/ExamGrouping_v1.2.1.zip` | 9 | CSV-Export kompakt: eine Zeile pro Kandidat (letzter Durchlauf), Spalten Name/Matrikelnummer/Kennung, Punkte + % je Gruppe, Gesamtpunktzahl |
+| 1.2.0 | `archive/ExamGrouping_v1.2.0.zip` | 9 | i18n DE/EN der Verwaltungs-GUI (Gruppen, Ergebnis-Tabellen Fix+Zufall, beide CSV-Exporte) |
 | 1.1.0 | `archive/ExamGrouping_v1.1.0.zip` | 9 | Modul-i18n DE/EN (Handler) |
 | 1.0.4 | `ExamGrouping_v1.0.4.zip` | 9 | Bugfix: Pass-Erkennung für Zufallstests via `tst_test_rnd_qst`; Pool-Matching über `original_id` |
 | 1.0.3 | — | 9 | Zufallstest-Unterstützung: Pool-basierte Gruppierung, neue Tabelle `examgrp_pool_items` |
