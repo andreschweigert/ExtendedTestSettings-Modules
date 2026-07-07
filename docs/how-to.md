@@ -2,7 +2,8 @@
 
 ## Voraussetzungen
 
-- ILIAS 9 mit installiertem und aktiviertem Plugin **ExtendedTestSettings**
+- ILIAS mit installiertem und aktiviertem Plugin **ExtendedTestSettings**
+  (Branch dieses Repos = ILIAS-Hauptversion: `ilias9` für ILIAS 9, `ilias10` für ILIAS 10 — Modul-ZIPs immer vom passenden Branch nehmen)
 - Admin-Zugang zu ILIAS
 
 ## Schritt-für-Schritt

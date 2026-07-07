@@ -2,8 +2,17 @@
 
 **Modul-ID:** `examchecker`  
 **Speicherort:** `modules/examchecker/` (externes Modul, nicht im Git-Repo)  
-**Referenz-ZIP:** `modules-zip/modules/examchecker/ExamChecker_v1.1.1.zip`  
-**Zuletzt aktualisiert:** 2026-05-12
+**Referenz-ZIP:** `modules-zip/modules/examchecker/ExamChecker_v10.0.0.zip`  
+**Zuletzt aktualisiert:** 2026-07-07
+
+---
+
+## ILIAS-10-Port (Version 10.0.0, 2026-07-07)
+
+Start der ILIAS-10-Linie (Branch `ilias10`; Versionsschema: Major = ILIAS-Version, Sprünge +0.0.1).
+module.json: `version` 10.0.0, `ilias_min`/`ilias_max` = 10.
+
+- Keine Code-Änderungen nötig. Web-Asset-Pfade (addJavaScript/addCss) funktionieren über den zentralen Registry-Compat des Hauptplugins (ab 10.0.0: Handler erhalten den web-relativen Pfad via `getRelativeDirectory()`).
 
 ---
 

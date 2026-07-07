@@ -1,8 +1,19 @@
 # ExamArchiver — Entwicklerdokumentation
 
 **Modul-ID:** `examarchiver`
-**Referenz-ZIP:** `modules-zip/modules/examarchiver/ExamArchiver_v1.0.0.zip`
-**Zuletzt aktualisiert:** 2026-07-02
+**Referenz-ZIP:** `modules-zip/modules/examarchiver/ExamArchiver_v10.0.0.zip`
+**Zuletzt aktualisiert:** 2026-07-07
+
+---
+
+## ILIAS-10-Port (Version 10.0.0, 2026-07-07)
+
+Start der ILIAS-10-Linie (Branch `ilias10`; Versionsschema: Major = ILIAS-Version, Sprünge +0.0.1).
+module.json: `version` 10.0.0, `ilias_min`/`ilias_max` = 10.
+
+- Null-Check nach `assQuestion::instantiateQuestionGUI()` — die Methode ist in ILIAS 10 nullable (z. B. gelöschte Frage); vorher fing der `catch (Throwable)` den Error ab, jetzt sauberer Fallback auf die Roh-Antworten-Tabelle.
+- `getSolutionOutput()` erhält explizit `show_inline_feedback = false` (10. Parameter, neu in ILIAS 10, Default `true`; in ILIAS 9 wird das überzählige Argument ignoriert). Verhalten beim ersten 10er-Archivlauf prüfen.
+- Bild-Inlining (`inlineImages`): Webdateien liegen in ILIAS 10 unter `ILIAS_ABSOLUTE_PATH/public/` — Auflösung probiert erst `public/`, dann Fallback ohne (ILIAS 9).
 
 ---
 

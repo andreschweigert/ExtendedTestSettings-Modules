@@ -2,8 +2,18 @@
 
 **Modul-ID:** `examlogger`  
 **Speicherort:** `modules/examlogger/` (direkt im Plugin-Repo)  
-**Referenz-ZIP:** `modules-zip/modules/examlogger/ExamLogger_v1.1.0.zip`  
-**Zuletzt aktualisiert:** 2026-05-21
+**Referenz-ZIP:** `modules-zip/modules/examlogger/ExamLogger_v10.0.0.zip`  
+**Zuletzt aktualisiert:** 2026-07-07
+
+---
+
+## ILIAS-10-Port (Version 10.0.0, 2026-07-07)
+
+Start der ILIAS-10-Linie (Branch `ilias10`; Versionsschema: Major = ILIAS-Version, Sprünge +0.0.1).
+module.json: `version` 10.0.0, `ilias_min`/`ilias_max` = 10.
+
+- Settings-Events: Erkennung um die namespaced 10er-cmdClasses erweitert (`ilias\test\settings\mainsettings\settingsmaingui`, `…scorereporting\settingsscoringgui`, `…scoring\manual\testscoringby*gui`); 9er-Strings bleiben.
+- Bugfix: `isPlayerClass()` prüfte `iltestplayerrandquestionsetgui` — die Klasse heißt (in 9 wie 10) `iltestplayerrandomquestionsetgui`. Folge: Player-Events von Random-Question-Set-Tests wurden nie geloggt.
 
 ---
 

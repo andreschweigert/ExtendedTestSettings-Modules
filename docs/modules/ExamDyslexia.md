@@ -1,8 +1,17 @@
 # ExamDyslexia — Entwicklerdokumentation
 
 **Modul-ID:** `examdyslexia`
-**Referenz-ZIP:** `modules-zip/modules/examdyslexia/ExamDyslexia_v1.1.0.zip`
-**Zuletzt aktualisiert:** 2026-07-02
+**Referenz-ZIP:** `modules-zip/modules/examdyslexia/ExamDyslexia_v10.0.0.zip`
+**Zuletzt aktualisiert:** 2026-07-07
+
+---
+
+## ILIAS-10-Port (Version 10.0.0, 2026-07-07)
+
+Start der ILIAS-10-Linie (Branch `ilias10`; Versionsschema: Major = ILIAS-Version, Sprünge +0.0.1).
+module.json: `version` 10.0.0, `ilias_min`/`ilias_max` = 10.
+
+- Cache-Busting: `filemtime()` nutzt direkt den web-relativen Pfad (CWD bei Web-Requests = Webroot, in 9 wie 10) — `ILIAS_ABSOLUTE_PATH . '/' . $webrel` zeigt in ILIAS 10 am Webroot (`public/`) vorbei, der Fallback degradierte still zu `time()`.
 
 ---
 

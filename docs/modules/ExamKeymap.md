@@ -2,8 +2,17 @@
 
 **Modul-ID:** `examkeymap`  
 **Speicherort:** `modules/examkeymap/` (externes Modul, nicht im Git-Repo)  
-**Referenz-ZIP:** `modules-zip/modules/examkeymap/ExamKeymap_v1.1.0.zip`  
-**Zuletzt aktualisiert:** 2026-06-10
+**Referenz-ZIP:** `modules-zip/modules/examkeymap/ExamKeymap_v10.0.0.zip`  
+**Zuletzt aktualisiert:** 2026-07-07
+
+---
+
+## ILIAS-10-Port (Version 10.0.0, 2026-07-07)
+
+Start der ILIAS-10-Linie (Branch `ilias10`; Versionsschema: Major = ILIAS-Version, Sprünge +0.0.1).
+module.json: `version` 10.0.0, `ilias_min`/`ilias_max` = 10.
+
+- `getModuleWebPath()`: Ableitung des Web-Pfads jetzt per Marker `/Customizing/global/plugins/` statt Strip von `ILIAS_ABSOLUTE_PATH` — Letzteres ließe in ILIAS 10 ein falsches `public/`-Präfix stehen (Assets-404).
 
 ---
 

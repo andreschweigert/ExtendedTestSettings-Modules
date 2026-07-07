@@ -12,9 +12,10 @@ Das Plugin selbst ermöglicht es, die ILIAS-Testeinstellungen um prüfungsspezif
 
 Jeder Branch entspricht einer ILIAS-Hauptversion:
 
-| Branch | ILIAS-Version |
-|---|---|
-| `ilias9` | ILIAS 9 |
+| Branch | ILIAS-Version | Modul-Versionsschema |
+|---|---|---|
+| `ilias9` | ILIAS 9 | 1.x/2.x (historisch) |
+| `ilias10` | ILIAS 10 | 10.x — Major = ILIAS-Version, Sprünge +0.0.1 |
 
 ---
 

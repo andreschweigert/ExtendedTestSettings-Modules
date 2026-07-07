@@ -2,8 +2,17 @@
 
 **Modul-ID:** `exampreflight`
 **Speicherort:** `modules/exampreflight/` (externes Modul)
-**Referenz-ZIP:** `modules-zip/modules/exampreflight/ExamPreflight_v1.2.2.zip`
-**Zuletzt aktualisiert:** 2026-07-02
+**Referenz-ZIP:** `modules-zip/modules/exampreflight/ExamPreflight_v10.0.0.zip`
+**Zuletzt aktualisiert:** 2026-07-07
+
+---
+
+## ILIAS-10-Port (Version 10.0.0, 2026-07-07)
+
+Start der ILIAS-10-Linie (Branch `ilias10`; Versionsschema: Major = ILIAS-Version, Sprünge +0.0.1).
+module.json: `version` 10.0.0, `ilias_min`/`ilias_max` = 10.
+
+- Keine Code-Änderungen nötig. Alle Core-DOM-Anker des Automatisierungs-JS (`taForm`, `.tst_question-container`, `.c-launcher`, `.ilTstNavigationBtn_Next`, `.il-layout-page-content`, `ilc_*`) existieren im 10er-Core weiter — vollständiger Laufzeit-Test steht aus.
 
 ---
 
