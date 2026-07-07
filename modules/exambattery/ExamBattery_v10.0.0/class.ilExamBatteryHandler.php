@@ -20,7 +20,7 @@ class ilExamBatteryHandler implements ilExamModuleInterface
 
     private const DEFAULT_WARN_PCT     = 20;
     private const DEFAULT_CRIT_PCT     = 10;
-    private const HEARTBEAT_SECONDS    = 180;
+    private const HEARTBEAT_SECONDS    = 300;
 
     private string $plugin_path;
     private ilModuleLanguage $lng;
@@ -166,15 +166,16 @@ class ilExamBatteryHandler implements ilExamModuleInterface
             'title'       => $this->lng->txt('title'),
             'icon'        => '🔋',
             'description' => $this->lng->txt('description'),
-            'version'     => '1.0.1',
+            'version'     => '1.3.2',
             'features'    => [
                 'Rein passive Akku-Überwachung via Battery Status API (navigator.getBattery)',
                 'Keinerlei Anzeige beim Studierenden — kein Banner, kein Button, kein DOM-Element',
-                'Reports bei Akkustand-/Ladezustand-Änderung plus Heartbeat alle 3 Minuten',
+                'Gedrosselte Reports: nur bei fallendem Akkustand, Ladezustand-Wechsel oder 5-min-Heartbeat (sessionStorage überlebt Fragennavigation)',
                 'Desktop-Erkennung (level=100 + lädt) — Arbeitsplatz-PCs erzeugen keine Reports',
                 'Ohne Battery-API (Firefox, HTTP-Kontext): Modul bleibt komplett stumm',
                 'Aufsichts-Ansicht pro Test: farbige Tabelle (grün/gelb/rot), kritische Geräte oben',
-                'Auto-Refresh alle 30 s; Meldungen älter als 10 Minuten werden ausgegraut',
+                'Geräte-Spalte (Koffer · Gerät-Nr) aus dem zentralen Geräte-Inventar des Plugins',
+                'Aktualisierung per Button; Meldungen älter als 10 Minuten werden ausgegraut',
                 'Konfigurierbare Anzeige-Schwellen pro Test (gelb/rot), bewusst keine Warnungen an Studierende',
                 'Entwickler-Helfer window.ExamBattery.simulate(level, charging) für Tests ohne Akku-Gerät',
             ],

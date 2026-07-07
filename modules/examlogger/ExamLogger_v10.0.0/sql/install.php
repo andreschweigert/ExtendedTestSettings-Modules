@@ -61,46 +61,8 @@ if (!$db->tableExists('examlogger_events')) {
     $db->addIndex('examlogger_events', ['tstamp'],      'i4');
 }
 
-if (!$db->tableExists('examlogger_hosts')) {
-    $db->createTable('examlogger_hosts', [
-        'ip_addr' => [
-            'type'    => 'text',
-            'length'  => 45,
-            'notnull' => true,
-            'default' => '',
-        ],
-        'hostname' => [
-            'type'    => 'text',
-            'length'  => 255,
-            'notnull' => true,
-            'default' => '',
-        ],
-        'ili_nr' => [
-            'type'    => 'text',
-            'length'  => 20,
-            'notnull' => true,
-            'default' => '',
-        ],
-        'koffer' => [
-            'type'    => 'text',
-            'length'  => 20,
-            'notnull' => true,
-            'default' => '',
-        ],
-        'geraet_nr' => [
-            'type'    => 'text',
-            'length'  => 20,
-            'notnull' => true,
-            'default' => '',
-        ],
-        'import_note' => [
-            'type'    => 'text',
-            'length'  => 255,
-            'notnull' => true,
-            'default' => '',
-        ],
-    ]);
-    $db->addPrimaryKey('examlogger_hosts', ['ip_addr']);
-    $db->addIndex('examlogger_hosts', ['ili_nr'], 'h1');
-    $db->addIndex('examlogger_hosts', ['koffer'],  'h2');
+// Geräte-Inventar lebt seit Plugin 2.0.1 zentral in etest_hosts (Plugin-dbupdate);
+// die alte Modul-Tabelle wird beim Update entfernt.
+if ($db->tableExists('examlogger_hosts')) {
+    $db->dropTable('examlogger_hosts');
 }

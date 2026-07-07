@@ -3,7 +3,9 @@
 class ilExamLoggerViewGUI
 {
     private const TABLE       = 'examlogger_events';
-    private const HOSTS_TABLE = 'examlogger_hosts';
+    // Zentrales Geräte-Inventar des Plugins (seit Plugin 2.0.1), gepflegt in der
+    // Plugin-Administration — hier nur lesend, mit tableExists()-Guard.
+    private const HOSTS_TABLE = 'etest_hosts';
 
     private string $form_cmd   = 'showLog';
     private string $export_cmd = 'exportCsv';
@@ -93,21 +95,31 @@ class ilExamLoggerViewGUI
         if ($filter_to !== '') {
             $where[] = 'e.tstamp <= %s'; $types[] = 'integer'; $values[] = strtotime($filter_to . ' 23:59:59');
         }
-        if ($filter_koffer !== '') {
+        // etest_hosts kommt vom Plugin (2.0.1+) — Guard falls das Modul vor dem Plugin aktualisiert wurde
+        $hasHosts = $db->tableExists(self::HOSTS_TABLE);
+
+        if ($filter_koffer !== '' && $hasHosts) {
             $where[] = 'h.koffer = %s'; $types[] = 'text'; $values[] = $filter_koffer;
         }
 
         $whereStr = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
 
+        $hostCols = $hasHosts
+            ? 'h.ili_nr, h.koffer, h.geraet_nr,'
+            : "'' AS ili_nr, '' AS koffer, '' AS geraet_nr,";
+        $hostJoin = $hasHosts
+            ? 'LEFT JOIN ' . self::HOSTS_TABLE . ' h ON h.ip_addr = e.ip_addr'
+            : '';
+
         $sql = "SELECT e.id, e.test_ref_id, e.test_obj_id, e.user_id, e.event_type,
                        e.question_id, e.ip_addr, e.tstamp, e.details,
                        u.login, o.title AS test_title,
-                       h.ili_nr, h.koffer, h.geraet_nr,
+                       $hostCols
                        q.title AS question_title
                 FROM " . self::TABLE . " e
                 LEFT JOIN usr_data u ON u.usr_id = e.user_id
                 LEFT JOIN object_data o ON o.obj_id = e.test_obj_id
-                LEFT JOIN " . self::HOSTS_TABLE . " h ON h.ip_addr = e.ip_addr
+                $hostJoin
                 LEFT JOIN qpl_questions q ON q.question_id = e.question_id
                 $whereStr
                 ORDER BY e.tstamp DESC, e.id DESC
@@ -517,20 +529,29 @@ class ilExamLoggerViewGUI
         if ($filter_to !== '') {
             $where[] = 'e.tstamp <= %s'; $types[] = 'integer'; $values[] = strtotime($filter_to . ' 23:59:59');
         }
-        if ($filter_koffer !== '') {
+        $hasHosts = $db->tableExists(self::HOSTS_TABLE);
+
+        if ($filter_koffer !== '' && $hasHosts) {
             $where[] = 'h.koffer = %s'; $types[] = 'text'; $values[] = $filter_koffer;
         }
 
         $whereStr = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
 
+        $hostCols = $hasHosts
+            ? 'h.ili_nr, h.koffer, h.geraet_nr,'
+            : "'' AS ili_nr, '' AS koffer, '' AS geraet_nr,";
+        $hostJoin = $hasHosts
+            ? 'LEFT JOIN ' . self::HOSTS_TABLE . ' h ON h.ip_addr = e.ip_addr'
+            : '';
+
         $sql = "SELECT e.id, e.test_ref_id, e.user_id, e.event_type, e.question_id, e.ip_addr, e.tstamp, e.details,
                        u.login, u.firstname, u.lastname, o.title AS test_title,
-                       h.ili_nr, h.koffer, h.geraet_nr,
+                       $hostCols
                        q.title AS question_title
                 FROM " . self::TABLE . " e
                 LEFT JOIN usr_data u ON u.usr_id = e.user_id
                 LEFT JOIN object_data o ON o.obj_id = e.test_obj_id
-                LEFT JOIN " . self::HOSTS_TABLE . " h ON h.ip_addr = e.ip_addr
+                $hostJoin
                 LEFT JOIN qpl_questions q ON q.question_id = e.question_id
                 $whereStr
                 ORDER BY e.tstamp DESC, e.id DESC";

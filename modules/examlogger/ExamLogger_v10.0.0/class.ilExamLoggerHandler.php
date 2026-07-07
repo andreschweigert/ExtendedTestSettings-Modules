@@ -49,7 +49,7 @@ class ilExamLoggerHandler implements ilExamModuleInterface
             'title'       => $this->lng->txt('title'),
             'icon'        => '',
             'description' => $this->lng->txt('description'),
-            'version'     => '1.1.0',
+            'version'     => '1.4.0',
         ];
     }
 
@@ -126,10 +126,10 @@ class ilExamLoggerHandler implements ilExamModuleInterface
         $settings_classes = [
             'ilobjtestsettingsmaingui',
             'iltestscoringgui',
-            'ilias\test\settings\mainsettings\settingsmaingui',
-            'ilias\test\settings\scorereporting\settingsscoringgui',
-            'ilias\test\scoring\manual\testscoringbyquestiongui',
-            'ilias\test\scoring\manual\testscoringbyparticipantgui',
+            'ilias\\test\\settings\\mainsettings\\settingsmaingui',
+            'ilias\\test\\settings\\scorereporting\\settingsscoringgui',
+            'ilias\\test\\scoring\\manual\\testscoringbyquestiongui',
+            'ilias\\test\\scoring\\manual\\testscoringbyparticipantgui',
         ];
         if (in_array($cmdClass, $settings_classes, true)) {
             if (in_array($cmd, self::NATIVE_SETTINGS_CMDS, true)) {

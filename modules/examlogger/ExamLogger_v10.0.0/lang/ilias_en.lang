@@ -36,7 +36,7 @@ import_title#:#Import CSV
 import_format_label#:#Format:
 import_format_hint#:#(semicolon-separated, UTF-8 with or without BOM)
 btn_import#:#Import
-hosts_table_missing#:#Table <code>examlogger_hosts</code> is missing — please reinstall the plugin.
+hosts_table_missing#:#Table <code>etest_hosts</code> is missing — please update the plugin first (it creates the table).
 devices_count#:#<strong>%d</strong> devices stored
 no_devices#:#No devices imported yet. Upload a CSV above.
 dev_th_koffer#:#Case
@@ -49,7 +49,7 @@ import_no_file#:#No file uploaded or upload error (code: %d).
 import_empty#:#File is empty or could not be read.
 import_empty2#:#Empty file.
 import_bad_format#:#Invalid format. Expected header: %s
-import_table_missing#:#Table examlogger_hosts does not exist. Please reinstall the plugin.
+import_table_missing#:#Table etest_hosts does not exist — please update the plugin first.
 import_done#:#%d devices imported/updated successfully.
 import_skipped#:# %d row(s) skipped (invalid IP address).
 csv_date#:#Date

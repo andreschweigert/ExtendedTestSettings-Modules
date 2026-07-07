@@ -18,9 +18,6 @@ class ilExamBatteryViewGUI
     // Meldungen älter als 10 Minuten gelten als veraltet (Gerät evtl. aus / Teilnehmer fertig)
     private const STALE_SECONDS = 600;
 
-    // Auto-Refresh-Intervall der Aufsichts-Ansicht
-    private const REFRESH_SECONDS = 30;
-
     private ilModuleLanguage $lng;
 
     public function __construct()
@@ -89,12 +86,15 @@ class ilExamBatteryViewGUI
         $raw  = (string)file_get_contents('php://input');
         $data = json_decode($raw, true);
 
-        // Harte Validierung: level ganzzahlig 0–100, charging exakt 0 oder 1
-        $level    = is_array($data) ? ($data['level'] ?? null) : null;
-        $charging = is_array($data) ? ($data['charging'] ?? null) : null;
+        // Harte Validierung: level ganzzahlig 0–100, charging exakt 0 oder 1,
+        // remaining (geschätzte Restzeit in Minuten) ganzzahlig -1–6000 (-1 = unbekannt)
+        $level     = is_array($data) ? ($data['level'] ?? null) : null;
+        $charging  = is_array($data) ? ($data['charging'] ?? null) : null;
+        $remaining = is_array($data) ? ($data['remaining'] ?? -1) : -1;
 
         if (!is_int($level) || $level < 0 || $level > 100
-            || ($charging !== 0 && $charging !== 1)) {
+            || ($charging !== 0 && $charging !== 1)
+            || !is_int($remaining) || $remaining < -1 || $remaining > 6000) {
             http_response_code(400);
             echo json_encode(['error' => 'invalid payload']);
             exit;
@@ -102,8 +102,30 @@ class ilExamBatteryViewGUI
 
         $obj_id = (int)ilObject::_lookupObjectId($ref_id);
         $db     = $DIC->database();
+        $now    = time();
 
         try {
+            // Referenzpunkt für die serverseitige Restzeit-Berechnung (Fallback,
+            // wenn die Battery-API keine Schätzung liefert): Akkustand + Zeitpunkt
+            // beim Beginn des Entladens. Zurückgesetzt beim Laden oder wenn der
+            // Akkustand über die Referenz steigt.
+            $ref_level = $level;
+            $ref_ts    = $now;
+            if ($charging === 0) {
+                $res = $db->queryF(
+                    'SELECT ref_level, ref_tstamp FROM ' . self::TABLE_STATUS
+                    . ' WHERE test_obj_id = %s AND user_id = %s',
+                    ['integer', 'integer'],
+                    [$obj_id, $user_id]
+                );
+                if (($row = $db->fetchAssoc($res))
+                    && (int)$row['ref_tstamp'] > 0
+                    && (int)$row['ref_level'] >= $level) {
+                    $ref_level = (int)$row['ref_level'];
+                    $ref_ts    = (int)$row['ref_tstamp'];
+                }
+            }
+
             // Upsert — es zählt nur der letzte Stand pro (Test, Nutzer)
             $db->replace(
                 self::TABLE_STATUS,
@@ -112,11 +134,14 @@ class ilExamBatteryViewGUI
                     'user_id'     => ['integer', $user_id],
                 ],
                 [
-                    'level_pct'   => ['integer', $level],
-                    'charging'    => ['integer', $charging],
-                    'ip_addr'     => ['text',    $this->getClientIp()],
-                    'test_ref_id' => ['integer', $ref_id],
-                    'tstamp'      => ['integer', time()],
+                    'level_pct'       => ['integer', $level],
+                    'charging'        => ['integer', $charging],
+                    'discharging_min' => ['integer', $remaining],
+                    'ref_level'       => ['integer', $ref_level],
+                    'ref_tstamp'      => ['integer', $ref_ts],
+                    'ip_addr'         => ['text',    $this->getClientIp()],
+                    'test_ref_id'     => ['integer', $ref_id],
+                    'tstamp'          => ['integer', $now],
                 ]
             );
         } catch (Exception $e) {
@@ -175,16 +200,69 @@ class ilExamBatteryViewGUI
         $warn     = (int)$settings['warn_pct'];
         $crit     = (int)$settings['crit_pct'];
 
+        // Sortierung über Spaltenkopf-Links (Whitelist), Default: Akkustand aufsteigend
+        $sort = strtolower((string)($_GET['sort'] ?? 'level'));
+        $dir  = strtolower((string)($_GET['dir'] ?? 'asc')) === 'desc' ? 'DESC' : 'ASC';
+
         $rows = [];
         try {
-            // Aufsteigend nach Akkustand — kritische Geräte oben
+            // Zentrales Geräte-Inventar des Plugins (etest_hosts, seit Plugin 2.0.1) —
+            // nur lesend, Guard falls das Plugin noch nicht aktualisiert ist
+            $hasHosts = $db->tableExists('etest_hosts');
+            $hostCols = $hasHosts
+                ? 'h.ili_nr, h.koffer, h.geraet_nr,'
+                : "'' AS ili_nr, '' AS koffer, '' AS geraet_nr,";
+            $hostJoin = $hasHosts
+                ? 'LEFT JOIN etest_hosts h ON h.ip_addr = s.ip_addr'
+                : '';
+
+            switch ($sort) {
+                case 'user':
+                    $order = "u.lastname $dir, u.firstname $dir, u.login $dir";
+                    break;
+                case 'charging':
+                    $order = "s.charging $dir, s.level_pct ASC";
+                    break;
+                case 'device':
+                    $order = $hasHosts ? "h.koffer $dir, h.geraet_nr $dir" : "s.ip_addr $dir";
+                    break;
+                case 'ip':
+                    $order = "s.ip_addr $dir";
+                    break;
+                case 'last':
+                    $order = "s.tstamp $dir";
+                    break;
+                case 'remaining':
+                    // Unbekannte Restzeit (-1) immer ans Ende
+                    $order = "(eff_remaining < 0) ASC, eff_remaining $dir";
+                    break;
+                default:
+                    $sort  = 'level';
+                    $order = "s.level_pct $dir, s.tstamp ASC";
+            }
+
+            // eff_remaining: Battery-API-Wert, sonst serverseitig aus der Entladerate
+            // seit dem Referenzpunkt gerechnet (frühestens nach 5 min und 2 % Abfall,
+            // sonst ist die Rate zu verrauscht); -1 = keine Aussage möglich
+            $effRemainingSql = "CASE
+                    WHEN s.discharging_min >= 0 THEN s.discharging_min
+                    WHEN s.charging = 0 AND s.ref_tstamp > 0
+                         AND s.ref_level - s.level_pct >= 2
+                         AND s.tstamp - s.ref_tstamp >= 300
+                    THEN LEAST(6000, ROUND(s.level_pct * (s.tstamp - s.ref_tstamp) / ((s.ref_level - s.level_pct) * 60.0)))
+                    ELSE -1
+                END";
+
             $result = $db->queryF(
-                'SELECT s.user_id, s.level_pct, s.charging, s.ip_addr, s.tstamp,
+                "SELECT s.user_id, s.level_pct, s.charging, s.discharging_min, s.ip_addr, s.tstamp,
+                        $effRemainingSql AS eff_remaining,
+                        $hostCols
                         u.login, u.firstname, u.lastname
-                 FROM ' . self::TABLE_STATUS . ' s
+                 FROM " . self::TABLE_STATUS . " s
                  LEFT JOIN usr_data u ON u.usr_id = s.user_id
+                 $hostJoin
                  WHERE s.test_obj_id = %s
-                 ORDER BY s.level_pct ASC, s.tstamp ASC',
+                 ORDER BY $order",
                 ['integer'],
                 [$obj_id]
             );
@@ -195,7 +273,30 @@ class ilExamBatteryViewGUI
             error_log('[ExamBattery] showStatus Fehler: ' . $e->getMessage());
         }
 
-        $tpl->setContent($this->renderStatusTable($rows, $obj_id, $warn, $crit));
+        // KS-Komponenten: Panel um die Tabelle, MessageBox für den Leer-Zustand
+        $f = $DIC->ui()->factory();
+        $r = $DIC->ui()->renderer();
+
+        // Kein Auto-Refresh — die Aufsicht aktualisiert bewusst per Button.
+        // Die komplette URL wird wiederverwendet, dadurch bleibt die Sortierung erhalten.
+        $refreshUrl = 'ilias.php?' . http_build_query($_GET);
+        $toolbar = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">'
+            . $r->render($f->button()->standard($this->lng->txt('btn_refresh'), $refreshUrl))
+            . '<span class="text-muted" style="font-size:13px;">'
+            . sprintf($this->lng->txt('last_loaded'), date('H:i:s')) . '</span>'
+            . '</div>';
+
+        if (empty($rows)) {
+            $content = $r->render($f->messageBox()->info($this->lng->txt('no_data')));
+        } else {
+            $panel = $f->panel()->standard(
+                sprintf($this->lng->txt('devices_reported'), count($rows)),
+                $f->legacy($this->renderStatusTable($rows, $warn, $crit, $sort, $dir))
+            );
+            $content = $r->render($panel);
+        }
+
+        $tpl->setContent($toolbar . $content);
         // Proxy druckt das Template nicht selbst — ohne printToStdout bleibt die Seite weiß.
         $tpl->printToStdout();
     }
@@ -204,7 +305,10 @@ class ilExamBatteryViewGUI
     {
         global $DIC;
         try {
-            $test_title = ilObject::_lookupTitle(ilObject::_lookupObjectId($ref_id));
+            $obj_id     = (int)ilObject::_lookupObjectId($ref_id);
+            $test_title = ilObject::_lookupTitle($obj_id);
+            $tpl        = $DIC->ui()->mainTemplate();
+
             $tabs = $DIC->offsetExists('ilTabs') ? $DIC['ilTabs'] : null;
             if ($tabs) {
                 $tabs->setBackTarget(
@@ -212,37 +316,40 @@ class ilExamBatteryViewGUI
                     'ilias.php?ref_id=' . $ref_id . '&baseClass=ilRepositoryGUI'
                 );
             }
+
+            // Brotkrumen-Pfad zum Test (wie auf regulären Repository-Seiten)
+            if ($DIC->offsetExists('ilLocator')) {
+                $DIC['ilLocator']->addRepositoryItems($ref_id);
+                $tpl->setLocator();
+            }
+
+            $tpl->setTitleIcon(ilObject::_getIcon($obj_id, 'big', 'tst'));
+            $tpl->setTitle(sprintf($this->lng->txt('status_title'), $test_title));
+            $tpl->setDescription($this->lng->txt('description'));
         } catch (Exception $e) {
             // Navigation-Setup ist nicht kritisch
         }
     }
 
-    private function renderStatusTable(array $rows, int $obj_id, int $warn, int $crit): string
+    private function renderStatusTable(array $rows, int $warn, int $crit, string $sort, string $dir): string
     {
-        $now   = time();
-        $title = ilObject::_lookupTitle($obj_id);
+        $now = time();
 
-        $html  = '<h3>' . sprintf($this->lng->txt('status_title'), htmlspecialchars($title)) . '</h3>';
-        $html .= '<p style="font-size:13px;color:#555;">'
+        $html  = '<p style="font-size:13px;color:#555;margin:0 0 12px;">'
                . sprintf($this->lng->txt('legend'), $warn, $crit)
-               . ' &nbsp;|&nbsp; ' . sprintf($this->lng->txt('devices_reported'), count($rows))
-               . ' &nbsp;|&nbsp; ' . $this->lng->txt('refresh_hint')
                . '<br>' . $this->lng->txt('stale_hint')
+               . ' ' . $this->lng->txt('remaining_hint')
                . '</p>';
-
-        if (empty($rows)) {
-            $html .= '<div class="alert alert-info">' . $this->lng->txt('no_data') . '</div>';
-            $html .= $this->refreshScript();
-            return $html;
-        }
 
         $html .= '<table class="table table-striped table-condensed table-hover" style="font-size:13px;">';
         $html .= '<thead><tr>'
-               . '<th>' . $this->lng->txt('th_user') . '</th>'
-               . '<th>' . $this->lng->txt('th_level') . '</th>'
-               . '<th>' . $this->lng->txt('th_charging') . '</th>'
-               . '<th>' . $this->lng->txt('th_ip') . '</th>'
-               . '<th>' . $this->lng->txt('th_last') . '</th>'
+               . '<th>' . $this->sortLink('user', $this->lng->txt('th_user'), $sort, $dir) . '</th>'
+               . '<th>' . $this->sortLink('level', $this->lng->txt('th_level'), $sort, $dir) . '</th>'
+               . '<th>' . $this->sortLink('remaining', $this->lng->txt('th_remaining'), $sort, $dir) . '</th>'
+               . '<th>' . $this->sortLink('charging', $this->lng->txt('th_charging'), $sort, $dir) . '</th>'
+               . '<th>' . $this->sortLink('device', $this->lng->txt('th_device'), $sort, $dir) . '</th>'
+               . '<th>' . $this->sortLink('ip', $this->lng->txt('th_ip'), $sort, $dir) . '</th>'
+               . '<th>' . $this->sortLink('last', $this->lng->txt('th_last'), $sort, $dir) . '</th>'
                . '</tr></thead><tbody>';
 
         foreach ($rows as $row) {
@@ -258,39 +365,89 @@ class ilExamBatteryViewGUI
 
             $rowStyle = $stale ? ' style="opacity:0.45;"' : '';
 
+            // Geräte-Zelle aus dem Plugin-Inventar (Darstellung wie im examlogger-Protokoll)
+            $koffer   = $row['koffer']    ?? '';
+            $geraetNr = $row['geraet_nr'] ?? '';
+            $iliNr    = $row['ili_nr']    ?? '';
+            if ($koffer !== '' && $geraetNr !== '') {
+                $tooltip    = htmlspecialchars(trim($iliNr . '  ' . ($row['ip_addr'] ?? '')));
+                $deviceCell = '<td title="' . $tooltip . '">'
+                            . htmlspecialchars($koffer) . ' &middot; ' . htmlspecialchars($geraetNr)
+                            . '</td>';
+            } elseif ($iliNr !== '') {
+                $deviceCell = '<td title="' . htmlspecialchars($row['ip_addr'] ?? '') . '">' . htmlspecialchars($iliNr) . '</td>';
+            } else {
+                $deviceCell = '<td class="text-muted">—</td>';
+            }
+
             $html .= '<tr' . $rowStyle . '>'
                    . '<td>' . htmlspecialchars($userName) . '</td>'
-                   . '<td>' . $this->levelBadge($level, $warn, $crit) . '</td>'
+                   . '<td>' . $this->levelBar($level, $warn, $crit) . '</td>'
+                   . '<td>' . $this->formatRemaining(
+                        (int)($row['eff_remaining'] ?? -1),
+                        $charging,
+                        (int)($row['discharging_min'] ?? -1) < 0
+                     ) . '</td>'
                    . '<td>' . ($charging
                         ? '<span class="text-success">⚡ ' . $this->lng->txt('charging_yes') . '</span>'
                         : $this->lng->txt('charging_no')) . '</td>'
+                   . $deviceCell
                    . '<td>' . htmlspecialchars($row['ip_addr'] ?? '') . '</td>'
                    . '<td>' . date('d.m.Y H:i:s', $tstamp) . '</td>'
                    . '</tr>';
         }
 
         $html .= '</tbody></table>';
-        $html .= $this->refreshScript();
         return $html;
     }
 
-    private function levelBadge(int $level, int $warn, int $crit): string
+    private function sortLink(string $key, string $label, string $sort, string $dir): string
     {
-        if ($level <= $crit) {
-            $cls = 'danger';
-        } elseif ($level <= $warn) {
-            $cls = 'warning';
-        } else {
-            $cls = 'success';
-        }
-        return '<span class="label label-' . $cls . '" style="font-size:12px;">' . $level . ' %</span>';
+        $params = $_GET;
+        $params['sort'] = $key;
+        $params['dir']  = ($sort === $key && $dir === 'ASC') ? 'desc' : 'asc';
+        $url   = 'ilias.php?' . http_build_query($params);
+        $arrow = ($sort === $key) ? ($dir === 'ASC' ? ' ▲' : ' ▼') : '';
+        return '<a href="' . htmlspecialchars($url) . '" style="white-space:nowrap;color:inherit;">'
+             . htmlspecialchars($label) . $arrow . '</a>';
     }
 
-    private function refreshScript(): string
+    /**
+     * Geschätzte Restzeit in Minuten; -1 = keine Aussage möglich.
+     * $isCalc = true, wenn der Wert serverseitig aus der Entladerate gerechnet
+     * wurde (Fallback, weil die Battery-API keine Schätzung liefert).
+     * Beim Laden gibt es keine Entlade-Restzeit — dann "—".
+     */
+    private function formatRemaining(int $min, bool $charging, bool $isCalc = false): string
     {
-        // Auto-Refresh — die Aufsicht lässt die Seite offen liegen
-        return '<script>setTimeout(function () { window.location.reload(); }, '
-            . (self::REFRESH_SECONDS * 1000) . ');</script>';
+        if ($min < 0 || $charging) {
+            return '<span class="text-muted">—</span>';
+        }
+        $txt = $min < 60
+            ? '~' . $min . ' min'
+            : '~' . intdiv($min, 60) . ' h ' . str_pad((string)($min % 60), 2, '0', STR_PAD_LEFT) . ' min';
+        if ($min <= 30) {
+            $txt = '<strong style="color:#e53935;">' . $txt . '</strong>';
+        }
+        $title = $this->lng->txt($isCalc ? 'remaining_src_calc' : 'remaining_src_api');
+        return '<span title="' . htmlspecialchars($title) . '">' . $txt . ($isCalc ? ' *' : '') . '</span>';
+    }
+
+    private function levelBar(int $level, int $warn, int $crit): string
+    {
+        if ($level <= $crit) {
+            $col = '#e53935';
+        } elseif ($level <= $warn) {
+            $col = '#f9a825';
+        } else {
+            $col = '#43a047';
+        }
+        return '<div style="display:flex;align-items:center;gap:8px;min-width:160px;">'
+             . '<div style="flex:1;background:#eceff1;border-radius:4px;height:14px;overflow:hidden;">'
+             . '<div style="width:' . $level . '%;height:100%;background:' . $col . ';"></div>'
+             . '</div>'
+             . '<strong style="min-width:44px;text-align:right;color:' . $col . ';">' . $level . '&nbsp;%</strong>'
+             . '</div>';
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────────

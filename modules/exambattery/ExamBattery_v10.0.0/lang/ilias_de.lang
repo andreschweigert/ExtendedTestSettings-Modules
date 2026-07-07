@@ -9,16 +9,22 @@ crit_label#:#Rot-Schwelle (%)
 crit_info#:#Akkustände bis zu diesem Wert werden rot markiert (5–30). Muss kleiner als die Gelb-Schwelle sein, sonst werden beide Werte auf die Standardwerte zurückgesetzt.
 status_link_label#:#Aufsichts-Ansicht
 open_status#:#Gerätestände anzeigen
-status_link_info#:#Live-Tabelle der zuletzt gemeldeten Akkustände für diesen Test — kritische Geräte oben, Auto-Refresh alle 30 Sekunden.
+status_link_info#:#Tabelle der zuletzt gemeldeten Akkustände für diesen Test — kritische Geräte oben, Aktualisierung per Button.
 status_title#:#Akku-Status: %s
 legend#:#Anzeige-Schwellen: gelb ≤ %1$d %%, rot ≤ %2$d %%
 devices_reported#:#%d Geräte gemeldet
-refresh_hint#:#Die Ansicht aktualisiert sich automatisch alle 30 Sekunden.
+btn_refresh#:#Aktualisieren
+last_loaded#:#Stand: %s Uhr — über „Aktualisieren" neu laden
 stale_hint#:#Ausgegraute Zeilen: letzte Meldung älter als 10 Minuten (Gerät evtl. aus oder Teilnehmer/in fertig).
+remaining_hint#:#Restzeit = Schätzung des Geräts; liefert es keine (*), wird sie aus der bisherigen Entladerate gerechnet (braucht ≥ 5 min und ≥ 2 % Abfall). Nur beim Entladen verfügbar.
+remaining_src_api#:#Schätzung des Geräts (Battery-API)
+remaining_src_calc#:#Aus der bisherigen Entladerate berechnet
 no_data#:#Noch keine Akku-Meldungen für diesen Test.
 th_user#:#Teilnehmer/in
 th_level#:#Akkustand
+th_remaining#:#Restzeit (ca.)
 th_charging#:#Lädt
+th_device#:#Gerät
 th_ip#:#IP-Adresse
 th_last#:#Letzte Meldung
 charging_yes#:#ja
