@@ -1,0 +1,26 @@
+<!-- language file start -->
+title#:#Battery monitor
+description#:#Silent battery monitoring for exam devices — reports go to the invigilator view only, nothing is ever shown to students
+enable#:#Enable battery monitor
+enable_info#:#Silently reports device battery levels to the server (Battery Status API, Chromium + HTTPS only). The test player never shows any message or UI element.
+warn_label#:#Yellow threshold (%)
+warn_info#:#Battery levels up to this value are marked yellow in the invigilator view (5–50). Display only — students never receive warnings.
+crit_label#:#Red threshold (%)
+crit_info#:#Battery levels up to this value are marked red (5–30). Must be lower than the yellow threshold, otherwise both values fall back to the defaults.
+status_link_label#:#Invigilator view
+open_status#:#Show device status
+status_link_info#:#Live table of the most recently reported battery levels for this test — critical devices on top, auto-refresh every 30 seconds.
+status_title#:#Battery status: %s
+legend#:#Display thresholds: yellow ≤ %1$d %%, red ≤ %2$d %%
+devices_reported#:#%d devices reported
+refresh_hint#:#The view refreshes automatically every 30 seconds.
+stale_hint#:#Grayed-out rows: last report older than 10 minutes (device possibly off or participant finished).
+no_data#:#No battery reports for this test yet.
+th_user#:#Participant
+th_level#:#Battery level
+th_charging#:#Charging
+th_ip#:#IP address
+th_last#:#Last report
+charging_yes#:#yes
+charging_no#:#no
+access_denied#:#Access denied.

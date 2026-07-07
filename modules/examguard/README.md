@@ -41,7 +41,8 @@ Eigene Tabelle: `examguard_settings`
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
-| 1.2.0 | `ExamGuard_v1.2.0.zip` | 9 | Modul-i18n DE/EN (ilModuleLanguage) |
+| 10.0.0 | `ExamGuard_v10.0.0.zip` | 10 | Port auf ILIAS 10: keine Code-Änderungen im Modul nötig — Web-Asset-Pfade laufen über den zentralen Registry-Compat des Plugins (ab 10.0.0). Start der ILIAS-10-Linie (Versionsschema: Major = ILIAS-Version, Sprünge +0.0.1); module.json: ilias_min/max = 10 |
+| 1.2.0 | `archive/ExamGuard_v1.2.0.zip` | 9 | Modul-i18n DE/EN (ilModuleLanguage) |
 | 1.1.1 | `ExamGuard_v1.1.1.zip` | 9 | ILIAS-Kompatibilität auf 9 beschränkt |
 | 1.1.0 | `ExamGuard_v1.1.0.zip` | 9–12 | Migration aus Built-in zu externem Modul, Asset-Pfade angepasst |
 

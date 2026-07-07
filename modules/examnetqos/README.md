@@ -103,7 +103,8 @@ Assets werden nur injiziert wenn `isEnabled() && isTestPlayerContext()`.
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
-| 1.2.0 | `ExamNetQos_v1.2.0.zip` | 9 | i18n DE/EN von Handler und ViewGUI (Chart, Sessions-Tabelle, CSV) |
+| 10.0.0 | `ExamNetQos_v10.0.0.zip` | 10 | Port auf ILIAS 10: keine Code-Änderungen im Modul nötig — Web-Asset-Pfade laufen über den zentralen Registry-Compat des Plugins (ab 10.0.0). Start der ILIAS-10-Linie (Versionsschema: Major = ILIAS-Version, Sprünge +0.0.1); module.json: ilias_min/max = 10 |
+| 1.2.0 | `archive/ExamNetQos_v1.2.0.zip` | 9 | i18n DE/EN von Handler und ViewGUI (Chart, Sessions-Tabelle, CSV) |
 | 1.1.0 | `archive/ExamNetQos_v1.1.0.zip` | 9 | Modul-i18n DE/EN (Handler) |
 | 1.0.1 | `ExamNetQos_v1.0.1.zip` | 9 | Detail-Link Bug fix (fehlender `cmd`-Parameter). Session-Key via `sessionStorage` (verhindert Aufsplittung in viele Kurz-Sessions bei ILIAS-Fragennavigation). SVG-Event-Labels durch Kreise + Hover-Tooltip ersetzt. `degraded`-Label: 'Verschlechterung' → 'Erhöht'. |
 | 1.0.0 | `ExamNetQos_v1.0.0.zip` | 9 | Erstveröffentlichung |

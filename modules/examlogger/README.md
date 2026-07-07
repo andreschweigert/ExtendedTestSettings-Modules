@@ -69,7 +69,8 @@ und Navigation zwischen Fragen.
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
-| 1.4.0 | `ExamLogger_v1.4.0.zip` | 9 | Geräte-Inventar ins Plugin verlagert (`etest_hosts`, Plugin ≥ 2.0.1): Modul liest nur noch, `examlogger_hosts` wird beim Update entfernt; JOINs defensiv (Guard bei fehlender Tabelle) |
+| 10.0.0 | `ExamLogger_v10.0.0.zip` | 10 | Port auf ILIAS 10: Settings-Events erkennen auch die namespaced 10er-cmdClasses; Bugfix Player-Erkennung für Random-Question-Set-Tests (falscher Klassenname, Events wurden nicht geloggt). Start der ILIAS-10-Linie (Versionsschema: Major = ILIAS-Version, Sprünge +0.0.1); module.json: ilias_min/max = 10 |
+| 1.4.0 | `archive/ExamLogger_v1.4.0.zip` | 9 | Geräte-Inventar ins Plugin verlagert (`etest_hosts`, Plugin ≥ 2.0.1): Modul liest nur noch, `examlogger_hosts` wird beim Update entfernt; JOINs defensiv (Guard bei fehlender Tabelle) |
 | 1.3.0 | `archive/ExamLogger_v1.3.0.zip` | 9 | i18n DE/EN der ViewGUI (Protokoll, Geräte, CSV-Export, Geräte-Import) |
 | 1.2.0 | `archive/ExamLogger_v1.2.0.zip` | 9 | Modul-i18n DE/EN (Handler/getInfo) |
 | 1.1.0 | `ExamLogger_v1.1.0.zip` | 9 | Frage-ID + Fragenname in Protokoll/CSV; Geräteverwaltung (examlogger_hosts); `test_submit` / `test_submit_confirmed` differenziert (GET vs. POST) |

@@ -1,0 +1,15 @@
+{
+    "id": "examkeymap",
+    "label": "Virtuelles Tastatur-Layout",
+    "description": "Clientseitiges Tastatur-Layout DE/EN für Kiosk-Geräte: schreibt Tastendrücke layoutunabhängig um (KeyboardEvent.code), umschaltbar per Button im Testplayer. Mit globaler Übersetzungstabelle und virtueller Feststelltaste.",
+    "version": "10.0.0",
+    "ilias_min": "10",
+    "ilias_max": "10",
+    "handler_class": "ilExamKeymapHandler",
+    "handler_file": "class.ilExamKeymapHandler.php",
+    "require_files": [],
+    "tables": [
+        "examkeymap_settings",
+        "examkeymap_custom"
+    ]
+}

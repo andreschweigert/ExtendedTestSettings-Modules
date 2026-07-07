@@ -1,14 +1,20 @@
 {
     "id": "examarchiver",
     "label": "Prüfungs-Archivierung",
-    "description": "Archiviert Tests vollständig: Antworten, Punkte, Noten und Test-Einstellungen als selbsttragendes ZIP (HTML + PDF + JSON/CSV) mit SHA-256-Manifest und Zugriffsprotokoll.",
-    "version": "1.0.0",
-    "ilias_min": "9",
-    "ilias_max": "9",
+    "description": "Archiviert Tests rechtssicher: Antworten, Punkte, Noten und Test-Einstellungen als selbsttragendes ZIP (HTML + PDF + JSON/CSV) mit SHA-256-Manifest und Zugriffsprotokoll.",
+    "version": "10.0.0",
+    "ilias_min": "10",
+    "ilias_max": "10",
     "handler_class": "ilExamArchiverHandler",
     "handler_file": "class.ilExamArchiverHandler.php",
     "gui_file": "class.ilExamArchiverGUI.php",
     "gui_class": "ilExamArchiverGUI",
-    "require_files": ["class.ilExamArchiverCollector.php", "class.ilExamArchiverRenderer.php"],
-    "tables": ["examarchiver_archives", "examarchiver_log"]
+    "require_files": [
+        "class.ilExamArchiverCollector.php",
+        "class.ilExamArchiverRenderer.php"
+    ],
+    "tables": [
+        "examarchiver_archives",
+        "examarchiver_log"
+    ]
 }

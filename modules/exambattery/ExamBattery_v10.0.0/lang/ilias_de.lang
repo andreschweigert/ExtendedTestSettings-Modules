@@ -1,0 +1,26 @@
+<!-- language file start -->
+title#:#Akku-Monitor
+description#:#Stille Akku-Überwachung für Prüfungsgeräte — Meldungen nur an die Aufsicht, keinerlei Anzeige für Studierende
+enable#:#Akku-Monitor aktivieren
+enable_info#:#Meldet Akkustände der Prüfungsgeräte still an den Server (Battery Status API, nur Chromium + HTTPS). Im Testplayer erscheint niemals eine Meldung oder ein UI-Element.
+warn_label#:#Gelb-Schwelle (%)
+warn_info#:#Akkustände bis zu diesem Wert werden in der Aufsichts-Ansicht gelb markiert (5–50). Steuert nur die Anzeige — es gibt keine Warnungen an Studierende.
+crit_label#:#Rot-Schwelle (%)
+crit_info#:#Akkustände bis zu diesem Wert werden rot markiert (5–30). Muss kleiner als die Gelb-Schwelle sein, sonst werden beide Werte auf die Standardwerte zurückgesetzt.
+status_link_label#:#Aufsichts-Ansicht
+open_status#:#Gerätestände anzeigen
+status_link_info#:#Live-Tabelle der zuletzt gemeldeten Akkustände für diesen Test — kritische Geräte oben, Auto-Refresh alle 30 Sekunden.
+status_title#:#Akku-Status: %s
+legend#:#Anzeige-Schwellen: gelb ≤ %1$d %%, rot ≤ %2$d %%
+devices_reported#:#%d Geräte gemeldet
+refresh_hint#:#Die Ansicht aktualisiert sich automatisch alle 30 Sekunden.
+stale_hint#:#Ausgegraute Zeilen: letzte Meldung älter als 10 Minuten (Gerät evtl. aus oder Teilnehmer/in fertig).
+no_data#:#Noch keine Akku-Meldungen für diesen Test.
+th_user#:#Teilnehmer/in
+th_level#:#Akkustand
+th_charging#:#Lädt
+th_ip#:#IP-Adresse
+th_last#:#Letzte Meldung
+charging_yes#:#ja
+charging_no#:#nein
+access_denied#:#Zugriff verweigert.

@@ -44,7 +44,8 @@ Eigene Tabelle: `examalert_settings`
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
-| 1.2.1 | `ExamAlert_v1.2.1.zip` | 9 | Sicherheitsfix: Warnmeldung wird vor der Anzeige escaped (XSS). Erlaubte Format-Tags (`<strong>`, `<b>`, `<i>`, `<u>`, `<br>`) bleiben erhalten, anderes HTML wird als Text angezeigt |
+| 10.0.0 | `ExamAlert_v10.0.0.zip` | 10 | Port auf ILIAS 10: tote Player-Kommandos (`confirmFinish`, `outUserPassedQuestionSetFinish`) aus dem JS entfernt. Start der ILIAS-10-Linie (Versionsschema: Major = ILIAS-Version, Sprünge +0.0.1); module.json: ilias_min/max = 10 |
+| 1.2.1 | `archive/ExamAlert_v1.2.1.zip` | 9 | Sicherheitsfix: Warnmeldung wird vor der Anzeige escaped (XSS). Erlaubte Format-Tags (`<strong>`, `<b>`, `<i>`, `<u>`, `<br>`) bleiben erhalten, anderes HTML wird als Text angezeigt |
 | 1.2.0 | `archive/ExamAlert_v1.2.0.zip` | 9 | Modul-eigene Sprachdateien DE/EN, Formular-Texte über ilModuleLanguage |
 | 1.1.1 | `ExamAlert_v1.1.1.zip` | 9 | ILIAS-Kompatibilität auf 9 beschränkt |
 | 1.1.0 | `ExamAlert_v1.1.0.zip` | 9–12 | Migration aus Built-in zu externem Modul, Asset-Pfade angepasst |

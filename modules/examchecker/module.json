@@ -2,9 +2,9 @@
     "id": "examchecker",
     "label": "Prüfungs-Checker",
     "description": "Überprüft Test-Einstellungen gegen definierte Standards für Präsenz- und Fernprüfungen.",
-    "version": "1.2.0",
-    "ilias_min": "9",
-    "ilias_max": "9",
+    "version": "10.0.0",
+    "ilias_min": "10",
+    "ilias_max": "10",
     "handler_class": "ilExamCheckerHandler",
     "handler_file": "class.ilExamCheckerHandler.php",
     "require_files": [

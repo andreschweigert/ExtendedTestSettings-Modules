@@ -1,6 +1,6 @@
 # ExamArchiver — Prüfungs-Archivierung
 
-**Modul-ID:** `examarchiver` · **Aktuelle Version:** 1.0.0 · **ILIAS:** 9
+**Modul-ID:** `examarchiver` · **Aktuelle Version:** 10.0.0 · **ILIAS:** 10
 
 Archiviert Tests **vollständig**: Alle Antworten, Punkte, Noten, manuelles Feedback und
 die Test-Einstellungen werden als **selbsttragendes ZIP** festgeschrieben — offline lesbar,
@@ -87,4 +87,5 @@ der Platte bleiben bewusst liegen.
 
 | Version | Datum | Änderungen |
 |---|---|---|
+| 10.0.0 | 2026-07-07 | Port auf ILIAS 10: Null-Check für `instantiateQuestionGUI()` (in 10 nullable), `getSolutionOutput()` mit explizitem `show_inline_feedback=false`, Bild-Inlining findet Webdateien unter `public/`. Start der ILIAS-10-Linie (Major = ILIAS-Version, Sprünge +0.0.1); module.json: ilias_min/max = 10 |
 | 1.0.0 | 2026-07-02 | Initiale Implementierung: chunked Erzeugung, HTML+PDF+JSON/CSV, SHA-256-Manifest, Integritätsprüfung, Zugriffsprotokoll, Admin-Tab + Einzeltest-Ansicht |

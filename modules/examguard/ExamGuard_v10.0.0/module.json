@@ -1,0 +1,14 @@
+{
+    "id": "examguard",
+    "label": "Prüfungsschutz",
+    "description": "Verhindert das versehentliche Verlassen des Tests (Browser-Back, Tab schließen, etc.).",
+    "version": "10.0.0",
+    "ilias_min": "10",
+    "ilias_max": "10",
+    "handler_class": "ilExamGuardHandler",
+    "handler_file": "class.ilExamGuardHandler.php",
+    "require_files": [],
+    "tables": [
+        "examguard_settings"
+    ]
+}

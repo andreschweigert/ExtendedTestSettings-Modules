@@ -53,7 +53,8 @@ Eigene Tabelle: `examressheet_settings`
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
-| 1.2.1 | `ExamResourceSheet_v1.2.1.zip` | 9 | Sicherheitsfix: HTML-Hilfsmittelblätter werden in einem `sandbox`-iframe geladen (keine JS-Ausführung in der Nutzer-Session) |
+| 10.0.0 | `ExamResourceSheet_v10.0.0.zip` | 10 | Port auf ILIAS 10: keine Code-Änderungen im Modul nötig — Web-Asset-Pfade laufen über den zentralen Registry-Compat des Plugins (ab 10.0.0). Start der ILIAS-10-Linie (Versionsschema: Major = ILIAS-Version, Sprünge +0.0.1); module.json: ilias_min/max = 10 |
+| 1.2.1 | `archive/ExamResourceSheet_v1.2.1.zip` | 9 | Sicherheitsfix: HTML-Hilfsmittelblätter werden in einem `sandbox`-iframe geladen (keine JS-Ausführung in der Nutzer-Session) |
 | 1.2.0 | `ExamResourceSheet_v1.2.0.zip` | 9 | Sprachdateien DE/EN (i18n), Texte über `ilModuleLanguage` |
 | 1.1.0 | `ExamResourceSheet_v1.1.0.zip` | 9 | PDF.js-Rendering, Text-Layer (Markieren/Kopieren), linker Edge-Tab, Push-Modus, Drag-Resize + Buttons, SessionStorage-State |
 | 1.0.0 | `ExamResourceSheet_v1.0.0.zip` | 9 | Initiale Version: floating Button, iframe-Overlay |

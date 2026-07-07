@@ -122,6 +122,7 @@ Eigene Tabellen: `exambattery_settings`, `exambattery_status`
 
 | Version | Datum | Änderung |
 |---|---|---|
+| 10.0.0 | 2026-07-07 | Port auf ILIAS 10: keine Code-Änderungen nötig (Web-Asset-Pfade über zentralen Registry-Compat des Plugins). Start der ILIAS-10-Linie (Major = ILIAS-Version, Sprünge +0.0.1); module.json: ilias_min/max = 10 |
 | 1.3.2 | 2026-07-03 | Restzeit-Fallback: liefert die Battery-API keine Schätzung (viele Geräte melden dauerhaft Infinity), wird die Restzeit serverseitig aus der bisherigen Entladerate gerechnet (Referenzpunkt `ref_level`/`ref_tstamp`, greift nach ≥ 5 min und ≥ 2 % Abfall; mit * und Tooltip markiert) |
 | 1.3.1 | 2026-07-03 | Reports gedrosselt: nur bei fallendem Akkustand, Ladezustand-Wechsel oder 5-min-Heartbeat (sessionStorage überlebt Fragennavigation — kein Report mehr pro Fragenwechsel); Auto-Refresh der Aufsichts-Ansicht durch „Aktualisieren"-Button mit Stand-Anzeige ersetzt |
 | 1.3.0 | 2026-07-03 | Spalten sortierbar (klickbare Köpfe); neue Spalte „Restzeit (ca.)" aus der Battery-API (`dischargingTime`, neue DB-Spalte `discharging_min`, ≤ 30 min rot); `simulate(level, charging, restMin)` erweitert |
