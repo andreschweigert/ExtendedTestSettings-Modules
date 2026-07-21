@@ -1,5 +1,7 @@
 # ExamMessage
 
+> **Entwicklungsstand:** Experimentell
+
 Externes Modul für das ILIAS-Plugin **ExtendedTestSettings**.
 
 Ermöglicht dem Kursadministrator, während einer Prüfung eine **Nachricht an alle

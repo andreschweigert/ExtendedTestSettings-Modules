@@ -1,5 +1,7 @@
 # ExamGuard
 
+> **Entwicklungsstand:** Im Test
+
 Externes Modul für das ILIAS-Plugin **ExtendedTestSettings**.
 
 Injiziert ein JavaScript in den Testplayer, das unfaires Verhalten während der Prüfung erschwert. Läuft **vollständig unsichtbar im Hintergrund** — keine Benutzeroberfläche.

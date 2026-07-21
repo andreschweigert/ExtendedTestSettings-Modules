@@ -3,6 +3,7 @@
     "label": "Prüfungs-Archivierung",
     "description": "Archiviert Tests rechtssicher: Antworten, Punkte, Noten und Test-Einstellungen als selbsttragendes ZIP (HTML + PDF + JSON/CSV) mit SHA-256-Manifest und Zugriffsprotokoll.",
     "version": "10.0.0",
+    "maturity": "experimentell",
     "ilias_min": "10",
     "ilias_max": "10",
     "handler_class": "ilExamArchiverHandler",

@@ -3,6 +3,7 @@
     "label": "Prüfungs-Logging",
     "description": "Protokolliert Test-Ereignisse (Start, Navigation, Abgabe, Einstellungsänderungen) in einer eigenen Tabelle ohne ILIAS-Kernanpassungen.",
     "version": "10.0.0",
+    "maturity": "experimentell",
     "ilias_min": "10",
     "ilias_max": "10",
     "handler_class": "ilExamLoggerHandler",

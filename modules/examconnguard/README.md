@@ -1,5 +1,7 @@
 # ExamConnGuard
 
+> **Entwicklungsstand:** Experimentell
+
 Externes Modul für das ILIAS-Plugin **ExtendedTestSettings**.
 
 Fängt WLAN-Aussetzer im Test-Player ab und verhindert Browser-Fehlerseiten ("Verbindung zurückgesetzt"). Gedacht für Hörsaal-Klausuren mit Chromebooks im überlasteten WLAN.

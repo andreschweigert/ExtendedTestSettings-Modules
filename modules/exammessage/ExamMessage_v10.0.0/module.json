@@ -3,6 +3,7 @@
     "label": "Prüfungs-Nachricht",
     "description": "Sendet eine Nachricht an alle Teilnehmer, die für eine konfigurierbare Dauer im Test-Player erscheint. AJAX-Polling alle 15 Sekunden für Echtzeit-Zustellung.",
     "version": "10.0.0",
+    "maturity": "experimentell",
     "ilias_min": "10",
     "ilias_max": "10",
     "handler_class": "ilExamMessageHandler",

@@ -3,6 +3,7 @@
     "label": "Netzwerk-Qualität",
     "description": "Misst Latenz und Paketverlust im Hintergrund während der Prüfung. Erkennt Netz-Ereignisse automatisch (RTT-Schwellwert-Überschreitungen) und speichert eine Zeitreihe zur späteren Korrelation mit Teilnehmer-Beschwerden.",
     "version": "10.0.0",
+    "maturity": "experimentell",
     "ilias_min": "10",
     "ilias_max": "10",
     "handler_class": "ilExamNetQosHandler",

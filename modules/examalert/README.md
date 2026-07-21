@@ -1,5 +1,7 @@
 # ExamAlert
 
+> **Entwicklungsstand:** Im Test
+
 Externes Modul für das ILIAS-Plugin **ExtendedTestSettings**.
 
 Zeigt den Prüfungsteilnehmern ein **Popup-Modal mit Countdown**, wenn die verbleibende Testzeit unter einen konfigurierbaren Schwellenwert fällt. Warnzeit und Nachricht sind pro Test einstellbar. Die mitgelieferte Standardnachricht ist zweisprachig (Deutsch/Englisch).

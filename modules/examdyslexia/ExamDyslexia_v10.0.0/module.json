@@ -3,6 +3,7 @@
     "label": "Legasthenie-Modus",
     "description": "Ermöglicht Studierenden das Aktivieren eines Legasthenie-freundlichen Lesemodus während der Prüfung.",
     "version": "10.0.0",
+    "maturity": "experimentell",
     "ilias_min": "10",
     "ilias_max": "10",
     "handler_class": "ilExamDyslexiaHandler",

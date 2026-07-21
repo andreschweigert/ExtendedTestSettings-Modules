@@ -1,5 +1,7 @@
 # ExamPreflight — Preflight-Durchlauf
 
+> **Entwicklungsstand:** Im Test
+
 Geführter Probedurchlauf durch einen ILIAS-Test **vor** der Prüfung: prüft pro Frage
 automatisch, ob alles korrekt gerendert wird, und erstellt Screenshots für einen
 Prüfbericht.

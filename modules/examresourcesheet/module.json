@@ -3,6 +3,7 @@
     "label": "Hilfsmittelblatt",
     "description": "Stellt Studierenden ein Hilfsmittelblatt (hochgeladenes PDF/HTML oder eigener Text) als Overlay im Test-Player bereit.",
     "version": "10.0.1",
+    "maturity": "test",
     "ilias_min": "10",
     "ilias_max": "10",
     "handler_class": "ilExamResourceSheetHandler",

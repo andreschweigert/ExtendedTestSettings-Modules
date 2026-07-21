@@ -1,5 +1,7 @@
 # ExamLogger
 
+> **Entwicklungsstand:** Experimentell
+
 Externes Modul für das ILIAS-Plugin **ExtendedTestSettings**.
 
 Protokolliert Test-Ereignisse **serverseitig** in einer eigenen Datenbanktabelle —

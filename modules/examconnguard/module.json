@@ -3,6 +3,7 @@
     "label": "Verbindungs-Schutz",
     "description": "Fängt WLAN-Aussetzer im Test-Player ab. Pre-Flight-Probe bei jedem Submit/Klick verhindert Browser-Fehlerseiten. Bei Outage: Wartebild, queued Action, Auto-Replay nach Reconnect. Wrappt fetch() für Autosave-Retry.",
     "version": "10.0.0",
+    "maturity": "experimentell",
     "ilias_min": "10",
     "ilias_max": "10",
     "handler_class": "ilExamConnGuardHandler",

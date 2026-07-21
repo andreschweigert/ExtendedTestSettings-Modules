@@ -1,5 +1,7 @@
 # ExamArchiver — Prüfungs-Archivierung
 
+> **Entwicklungsstand:** Experimentell
+
 **Modul-ID:** `examarchiver` · **Aktuelle Version:** 10.0.0 · **ILIAS:** 10
 
 Archiviert Tests **vollständig**: Alle Antworten, Punkte, Noten, manuelles Feedback und

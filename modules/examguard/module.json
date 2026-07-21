@@ -3,6 +3,7 @@
     "label": "Prüfungsschutz",
     "description": "Verhindert das versehentliche Verlassen des Tests (Browser-Back, Tab schließen, etc.).",
     "version": "10.0.0",
+    "maturity": "test",
     "ilias_min": "10",
     "ilias_max": "10",
     "handler_class": "ilExamGuardHandler",
