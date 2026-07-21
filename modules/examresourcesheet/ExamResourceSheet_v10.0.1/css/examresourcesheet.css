@@ -323,3 +323,16 @@ body.ers-panel-active.ers-resizing {
         transition: none;
     }
 }
+
+/* ============================================
+   TEXT-MODUS (eigener Text statt Datei)
+   ============================================ */
+.ers-text-content {
+    padding: 16px 20px;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    color: #1a1a1a;
+    background: #fff;
+    overflow-wrap: break-word;
+}
