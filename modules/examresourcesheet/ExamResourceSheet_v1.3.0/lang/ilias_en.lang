@@ -1,0 +1,18 @@
+<!-- language file start -->
+title#:#Resource sheet
+description#:#Provides students with a resource sheet (uploaded PDF/HTML or custom text) as an overlay in the test player.
+enable#:#Enable resource sheet
+enable_info#:#Provides students with a resource sheet (PDF/HTML file or custom text) as an overlay in the test player.
+label_field#:#Button label
+label_field_info#:#Label of the button in the test player, e.g. "Formula sheet", "Resources", "Appendix".
+current_file#:#Current file
+file_upload#:#Upload file
+file_replace#:#Replace file
+file_info#:#PDF or HTML — max. 10 MB.
+source_select#:#Source
+source_file#:#File upload (PDF/HTML)
+source_text#:#Custom text
+delete_file#:#Remove current file
+delete_file_info#:#The uploaded file will be permanently deleted when saving.
+text_field#:#Text content
+text_field_info#:#Line breaks are preserved. Allowed HTML tags: &lt;strong&gt;, &lt;b&gt;, &lt;i&gt;, &lt;u&gt;, &lt;br&gt; — everything else is displayed as plain text.

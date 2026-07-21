@@ -18,8 +18,9 @@
     }
 
     function buildUI(cfg) {
-        var label = cfg.label || 'Hilfsmittel';
-        var isPdf = cfg.mimetype === 'application/pdf';
+        var label  = cfg.label || 'Hilfsmittel';
+        var isText = cfg.mode === 'text';
+        var isPdf  = !isText && cfg.mimetype === 'application/pdf';
 
         var blobUrl      = null;
         var pdfDoc       = null;
@@ -291,8 +292,19 @@
             if (isPdf && pdfDoc) rerenderPdf();
         });
 
-        // ── Datei laden ───────────────────────────────────────────────
+        // ── Inhalt laden ──────────────────────────────────────────────
         function loadFile() {
+            if (isText) {
+                // contentHtml ist serverseitig sanitisiert (Whitelist strong/b/i/u/br)
+                if (!scrollArea.querySelector('.ers-text-content')) {
+                    var textDiv = document.createElement('div');
+                    textDiv.className = 'ers-text-content';
+                    textDiv.innerHTML = cfg.contentHtml || '';
+                    scrollArea.appendChild(textDiv);
+                }
+                return;
+            }
+
             if (blobUrl) {
                 if (isPdf && pdfDoc) rerenderPdf();
                 return;
@@ -342,7 +354,7 @@
     // addJavaScript läuft vor addOnLoadCode — beim ersten DOMContentLoaded noch nicht verfügbar.
     function waitForConfig(retries) {
         var cfg = window.ExamResourceSheet && window.ExamResourceSheet.config;
-        if (cfg && cfg.enabled && cfg.fileUrl) { buildUI(cfg); return; }
+        if (cfg && cfg.enabled && (cfg.fileUrl || cfg.contentHtml)) { buildUI(cfg); return; }
         if (retries > 0) setTimeout(function () { waitForConfig(retries - 1); }, 100);
     }
 

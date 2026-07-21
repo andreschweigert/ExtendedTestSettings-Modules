@@ -44,10 +44,42 @@ if (!$db->tableExists('examressheet_settings')) {
             'length'  => 8,
             'notnull' => false,
         ],
+        'source_mode' => [
+            'type'    => 'text',
+            'length'  => 10,
+            'notnull' => false,
+            'default' => 'file',
+        ],
+        'content_text' => [
+            'type'    => 'clob',
+            'notnull' => false,
+        ],
         'updated_at' => [
             'type'    => 'timestamp',
             'notnull' => false,
         ],
     ]);
     $db->addPrimaryKey('examressheet_settings', ['test_id']);
+}
+
+if (
+    $db->tableExists('examressheet_settings')
+    && !$db->tableColumnExists('examressheet_settings', 'source_mode')
+) {
+    $db->addTableColumn('examressheet_settings', 'source_mode', [
+        'type'    => 'text',
+        'length'  => 10,
+        'notnull' => false,
+        'default' => 'file',
+    ]);
+}
+
+if (
+    $db->tableExists('examressheet_settings')
+    && !$db->tableColumnExists('examressheet_settings', 'content_text')
+) {
+    $db->addTableColumn('examressheet_settings', 'content_text', [
+        'type'    => 'clob',
+        'notnull' => false,
+    ]);
 }

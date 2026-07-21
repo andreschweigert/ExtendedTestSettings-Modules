@@ -2,16 +2,18 @@
 
 **Modul-ID:** `examresourcesheet`  
 **Speicherort:** `modules/examresourcesheet/` (externes Modul, nicht im Git-Repo)  
-**Referenz-ZIP:** `modules-zip/modules/examresourcesheet/ExamResourceSheet_v1.2.1.zip`  
+**Referenz-ZIP:** `modules-zip/modules/examresourcesheet/ExamResourceSheet_v1.3.0.zip`  
 **ILIAS-Kompatibilität:** 9  
-**Zuletzt aktualisiert:** 2026-06-02
+**Zuletzt aktualisiert:** 2026-07-21
 
 ---
 
 ## Was ist ExamResourceSheet?
 
-Stellt Prüfungsteilnehmern während eines ILIAS-Tests ein vom Dozenten hochgeladenes
-**Hilfsmittelblatt** (PDF oder HTML, max. 10 MB) als seitliches Fixed-Panel bereit.
+Stellt Prüfungsteilnehmern während eines ILIAS-Tests ein **Hilfsmittelblatt** als
+seitliches Fixed-Panel bereit — entweder eine vom Dozenten hochgeladene Datei
+(PDF oder HTML, max. 10 MB) oder ab 1.3.0 alternativ ein direkt im Formular
+eingegebener Text (Whitelist `strong`/`b`/`i`/`u`/`br`).
 Ein linker Edge-Tab öffnet ein Panel, das von links ins Bild einfährt und die Seite nach
 rechts schiebt (Push-Modus). PDFs werden über PDF.js gerendert — kein nativer Browser-Viewer,
 kein Download-Button. Text im PDF ist markier- und kopierbar (PDF.js Text-Layer).
@@ -73,7 +75,7 @@ classes/class.ilExtendedTestSettingsModuleProxyGUI.php
     "id": "examresourcesheet",
     "label": "Hilfsmittelblatt",
     "description": "Stellt Studierenden ein vom Dozenten hochgeladenes Hilfsmittelblatt (PDF/HTML) als Overlay im Test-Player bereit.",
-    "version": "1.2.1",
+    "version": "1.3.0",
     "ilias_min": "9",
     "ilias_max": "9",
     "handler_class": "ilExamResourceSheetHandler",
@@ -103,6 +105,8 @@ Speichert Konfiguration und Datei-Metadaten je Test. Primärschlüssel ist `test
 | `stored_name` | text(255) | Physischer Dateiname `{test_id}_{token}.{ext}`, nullable |
 | `mimetype` | text(100) | `application/pdf` oder `text/html`, nullable |
 | `filesize` | integer(8) | Dateigröße in Bytes, nullable |
+| `source_mode` | text(10) | `file` (Default) oder `text` — Quelle für den Player (ab 1.3.0) |
+| `content_text` | clob | Eigener Text-Inhalt, roh gespeichert; Sanitizing erst bei Ausgabe (ab 1.3.0) |
 | `updated_at` | timestamp | Letzter Speicherzeitpunkt, nullable |
 
 Schreiben via **explizitem** `$db->insert()` (Ersteintrag) bzw. `$db->update()` (Folge-
@@ -135,23 +139,30 @@ Implementiert `ilExamModuleInterface`.
 ```
 isEnabled(ref_id)         → liest examressheet_settings.enabled; false bei fehlendem Eintrag
 injectAssets(tpl, ref_id) → nur wenn isEnabled() && isTestPlayerContext();
-                            Token aus stored_name extrahieren → file_url aufbauen
+                            source_mode='text': content_text via formatTextContent() sanitisieren,
+                            config {mode:'text', contentHtml} — kein PDF.js, kein fetch
+                            source_mode='file': Token aus stored_name → file_url (buildFileUrl)
                             examresourcesheet.css + pdf.min.js (bei PDF) + examresourcesheet.js injizieren
                             window.ExamResourceSheet.config als JSON via addOnLoadCode setzen
-saveSettings(ref_id, post)→ Checkbox/Label aus $_POST (multipart-Fallback)
+saveSettings(ref_id, post)→ Checkbox/Label/Quelle/Text/Lösch-Checkbox aus $_POST (multipart-Fallback)
                             Upload aus $_FILES: MIME-Check via finfo + Extension-Whitelist
+                            delete_file (ohne neuen Upload): Datei unlink + Datei-Spalten NULL
                             INSERT wenn kein Eintrag, UPDATE sonst
-getFormItems(ref_id)       → [$checkbox_mit_label_subitem, $fileInput] — zwei Top-Level-Items
+getFormItems(ref_id)       → [$checkbox, $fileInput] — Checkbox enthält label + Radio „Quelle"
+                            (Option Datei: aktuelle Datei als Link + Entfernen-Checkbox;
+                             Option Text: Textarea, max. 20.000 Zeichen)
 getInfo()                  → title, icon, description, version, ilias_min, ilias_max, features-Array
 ```
 
 ### Nicht-Interface-Methoden
 
 ```
-ensureTableExists()          → Konstruktor-Aufruf; legt Tabelle an wenn nicht vorhanden
-                               (notwendig bei manuellem Ablegen ohne ZIP-Installer)
+ensureTableExists()          → Konstruktor-Aufruf; legt Tabelle an bzw. führt install.php
+                               erneut aus, wenn Spalte content_text fehlt (Upgrade-Guard)
 loadSettings(ref_id)         → SELECT * für Formular-Befüllung
 getStorageDir()              → {CLIENT_DATA_DIR}/plugins/ExtendedTestSettings/resourcesheets/
+buildFileUrl(ref_id, row)    → Token-geschützte serveResourceFile-URL aus stored_name
+formatTextContent(raw)       → htmlspecialchars + Whitelist strong/b/i/u/br + nl2br (Muster examalert)
 detectMimeType(tmp_path)     → finfo_file(); Fallback: Magic-Bytes (%PDF)
 isTestPlayerContext()        → prüft cmdClass (iltestplayer*) + URL-Pattern
 ```
@@ -305,6 +316,7 @@ Gleiche Dateien ersetzen. Die DB-Tabelle `examressheet_settings` bleibt unverän
 
 | Datum | Version | Was |
 |---|---|---|
+| 2026-07-21 | 1.3.0 | Quelle wählbar (Radio): Datei-Upload **oder** eigener Text (`source_mode`, `content_text`; Whitelist `strong`/`b`/`i`/`u`/`br`, serverseitig via `formatTextContent()`); aktuelle Datei im Formular als Link (nur bei `enabled=1`, da `serveResourceFile` sonst 404) + Entfernen-Checkbox; `ensureTableExists()` mit Spalten-Upgrade-Guard |
 | 2026-06-02 | 1.2.1 | **Sicherheitsfix:** HTML-Hilfsmittelblätter werden in einem `sandbox`-iframe (kein `allow-scripts`) geladen — verhindert Same-Origin-JS-Ausführung aus hochgeladenem HTML in der Nutzer-Session |
 | 2026-06-01 | 1.2.0 | Sprachdateien DE/EN (i18n) über `ilModuleLanguage`; Texte in getFormItems/getInfo übersetzt |
 | 2026-05-12 | 1.1.0 | PDF.js-Rendering (kein nativer Viewer), Text-Layer (Markieren/Kopieren), linker Edge-Tab, Push-Modus (body margin-left), Drag-Resize + [−]/[+]-Buttons, SessionStorage-State, ILIAS 9-only |

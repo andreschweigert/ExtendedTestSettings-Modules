@@ -1,7 +1,7 @@
 <?php
 
 /**
- * ExamResourceSheet Handler - Hilfsmittelblatt (PDF/HTML) im Test-Player
+ * ExamResourceSheet Handler - Hilfsmittelblatt (PDF/HTML/Text) im Test-Player
  * Part of ExtendedTestSettings Plugin
  */
 class ilExamResourceSheetHandler implements ilExamModuleInterface
@@ -9,6 +9,7 @@ class ilExamResourceSheetHandler implements ilExamModuleInterface
     private string $plugin_path;
 
     private const MAX_FILESIZE = 10 * 1024 * 1024; // 10 MB
+    private const MAX_TEXTLEN = 20000;
     private const ALLOWED_MIMETYPES = ['application/pdf', 'text/html'];
     private const ALLOWED_EXTENSIONS = ['pdf', 'html', 'htm'];
     private const TABLE = 'examressheet_settings';
@@ -98,7 +99,7 @@ class ilExamResourceSheetHandler implements ilExamModuleInterface
             $test_id = ilObject::_lookupObjectId($ref_id);
 
             $result = $db->queryF(
-                "SELECT label, filename, stored_name, mimetype FROM " . self::TABLE .
+                "SELECT label, filename, stored_name, mimetype, source_mode, content_text FROM " . self::TABLE .
                 " WHERE test_id = %s AND enabled = 1",
                 ['integer'],
                 [$test_id]
@@ -106,28 +107,49 @@ class ilExamResourceSheetHandler implements ilExamModuleInterface
 
             $row = $db->fetchAssoc($result);
 
-            if (!$row || empty($row['stored_name'])) {
+            if (!$row) {
                 return;
             }
 
-            // Token aus stored_name extrahieren: "{test_id}_{token}.{ext}"
-            $basename       = pathinfo($row['stored_name'], PATHINFO_FILENAME); // "{test_id}_{token}"
-            $underscore_pos = strpos($basename, '_');
-            if ($underscore_pos === false) {
+            $mode = (($row['source_mode'] ?? 'file') === 'text') ? 'text' : 'file';
+
+            if ($mode === 'text') {
+                $content = trim((string) ($row['content_text'] ?? ''));
+                if ($content === '') {
+                    return;
+                }
+
+                $config = [
+                    'enabled'     => true,
+                    'label'       => $row['label'] ?: 'Hilfsmittel',
+                    'mode'        => 'text',
+                    'contentHtml' => $this->formatTextContent($content),
+                ];
+
+                $tpl->addCss($this->plugin_path . '/modules/examresourcesheet/css/examresourcesheet.css');
+                $tpl->addJavaScript($this->plugin_path . '/modules/examresourcesheet/js/examresourcesheet.js');
+
+                $config_json = json_encode($config, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+                $tpl->addOnLoadCode(
+                    "window.ExamResourceSheet = window.ExamResourceSheet || {};" .
+                    "window.ExamResourceSheet.config = $config_json;"
+                );
                 return;
             }
-            $token = substr($basename, $underscore_pos + 1); // 32-char hex
 
-            $file_url = ILIAS_HTTP_PATH . '/ilias.php'
-                . '?baseClass=ilUIPluginRouterGUI'
-                . '&cmdClass=ilextendedtestsettingsmoduleproxygui'
-                . '&cmd=serveResourceFile'
-                . '&ref_id=' . $ref_id
-                . '&token=' . urlencode($token);
+            if (empty($row['stored_name'])) {
+                return;
+            }
+
+            $file_url = $this->buildFileUrl($ref_id, $row);
+            if ($file_url === null) {
+                return;
+            }
 
             $config = [
                 'enabled'      => true,
                 'label'        => $row['label'] ?: 'Hilfsmittel',
+                'mode'         => 'file',
                 'mimetype'     => $row['mimetype'],
                 'filename'     => $row['filename'],
                 'fileUrl'      => $file_url,
@@ -192,6 +214,24 @@ class ilExamResourceSheetHandler implements ilExamModuleInterface
             if (mb_strlen($label) > 100) {
                 $label = mb_substr($label, 0, 100);
             }
+
+            $source_raw = $post_data['examresourcesheet_source']
+                ?? $_POST['examresourcesheet_source']
+                ?? 'file';
+            $source = ($source_raw === 'text') ? 'text' : 'file';
+
+            $text_raw = $post_data['examresourcesheet_text']
+                ?? $_POST['examresourcesheet_text']
+                ?? '';
+            $content_text = trim((string) $text_raw);
+            if (mb_strlen($content_text) > self::MAX_TEXTLEN) {
+                $content_text = mb_substr($content_text, 0, self::MAX_TEXTLEN);
+            }
+
+            $delete_raw = $post_data['examresourcesheet_delete_file']
+                ?? $_POST['examresourcesheet_delete_file']
+                ?? null;
+            $delete_file = ($delete_raw !== null && $delete_raw !== '' && $delete_raw !== '0');
 
             // Bestehende Einstellungen laden (für alten Dateinamen)
             $result   = $db->queryF(
@@ -261,6 +301,16 @@ class ilExamResourceSheetHandler implements ilExamModuleInterface
                 }
             }
 
+            // Datei entfernen (nur wenn kein neuer Upload dieselbe Speicherung gewinnt)
+            $file_removed = false;
+            if ($delete_file && !$new_file && !empty($existing['stored_name'])) {
+                $old_file = $this->getStorageDir() . $existing['stored_name'];
+                if (is_file($old_file)) {
+                    @unlink($old_file);
+                }
+                $file_removed = true;
+            }
+
             // Speichern: INSERT wenn neu, UPDATE wenn bereits vorhanden.
             // NICHT db->replace() verwenden — das ist REPLACE INTO (DELETE+INSERT)
             // und würde filename/stored_name auf NULL setzen wenn kein Upload.
@@ -269,10 +319,12 @@ class ilExamResourceSheetHandler implements ilExamModuleInterface
             if ($existing === false || $existing === null) {
                 // Erster Speichervorgang: INSERT
                 $insert_data = [
-                    'test_id'    => ['integer',   $test_id],
-                    'enabled'    => ['integer',   $enabled],
-                    'label'      => ['text',       $label],
-                    'updated_at' => ['timestamp',  $now],
+                    'test_id'      => ['integer',   $test_id],
+                    'enabled'      => ['integer',   $enabled],
+                    'label'        => ['text',       $label],
+                    'source_mode'  => ['text',       $source],
+                    'content_text' => ['clob',       $content_text],
+                    'updated_at'   => ['timestamp',  $now],
                 ];
                 if ($new_file) {
                     $insert_data['filename']    = ['text',    $filename_new];
@@ -284,15 +336,22 @@ class ilExamResourceSheetHandler implements ilExamModuleInterface
             } else {
                 // Folgespeicherungen: UPDATE — nur geänderte Felder anfassen
                 $update_data = [
-                    'enabled'    => ['integer',   $enabled],
-                    'label'      => ['text',       $label],
-                    'updated_at' => ['timestamp',  $now],
+                    'enabled'      => ['integer',   $enabled],
+                    'label'        => ['text',       $label],
+                    'source_mode'  => ['text',       $source],
+                    'content_text' => ['clob',       $content_text],
+                    'updated_at'   => ['timestamp',  $now],
                 ];
                 if ($new_file) {
                     $update_data['filename']    = ['text',    $filename_new];
                     $update_data['stored_name'] = ['text',    $stored_name_new];
                     $update_data['mimetype']    = ['text',    $mimetype_new];
                     $update_data['filesize']    = ['integer', $filesize_new];
+                } elseif ($file_removed) {
+                    $update_data['filename']    = ['text',    null];
+                    $update_data['stored_name'] = ['text',    null];
+                    $update_data['mimetype']    = ['text',    null];
+                    $update_data['filesize']    = ['integer', null];
                 }
                 $db->update(
                     self::TABLE,
@@ -323,13 +382,42 @@ class ilExamResourceSheetHandler implements ilExamModuleInterface
         $label_field->setInfo($this->lng->txt('label_field_info'));
         $cb->addSubItem($label_field);
 
-        // Aktuellen Dateinamen anzeigen wenn vorhanden
+        // Quelle: hochgeladene Datei ODER eigener Text
+        $source = new ilRadioGroupInputGUI($this->lng->txt('source_select'), 'examresourcesheet_source');
+        $source->setValue((($row['source_mode'] ?? 'file') === 'text') ? 'text' : 'file');
+
+        $opt_file = new ilRadioOption($this->lng->txt('source_file'), 'file');
+
+        // Aktuelle Datei anzeigen: als Link (öffnet im neuen Tab) wenn das Modul
+        // aktiviert ist — serveResourceFile liefert nur bei enabled=1 aus.
         if (!empty($row['filename'])) {
-            $size_kb    = isset($row['filesize']) ? round((int) $row['filesize'] / 1024) : '?';
-            $info_field = new ilNonEditableValueGUI($this->lng->txt('current_file'), '');
-            $info_field->setValue(htmlspecialchars($row['filename'], ENT_QUOTES) . ' (' . $size_kb . ' KB)');
-            $cb->addSubItem($info_field);
+            $size_kb = isset($row['filesize']) ? round((int) $row['filesize'] / 1024) : '?';
+            $display = htmlspecialchars($row['filename'], ENT_QUOTES) . ' (' . $size_kb . ' KB)';
+            $file_url = $this->buildFileUrl($ref_id, $row);
+            if ($file_url !== null && !empty($row['enabled'])) {
+                $display = '<a href="' . htmlspecialchars($file_url, ENT_QUOTES) . '" target="_blank" rel="noopener">'
+                    . $display . '</a>';
+            }
+            $info_field = new ilNonEditableValueGUI($this->lng->txt('current_file'), '', true);
+            $info_field->setValue($display);
+            $opt_file->addSubItem($info_field);
+
+            $del = new ilCheckboxInputGUI($this->lng->txt('delete_file'), 'examresourcesheet_delete_file');
+            $del->setInfo($this->lng->txt('delete_file_info'));
+            $opt_file->addSubItem($del);
         }
+
+        $opt_text = new ilRadioOption($this->lng->txt('source_text'), 'text');
+
+        $text_area = new ilTextAreaInputGUI($this->lng->txt('text_field'), 'examresourcesheet_text');
+        $text_area->setValue((string) ($row['content_text'] ?? ''));
+        $text_area->setRows(10);
+        $text_area->setInfo($this->lng->txt('text_field_info'));
+        $opt_text->addSubItem($text_area);
+
+        $source->addOption($opt_file);
+        $source->addOption($opt_text);
+        $cb->addSubItem($source);
 
         // Datei-Upload als eigenes top-level Item zurückgeben,
         // damit ilPropertyFormGUI enctype="multipart/form-data" setzt.
@@ -350,13 +438,15 @@ class ilExamResourceSheetHandler implements ilExamModuleInterface
             'title'       => $this->lng->txt('title'),
             'icon'        => '',
             'description' => $this->lng->txt('description'),
-            'version'     => '1.2.1',
+            'version'     => '1.3.0',
             'ilias_min'   => '9',
             'ilias_max'   => '9',
             'features'    => [
                 'PDF- und HTML-Dokumente',
+                'Alternativ: eigener Text mit einfacher Formatierung (strong/b/i/u/br)',
                 'Overlay-Panel im Test-Player (rechts ausklappbar)',
                 'Konfigurierbarer Button-Label',
+                'Hochgeladene Datei in den Einstellungen einsehbar und entfernbar',
                 'Sichere Dateiablage außerhalb des Web-Roots',
                 'Zugriffsschutz via Token-URL (nur aktive Test-Sessions)',
                 'HTML-Anzeige in sandboxed iframe (keine JS-Ausführung)',
@@ -378,18 +468,63 @@ class ilExamResourceSheetHandler implements ilExamModuleInterface
         global $DIC;
         try {
             $db = $DIC->database();
-            if (!$db->tableExists(self::TABLE)) {
+            if (
+                !$db->tableExists(self::TABLE)
+                || !$db->tableColumnExists(self::TABLE, 'content_text')
+            ) {
                 $install_file = __DIR__ . '/sql/install.php';
                 if (file_exists($install_file)) {
                     (function () use ($install_file, $db): void {
                         require $install_file;
                     })();
-                    error_log("[ExamResourceSheet] Tabelle " . self::TABLE . " automatisch angelegt.");
+                    error_log("[ExamResourceSheet] Tabelle " . self::TABLE . " automatisch angelegt/aktualisiert.");
                 }
             }
         } catch (Throwable $e) {
             error_log("[ExamResourceSheet] ensureTableExists Fehler: " . $e->getMessage());
         }
+    }
+
+    /**
+     * Token-geschützte Auslieferungs-URL der aktuellen Datei
+     * (stored_name-Format: "{test_id}_{token}.{ext}").
+     */
+    private function buildFileUrl(int $ref_id, array $row): ?string
+    {
+        if (empty($row['stored_name'])) {
+            return null;
+        }
+
+        $basename       = pathinfo($row['stored_name'], PATHINFO_FILENAME);
+        $underscore_pos = strpos($basename, '_');
+        if ($underscore_pos === false) {
+            return null;
+        }
+        $token = substr($basename, $underscore_pos + 1); // 32-char hex
+
+        return ILIAS_HTTP_PATH . '/ilias.php'
+            . '?baseClass=ilUIPluginRouterGUI'
+            . '&cmdClass=ilextendedtestsettingsmoduleproxygui'
+            . '&cmd=serveResourceFile'
+            . '&ref_id=' . $ref_id
+            . '&token=' . urlencode($token);
+    }
+
+    /**
+     * Text-Inhalt für die Anzeige aufbereiten: alles escapen, danach nur die
+     * Whitelist-Tags strong/b/i/u/br wiederherstellen (Muster examalert).
+     */
+    private function formatTextContent(string $raw): string
+    {
+        $escaped = htmlspecialchars($raw, ENT_QUOTES, 'UTF-8');
+
+        foreach (['strong', 'b', 'i', 'u'] as $tag) {
+            $escaped = preg_replace('/&lt;' . $tag . '&gt;/i', '<' . $tag . '>', $escaped);
+            $escaped = preg_replace('/&lt;\/' . $tag . '&gt;/i', '</' . $tag . '>', $escaped);
+        }
+        $escaped = preg_replace('/&lt;br\s*\/?&gt;/i', '<br />', $escaped);
+
+        return nl2br($escaped);
     }
 
     private function loadSettings(int $ref_id): array
