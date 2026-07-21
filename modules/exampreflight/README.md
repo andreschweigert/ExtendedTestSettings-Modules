@@ -1,6 +1,6 @@
 # ExamPreflight — Preflight-Durchlauf
 
-> **Entwicklungsstand:** Im Test
+![Entwicklungsstand: Im Test](https://img.shields.io/badge/Entwicklungsstand-Im%20Test-blue)
 
 Geführter Probedurchlauf durch einen ILIAS-Test **vor** der Prüfung: prüft pro Frage
 automatisch, ob alles korrekt gerendert wird, und erstellt Screenshots für einen

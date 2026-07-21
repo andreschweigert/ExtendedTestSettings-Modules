@@ -4,8 +4,18 @@ Jedes Modul trägt in seiner `module.json` das Feld `"maturity"` mit dem
 Entwicklungsstand. Das Feld steht in der Repo-Kopie
 (`modules/<id>/module.json`) und im Quellordner; in die Release-ZIPs wandert
 es mit dem jeweils nächsten regulären Release (kein eigener Versions-Bump nur
-für dieses Feld). Zusätzlich zeigt jede Modul-README den Stand als Zeile
-`> **Entwicklungsstand:** …` direkt unter der Überschrift.
+für dieses Feld). Zusätzlich zeigt jede Modul-README den Stand als shields.io-Badge
+direkt unter der Überschrift, und die Modul-Tabelle in der Repo-README hat eine
+„Stand"-Spalte mit Kurz-Badges:
+
+```markdown
+![Entwicklungsstand: Im Test](https://img.shields.io/badge/Entwicklungsstand-Im%20Test-blue)
+```
+
+Badge-Farben: konzept `lightgrey`, experimentell `orange`, entwicklung `yellow`,
+test `blue`, pilot `blueviolet`, erprobt `brightgreen`, eingestellt `red`.
+(Umlaute URL-encodieren, z. B. `Pr%C3%BCfungserprobt`; Kurz-Badge ohne Präfix:
+`badge/Im%20Test-blue`.)
 
 ## Stufen
 

@@ -1,6 +1,6 @@
 # ExamConnGuard
 
-> **Entwicklungsstand:** Experimentell
+![Entwicklungsstand: Experimentell](https://img.shields.io/badge/Entwicklungsstand-Experimentell-orange)
 
 Externes Modul für das ILIAS-Plugin **ExtendedTestSettings**.
 

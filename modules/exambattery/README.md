@@ -1,6 +1,6 @@
 # ExamBattery
 
-> **Entwicklungsstand:** Im Test
+![Entwicklungsstand: Im Test](https://img.shields.io/badge/Entwicklungsstand-Im%20Test-blue)
 
 Externes Modul für das ILIAS-Plugin **ExtendedTestSettings**.
 
