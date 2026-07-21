@@ -1,5 +1,7 @@
 # ExamChecker
 
+> **Entwicklungsstand:** In Entwicklung
+
 Externes Modul für das ILIAS-Plugin **ExtendedTestSettings**.
 
 Prüft die Einstellungen eines ILIAS-Tests gegen definierte **Prüfungsstandards** — separat für Präsenz- und Fernprüfungen. In den Test-Einstellungen erscheint ein Check-Button; das Ergebnis listet korrekte und abweichende Einstellungen farbkodiert auf, inkl. Warnung bei vorhandenen Vorbedingungen.

@@ -1,5 +1,7 @@
 # ExamSymbols
 
+> **Entwicklungsstand:** Prüfungserprobt
+
 Externes Modul für das ILIAS-Plugin **ExtendedTestSettings**.
 
 Stellt während einer Prüfung eine **klickbare Sonderzeichen-Palette** als schwebendes Overlay zur Verfügung (Shortcut: `Alt + S`). Zeichen werden in das aktuell fokussierte Eingabefeld eingefügt — inkl. Rich-Text-Editoren (TinyMCE, CKEditor).

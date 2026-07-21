@@ -1,5 +1,7 @@
 # ExamNetQos
 
+> **Entwicklungsstand:** Experimentell
+
 Externes Modul für das ILIAS-Plugin **ExtendedTestSettings**.
 
 Misst **Latenz (RTT) und Paketverlust** clientseitig im Hintergrund während der Prüfung —

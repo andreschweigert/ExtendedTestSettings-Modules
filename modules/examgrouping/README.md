@@ -1,5 +1,7 @@
 # ExamGrouping
 
+> **Entwicklungsstand:** Pilotbetrieb
+
 Externes Modul für das ILIAS-Plugin **ExtendedTestSettings**.
 
 Erlaubt es, die Fragen eines Tests zu **benannten Gruppen** (z.B. "Grundlagen", "Anwendung") zusammenzufassen und die Punkte je Gruppe aus den Testergebnissen auszuwerten. Für jede Gruppe ist ein Bestehensschwellenwert konfigurierbar (Prozent oder absolute Punkte).

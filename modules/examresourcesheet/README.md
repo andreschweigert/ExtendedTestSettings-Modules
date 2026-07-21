@@ -1,5 +1,7 @@
 # ExamResourceSheet — Hilfsmittelblatt
 
+> **Entwicklungsstand:** Im Test
+
 Externes Modul für das ILIAS-Plugin **ExtendedTestSettings**.
 
 Dozenten laden ein **Hilfsmittelblatt** (PDF oder HTML, max. 10 MB) in den Test-Einstellungen hoch — oder geben alternativ **eigenen Text** direkt im Formular ein (einfache Formatierung mit `strong`/`b`/`i`/`u`/`br`). Während der Prüfung erscheint ein **linker Edge-Tab** im Test-Player, über den Studierende den Inhalt in einem einschiebbaren Panel öffnen können. Das Panel schiebt die ILIAS-Seite nach rechts (Push-Modus). PDFs werden über PDF.js gerendert — kein nativer Browser-Viewer, kein Download-Button. Text im PDF ist markier- und kopierbar.

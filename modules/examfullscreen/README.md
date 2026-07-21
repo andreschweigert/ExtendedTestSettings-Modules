@@ -1,5 +1,7 @@
 # ExamFullscreen
 
+> **Entwicklungsstand:** Experimentell
+
 Externes Modul für das ILIAS-Plugin **ExtendedTestSettings**.
 
 Fordert Prüfungsteilnehmer beim Teststart auf, den **Browser-Vollbild-Modus** (F11 bzw. Ctrl+Cmd+F auf Mac) zu aktivieren. Überwacht während der Prüfung, ob der Vollbild-Modus verlassen wird, und reagiert mit einer **Warnung** oder **Sperrung** des Tests.

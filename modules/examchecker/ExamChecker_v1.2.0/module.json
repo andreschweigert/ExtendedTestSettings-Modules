@@ -3,6 +3,7 @@
     "label": "Prüfungs-Checker",
     "description": "Überprüft Test-Einstellungen gegen definierte Standards für Präsenz- und Fernprüfungen.",
     "version": "1.2.0",
+    "maturity": "entwicklung",
     "ilias_min": "9",
     "ilias_max": "9",
     "handler_class": "ilExamCheckerHandler",

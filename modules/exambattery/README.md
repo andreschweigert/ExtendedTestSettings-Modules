@@ -1,5 +1,7 @@
 # ExamBattery
 
+> **Entwicklungsstand:** Im Test
+
 Externes Modul für das ILIAS-Plugin **ExtendedTestSettings**.
 
 **Stiller Akku-Monitor für Prüfungsgeräte:** meldet Akkustände der Geräte im Testplayer

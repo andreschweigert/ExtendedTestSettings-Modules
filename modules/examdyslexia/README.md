@@ -1,5 +1,7 @@
 # ExamDyslexia
 
+> **Entwicklungsstand:** Experimentell
+
 Externes Modul für das ILIAS-Plugin **ExtendedTestSettings**.
 
 Bietet einen **Legasthenie-freundlichen Lesemodus** im ILIAS Test-Player. Studierende können den Modus per Toggle-Button selbst aktivieren oder deaktivieren. Dozenten konfigurieren, welche Optionen erlaubt sind.

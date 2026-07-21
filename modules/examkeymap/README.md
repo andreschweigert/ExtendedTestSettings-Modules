@@ -1,5 +1,7 @@
 # ExamKeymap
 
+> **Entwicklungsstand:** Experimentell
+
 Externes Modul für das ILIAS-Plugin **ExtendedTestSettings**.
 
 Stellt im Testplayer ein **virtuelles Tastatur-Layout (DE/EN)** bereit — für Prüfungen auf ChromeOS-Geräten im Kioskmodus, wo die Eingabesprache weder angezeigt noch umgestellt werden kann. Ein kleiner, fixierter Button unten rechts rotiert durch drei Zustände: **OS → DE → EN → OS**. Ist DE oder EN aktiv, fängt das Skript Tastendrücke ab und schreibt sie anhand der **physischen Taste** (`KeyboardEvent.code`, layoutunabhängig) in das gewählte Layout um — inklusive y/z-Tausch, Shift-Belegung der Ziffernreihe, Umlauten (ä ö ü ß) und AltGr-Kombinationen (@ € { } [ ] \ ~ | µ ² ³).

@@ -1,5 +1,7 @@
 # ExamCalc
 
+> **Entwicklungsstand:** Prüfungserprobt
+
 Externes Modul für das ILIAS-Plugin **ExtendedTestSettings**.
 
 Stellt während einer Prüfung einen **Taschenrechner** als schwebendes Overlay zur Verfügung (Shortcut: `Alt + R`). Zwei Modi:

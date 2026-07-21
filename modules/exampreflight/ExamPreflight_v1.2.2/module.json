@@ -3,6 +3,7 @@
     "label": "Preflight-Durchlauf",
     "description": "Geführter Probedurchlauf durch den Test: prüft pro Frage automatisch Bilder, Videos, Formeln und Layout auf Anomalien und erstellt Screenshots für einen Prüfbericht.",
     "version": "1.2.2",
+    "maturity": "pilot",
     "ilias_min": "9",
     "ilias_max": "9",
     "handler_class": "ilExamPreflightHandler",

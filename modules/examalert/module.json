@@ -3,6 +3,7 @@
     "label": "Zeit-Warnung",
     "description": "Zeigt eine Warnung an wenn die Prüfungszeit fast abgelaufen ist.",
     "version": "1.2.1",
+    "maturity": "erprobt",
     "ilias_min": "9",
     "ilias_max": "9",
     "handler_class": "ilExamAlertHandler",
