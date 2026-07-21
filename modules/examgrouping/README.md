@@ -1,6 +1,6 @@
 # ExamGrouping
 
-> **Entwicklungsstand:** Pilotbetrieb
+![Entwicklungsstand: Pilotbetrieb](https://img.shields.io/badge/Entwicklungsstand-Pilotbetrieb-blueviolet)
 
 Externes Modul für das ILIAS-Plugin **ExtendedTestSettings**.
 

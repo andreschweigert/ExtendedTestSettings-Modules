@@ -1,6 +1,6 @@
 # ExamArchiver — Prüfungs-Archivierung
 
-> **Entwicklungsstand:** Experimentell
+![Entwicklungsstand: Experimentell](https://img.shields.io/badge/Entwicklungsstand-Experimentell-orange)
 
 **Modul-ID:** `examarchiver` · **Aktuelle Version:** 1.0.0 · **ILIAS:** 9
 

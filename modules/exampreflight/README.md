@@ -1,6 +1,6 @@
 # ExamPreflight — Preflight-Durchlauf
 
-> **Entwicklungsstand:** Pilotbetrieb
+![Entwicklungsstand: Pilotbetrieb](https://img.shields.io/badge/Entwicklungsstand-Pilotbetrieb-blueviolet)
 
 Geführter Probedurchlauf durch einen ILIAS-Test **vor** der Prüfung: prüft pro Frage
 automatisch, ob alles korrekt gerendert wird, und erstellt Screenshots für einen

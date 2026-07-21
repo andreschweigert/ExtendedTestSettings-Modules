@@ -1,6 +1,6 @@
 # ExamChecker
 
-> **Entwicklungsstand:** In Entwicklung
+![Entwicklungsstand: In Entwicklung](https://img.shields.io/badge/Entwicklungsstand-In%20Entwicklung-yellow)
 
 Externes Modul für das ILIAS-Plugin **ExtendedTestSettings**.
 

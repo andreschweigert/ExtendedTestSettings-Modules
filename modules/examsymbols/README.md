@@ -1,6 +1,6 @@
 # ExamSymbols
 
-> **Entwicklungsstand:** Prüfungserprobt
+![Entwicklungsstand: Prüfungserprobt](https://img.shields.io/badge/Entwicklungsstand-Pr%C3%BCfungserprobt-brightgreen)
 
 Externes Modul für das ILIAS-Plugin **ExtendedTestSettings**.
 
