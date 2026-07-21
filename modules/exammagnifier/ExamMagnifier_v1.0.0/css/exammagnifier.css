@@ -1,0 +1,153 @@
+/**
+ * exammagnifier.css - Bildschirmlupe für ExtendedTestSettings
+ * Toolbar unten links (oben rechts: examdyslexia, unten rechts: examcalc/examsymbols)
+ * Zoom: JS setzt transform/transform-origin direkt auf <body>;
+ * eigene UI (.exammagnifier-ui) hängt unter <html> und bleibt unskaliert.
+ */
+
+/* ============================================
+   VOLLBILD-ZOOM
+   ============================================ */
+
+/* Horizontaler Überhang des skalierten Body erzeugt sonst springende
+   Scrollbalken — horizontal wird per Maus geschwenkt, nicht gescrollt */
+html.exammagnifier-zoomed {
+    overflow-x: hidden;
+    background: #ffffff;
+}
+
+/* ============================================
+   FARBINVERTIERUNG
+   Klassischer Root-Filter (wie Dark-Mode-Hack): invertiert die ganze
+   Seite; Medien und die eigene UI werden zurück-invertiert.
+   ============================================ */
+
+html.exammagnifier-inverted {
+    filter: invert(1) hue-rotate(180deg);
+    background: #ffffff; /* wird durch den Filter zu Schwarz */
+}
+
+html.exammagnifier-inverted img,
+html.exammagnifier-inverted video,
+html.exammagnifier-inverted canvas,
+html.exammagnifier-inverted picture,
+html.exammagnifier-inverted #exammagnifier-cursor,
+html.exammagnifier-inverted #exammagnifier-ring {
+    filter: invert(1) hue-rotate(180deg);
+}
+
+/* ============================================
+   TOOLBAR (unten links)
+   ============================================ */
+
+#exammagnifier-toolbar {
+    position: fixed !important;
+    bottom: 20px !important;
+    left: 20px !important;
+    z-index: 99980;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px;
+    background: #ffffff;
+    border: 1px solid #b8c2d0;
+    border-radius: 10px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
+    font-family: Arial, sans-serif;
+}
+
+.exammagnifier-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.exammagnifier-btn {
+    min-width: 40px;
+    min-height: 40px;
+    padding: 4px 10px;
+    font-size: 18px;
+    line-height: 1;
+    border: 1px solid #b8c2d0;
+    border-radius: 8px;
+    background: #f2f5f9;
+    color: #1c2733;
+    cursor: pointer;
+}
+
+.exammagnifier-btn:hover {
+    background: #e3eaf3;
+    border-color: #2456a6;
+}
+
+.exammagnifier-btn:focus-visible {
+    outline: 3px solid #2456a6;
+    outline-offset: 2px;
+}
+
+.exammagnifier-btn.exammagnifier-on {
+    background: #2456a6;
+    border-color: #2456a6;
+    color: #ffffff;
+}
+
+.exammagnifier-zoomval {
+    min-width: 58px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: bold;
+    font-variant-numeric: tabular-nums;
+    color: #1c2733;
+}
+
+/* ============================================
+   GROSSER MAUSZEIGER + KLICK-HERVORHEBUNG
+   ============================================ */
+
+/* Echten Zeiger ausblenden, Overlay übernimmt */
+html.exammagnifier-bigcursor,
+html.exammagnifier-bigcursor body,
+html.exammagnifier-bigcursor body * {
+    cursor: none !important;
+}
+
+/* Toolbar bleibt mit normalem Zeiger bedienbar (sonst Blindflug beim Umschalten) */
+html.exammagnifier-bigcursor #exammagnifier-toolbar,
+html.exammagnifier-bigcursor #exammagnifier-toolbar * {
+    cursor: pointer !important;
+}
+
+#exammagnifier-cursor {
+    position: fixed;
+    z-index: 99999;
+    pointer-events: none;
+    display: none;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
+}
+
+#exammagnifier-ring {
+    position: fixed;
+    width: 70px;
+    height: 70px;
+    border: 4px solid #ffd21e;
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 99998;
+}
+
+@keyframes exammagnifier-ringpulse {
+    0%   { opacity: 0.9; transform: scale(0.4); }
+    100% { opacity: 0;   transform: scale(1.15); }
+}
+
+#exammagnifier-ring.exammagnifier-pulse {
+    animation: exammagnifier-ringpulse 0.5s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #exammagnifier-ring.exammagnifier-pulse {
+        animation: none;
+        opacity: 0;
+    }
+}

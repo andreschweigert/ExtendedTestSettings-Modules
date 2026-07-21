@@ -1,0 +1,26 @@
+<!-- language file start -->
+title#:#Screen Magnifier
+description#:#Screen magnifier with full-screen zoom up to 1600%, color inversion and a large mouse pointer – for all participants or only for listed users (special accommodations)
+enable#:#Enable screen magnifier
+enable_info#:#Provides visual aids in the test player: full-screen zoom (the visible area follows the mouse, like the Windows Magnifier), color inversion and a large mouse pointer. Controlled via a floating bar in the bottom left corner and keyboard shortcuts (Ctrl+Alt+Plus/Minus, Ctrl+Alt+0 = reset zoom, Ctrl+Alt+I = inversion, Ctrl+Alt+P = pointer).
+mode_label#:#Available for
+mode_all#:#All participants
+mode_all_info#:#Every participant sees the bar and can switch the aids on and off individually. Everything is off by default.
+mode_list#:#Listed users only
+mode_list_info#:#Only the users entered below see the bar (e.g. for special accommodations). All other participants will not notice the module at all.
+user_list_label#:#User list
+user_list_info#:#One entry per line (comma/semicolon also allowed): ILIAS login name or matriculation number. Case-insensitive.
+allow_zoom#:#Allow full-screen zoom
+allow_zoom_info#:#Magnifies the entire page; the visible area follows the mouse movement. All inputs keep working normally.
+max_zoom_label#:#Maximum magnification
+allow_invert#:#Allow color inversion
+allow_invert_info#:#Inverts the page colors (light text on dark background). Images and videos keep their original colors.
+allow_cursor#:#Allow large mouse pointer
+allow_cursor_info#:#Replaces the mouse pointer with a large yellow pointer and highlights clicks with a short ring animation.
+js_tb_label#:#Visual aids
+js_tb_open#:#Show visual aids
+js_tb_close#:#Hide visual aids
+js_zoom_in#:#Zoom in (Ctrl+Alt+Plus)
+js_zoom_out#:#Zoom out (Ctrl+Alt+Minus)
+js_invert#:#Invert colors (Ctrl+Alt+I)
+js_cursor#:#Large mouse pointer (Ctrl+Alt+P)
