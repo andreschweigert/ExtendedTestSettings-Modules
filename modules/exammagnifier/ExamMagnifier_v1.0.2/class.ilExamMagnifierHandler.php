@@ -360,9 +360,9 @@ class ilExamMagnifierHandler implements ilExamModuleInterface
             'title'       => $this->lng->txt('title'),
             'icon'        => '🔍',
             'description' => $this->lng->txt('description'),
-            'version'     => '1.0.1',
+            'version'     => '1.0.2',
             'features'    => [
-                'Vollbild-Zoom bis 1600 % mit Rand-Schwenk: Ruhezone in der Mitte, Schwenken am Bildschirmrand (wie Windows-Bildschirmlupe)',
+                'Vollbild-Zoom bis 1600 % mit Schiebe-Steuerung: Ruhezone in der Mitte, Mausbewegung am Rand schiebt den Ausschnitt (wie Windows-Bildschirmlupe)',
                 'Farbinvertierung (Bilder/Videos bleiben natürlich)',
                 'Großer Mauszeiger mit Klick-Hervorhebung',
                 'Schwebende Toolbar unten links + Tastatur-Shortcuts (Strg+Alt+Plus/Minus/0/I/P)',

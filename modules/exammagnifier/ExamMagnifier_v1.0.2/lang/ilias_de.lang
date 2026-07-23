@@ -2,7 +2,7 @@
 title#:#Bildschirmlupe
 description#:#Bildschirmlupe mit Vollbild-Zoom bis 1600 %, Farbinvertierung und großem Mauszeiger – für alle Teilnehmer oder nur für hinterlegte Benutzer (Nachteilsausgleich)
 enable#:#Bildschirmlupe aktivieren
-enable_info#:#Stellt Sehhilfen im Testplayer bereit: Vollbild-Zoom mit Rand-Schwenk (in der Bildmitte bewegt sich nichts, am Bildschirmrand gleitet der Ausschnitt in diese Richtung – wie bei der Windows-Bildschirmlupe), Farbinvertierung und großer Mauszeiger. Bedienung über eine schwebende Leiste unten links sowie Tastatur-Shortcuts (Strg+Alt+Plus/Minus, Strg+Alt+0 = Zoom zurücksetzen, Strg+Alt+I = Invertierung, Strg+Alt+P = Zeiger).
+enable_info#:#Stellt Sehhilfen im Testplayer bereit: Vollbild-Zoom mit Schiebe-Steuerung (in der Bildmitte bewegt sich nichts, am Bildschirmrand schiebt die Mausbewegung den Ausschnitt weiter – wie bei der Windows-Bildschirmlupe), Farbinvertierung und großer Mauszeiger. Bedienung über eine schwebende Leiste unten links sowie Tastatur-Shortcuts (Strg+Alt+Plus/Minus, Strg+Alt+0 = Zoom zurücksetzen, Strg+Alt+I = Invertierung, Strg+Alt+P = Zeiger).
 mode_label#:#Verfügbar für
 mode_all#:#Alle Teilnehmer
 mode_all_info#:#Jeder Teilnehmer sieht die Leiste und kann die Hilfen selbst ein- und ausschalten. Standardmäßig ist alles ausgeschaltet.
@@ -11,7 +11,7 @@ mode_list_info#:#Nur die unten eingetragenen Benutzer sehen die Leiste (z. B. be
 user_list_label#:#Benutzerliste
 user_list_info#:#Ein Eintrag pro Zeile (Komma/Semikolon ebenfalls erlaubt): ILIAS-Anmeldename oder Matrikelnummer. Groß-/Kleinschreibung ist egal.
 allow_zoom#:#Vollbild-Zoom erlauben
-allow_zoom_info#:#Vergrößert die gesamte Seite. In der Bildmitte liegt eine Ruhezone zum Lesen und Klicken; erst am Bildschirmrand schwenkt der Ausschnitt in diese Richtung. Eingaben funktionieren dabei ganz normal.
+allow_zoom_info#:#Vergrößert die gesamte Seite. In der Bildmitte liegt eine Ruhezone zum Lesen und Klicken; am Bildschirmrand schiebt die Mausbewegung den Ausschnitt weiter. Eingaben funktionieren dabei ganz normal.
 max_zoom_label#:#Maximale Vergrößerung
 allow_invert#:#Farbinvertierung erlauben
 allow_invert_info#:#Invertiert die Farben der Seite (helle Schrift auf dunklem Grund). Bilder und Videos bleiben in Originalfarben.
@@ -24,4 +24,4 @@ js_zoom_in#:#Vergrößern (Strg+Alt+Plus)
 js_zoom_out#:#Verkleinern (Strg+Alt+Minus)
 js_invert#:#Farben invertieren (Strg+Alt+I)
 js_cursor#:#Großer Mauszeiger (Strg+Alt+P)
-js_deadzone#:#Ruhezone – zum Schwenken mit der Maus an den Bildschirmrand fahren
+js_deadzone#:#Ruhezone – am Bildschirmrand schiebt die Mausbewegung den Ausschnitt

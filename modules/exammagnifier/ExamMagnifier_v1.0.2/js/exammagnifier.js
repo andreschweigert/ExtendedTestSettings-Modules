@@ -3,10 +3,15 @@
  * Part of ExtendedTestSettings Plugin
  *
  * Vollbild-Zoom: transform auf <body>, transform-origin wird per
- * Rand-Schwenk gesteuert (wie der Vollbildmodus der Windows-Lupe):
+ * Schiebe-Steuerung bewegt (wie der Vollbildmodus der Windows-Lupe):
  * In der Bildmitte liegt eine Ruhezone — dort bewegt sich nichts.
- * Erst am Rand gleitet der Ausschnitt in diese Richtung, je näher
- * am Rand desto schneller. Die eigene UI (Toolbar, Zeiger-Overlay)
+ * Im Randbereich schiebt die Mausbewegung selbst den Ausschnitt
+ * (Ratsche: nur auswärts, Zurückziehen schiebt nicht zurück — so
+ * funktionieren wiederholte Wischbewegungen). Steht die Hand, steht
+ * das Bild; bei gedrückter Maustaste wird nie geschoben (stabiles
+ * Klicken auch am Rand). Nur ganz außen, wo der Zeiger am
+ * Viewport-Rand ansteht und keine Deltas mehr liefert, gleitet der
+ * Ausschnitt langsam nach. Die eigene UI (Toolbar, Zeiger-Overlay)
  * hängt direkt unter <html> und bleibt dadurch unskaliert. Kein
  * DOM-Umbau, keine iframes werden bewegt (TinyMCE-sicher).
  *
@@ -19,10 +24,16 @@
 
     var ZOOM_STEPS = [100, 150, 200, 300, 400, 600, 800, 1200, 1600];
 
-    // Rand-Schwenk: äußere 22 % je Seite schwenken, innen ist Ruhezone
-    var EDGE_BAND = 0.22;
-    // Sichtgeschwindigkeit am Rand (px pro Frame), skaliert mit dem Zoom
-    var PAN_SPEED = 26;
+    // Schiebezone: äußere 18 % je Seite, innen ist Ruhezone
+    var EDGE_BAND = 0.18;
+    // Übersetzung Mausbewegung → Sichtverschiebung: 1:1 bei kleinem Zoom,
+    // moderat beschleunigt bei hohen Stufen (sonst endlose Mauswege)
+    function gear(s) {
+        return Math.min(1 + (s - 1) * 0.25, 5);
+    }
+    // Nachgleiten ganz außen: Abstand zum Viewport-Rand (px) und Basistempo
+    var GLIDE_MARGIN = 8;
+    var GLIDE_SPEED = 6;
     // Ruhezonen-Hinweis nach dem Aktivieren (ms)
     var HINT_DURATION = 2500;
 
@@ -38,6 +49,8 @@
     var origin = { x: 0, y: 0 };
     var panRaf = null;
     var lastClient = null;
+    var prevClient = null;
+    var lastButtons = 0;
     var pointerInWindow = false;
     var wasZoomed = false;
 
@@ -115,48 +128,92 @@
         origin.y = window.pageYOffset + cy;
     }
 
-    // Quadratische Kennlinie: sanfter Einstieg, schnell direkt am Rand
-    function edgeVelocity(frac) {
-        var v = 0;
-        if (frac < EDGE_BAND) {
-            v = -(EDGE_BAND - frac) / EDGE_BAND;
-        } else if (frac > 1 - EDGE_BAND) {
-            v = (frac - (1 - EDGE_BAND)) / EDGE_BAND;
-        }
-        return v * Math.abs(v);
-    }
-
     function pointerOverOwnUi(x, y) {
-        // Toolbar liegt am Rand — dort darf kein Schwenken ausgelöst werden
+        // Toolbar liegt am Rand — dort darf kein Schieben ausgelöst werden
         if (!toolbar) return false;
         var r = toolbar.getBoundingClientRect();
         return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
     }
 
-    function panTick() {
+    function applyOrigin() {
+        document.body.style.transformOrigin = origin.x + 'px ' + origin.y + 'px';
+    }
+
+    /**
+     * Schiebe-Steuerung: Mausbewegung im Randbereich schiebt den Ausschnitt.
+     * Ratsche: nur die auswärts gerichtete Komponente schiebt — Zurückziehen
+     * bewegt nichts, dadurch funktionieren wiederholte Wischbewegungen.
+     */
+    function handlePanMove(x, y, buttons) {
+        var s = currentZoom() / 100;
+        if (s <= 1) { prevClient = null; return; }
+
+        var prev = prevClient;
+        prevClient = { x: x, y: y };
+
+        // Bei gedrückter Maustaste oder über der Toolbar nie schieben
+        if (!prev || buttons || pointerOverOwnUi(x, y)) return;
+
+        var w = window.innerWidth;
+        var h = window.innerHeight;
+        var dx = x - prev.x;
+        var dy = y - prev.y;
+        var g = gear(s);
+        var vx = 0, vy = 0;
+
+        if ((x < w * EDGE_BAND && dx < 0) || (x > w * (1 - EDGE_BAND) && dx > 0)) {
+            vx = dx * g;
+        }
+        if ((y < h * EDGE_BAND && dy < 0) || (y > h * (1 - EDGE_BAND) && dy > 0)) {
+            vy = dy * g;
+        }
+
+        if (vx || vy) {
+            // Sichtverschiebung v entspricht Origin-Verschiebung v/(s-1)
+            origin.x += vx / (s - 1);
+            origin.y += vy / (s - 1);
+            clampOriginToViewport();
+            applyOrigin();
+        }
+    }
+
+    /**
+     * Nachgleiten nur ganz außen: Steht der Zeiger am Viewport-Rand an,
+     * liefert der Browser keine Bewegungs-Deltas mehr — dort gleitet der
+     * Ausschnitt langsam weiter, solange der Zeiger dort verharrt.
+     */
+    function glideTick() {
         panRaf = null;
         var s = currentZoom() / 100;
         if (s <= 1) return;
 
-        if (pointerInWindow && lastClient && !pointerOverOwnUi(lastClient.x, lastClient.y)) {
-            var vx = edgeVelocity(lastClient.x / window.innerWidth);
-            var vy = edgeVelocity(lastClient.y / window.innerHeight);
+        if (pointerInWindow && lastClient && !lastButtons
+            && !pointerOverOwnUi(lastClient.x, lastClient.y)) {
+
+            var w = window.innerWidth;
+            var h = window.innerHeight;
+            var v = GLIDE_SPEED * Math.sqrt(s); // moderat mit dem Zoom skaliert
+            var vx = 0, vy = 0;
+
+            if (lastClient.x <= GLIDE_MARGIN)          vx = -v;
+            else if (lastClient.x >= w - GLIDE_MARGIN) vx = v;
+            if (lastClient.y <= GLIDE_MARGIN)          vy = -v;
+            else if (lastClient.y >= h - GLIDE_MARGIN) vy = v;
+
             if (vx || vy) {
-                // Origin-Tempo so, dass die Sichtgeschwindigkeit mit dem Zoom skaliert
-                var f = PAN_SPEED * s / (s - 1);
-                origin.x += vx * f;
-                origin.y += vy * f;
+                origin.x += vx / (s - 1);
+                origin.y += vy / (s - 1);
+                clampOriginToViewport();
+                applyOrigin();
             }
         }
 
-        clampOriginToViewport();
-        document.body.style.transformOrigin = origin.x + 'px ' + origin.y + 'px';
-        panRaf = requestAnimationFrame(panTick);
+        panRaf = requestAnimationFrame(glideTick);
     }
 
     function startPanLoop() {
         if (!panRaf) {
-            panRaf = requestAnimationFrame(panTick);
+            panRaf = requestAnimationFrame(glideTick);
         }
     }
 
@@ -165,6 +222,7 @@
             cancelAnimationFrame(panRaf);
             panRaf = null;
         }
+        prevClient = null;
     }
 
     function showDeadzoneHint() {
@@ -385,7 +443,10 @@
     function bindMouse() {
         document.addEventListener('mousemove', function (e) {
             lastClient = { x: e.clientX, y: e.clientY };
+            lastButtons = e.buttons || 0;
             pointerInWindow = true;
+
+            handlePanMove(e.clientX, e.clientY, e.buttons || 0);
 
             if (state.cur && cursorEl) {
                 cursorEl.style.left = (e.clientX - 6) + 'px';
@@ -393,12 +454,19 @@
             }
         }, { passive: true });
 
-        // Zeiger verlässt das Fenster: Schwenken anhalten
+        // Zeiger verlässt das Fenster: Schieben/Nachgleiten anhalten,
+        // Delta-Kette zurücksetzen (sonst Sprung beim Wiedereintritt)
         document.documentElement.addEventListener('mouseleave', function () {
             pointerInWindow = false;
+            prevClient = null;
         });
 
+        document.addEventListener('mouseup', function (e) {
+            lastButtons = e.buttons || 0;
+        }, true);
+
         document.addEventListener('mousedown', function (e) {
+            lastButtons = e.buttons || 1;
             if (!state.cur || !ringEl) return;
             ringEl.style.left = (e.clientX - 35) + 'px';
             ringEl.style.top  = (e.clientY - 35) + 'px';
