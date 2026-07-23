@@ -1,7 +1,7 @@
 # ExamMagnifier — Entwicklerdokumentation
 
 **Modul-ID:** `exammagnifier`
-**Referenz-ZIP:** `modules-zip/modules/exammagnifier/ExamMagnifier_v1.0.2.zip`
+**Referenz-ZIP:** `modules-zip/modules/exammagnifier/ExamMagnifier_v1.0.3.zip`
 **Entwicklungsstand:** experimentell
 **Zuletzt aktualisiert:** 2026-07-23
 
@@ -11,8 +11,8 @@
 
 Bildschirmlupe im Testplayer als browserbasierter Ersatz für die
 Windows-Bildschirmlupe in Kiosk-Linux-Umgebungen: Vollbild-Zoom bis 1600 %
-mit Schiebe-Steuerung (Ruhezone in der Mitte, Mausbewegung am Rand
-schiebt den Ausschnitt),
+mit vier zur Erprobung umschaltbaren Steuerungen (Schieben, Gleiten,
+Direkt, Umbruch — Toolbar-Button oder Strg+Alt+M),
 Farbinvertierung und großer Mauszeiger mit Klick-Hervorhebung. Bedienung über eine einklappbare Toolbar unten links
 plus Tastatur-Shortcuts. Freigabe wahlweise für alle Teilnehmer oder nur
 für hinterlegte Benutzer (Nachteilsausgleich); nicht gelistete Teilnehmer
@@ -89,13 +89,28 @@ Zurückziehen bewegt nichts — wiederholte Wischbewegungen traversieren
 so beliebig weit. Bei gedrückter Maustaste (`e.buttons`) wird nie
 geschoben (stabiles Klicken am Rand). Nur in den äußersten
 `GLIDE_MARGIN` = 8 px, wo der angepinnte Zeiger keine Deltas mehr
-liefert, gleitet ein rAF-Loop (`glideTick`) langsam nach
-(`GLIDE_SPEED * sqrt(s)`). Über der Toolbar (unten links am Rand!)
-wird weder geschoben noch geglitten (`pointerOverOwnUi`); beim
-Verlassen des Fensters wird die Delta-Kette zurückgesetzt. Beim
-Einschalten zentriert `centerOnQuestion()` auf `#tst_output`, und ein
-Ruhezonen-Hinweis (gestrichelter Rahmen + Label, `js_deadzone`) wird
-2,5 s eingeblendet.
+liefert, gleitet ein rAF-Loop langsam nach (`GLIDE_SPEED * sqrt(s)`).
+Über der Toolbar (unten links am Rand!) wird weder geschoben noch
+geglitten (`pointerOverOwnUi`); beim Verlassen des Fensters wird die
+Delta-Kette zurückgesetzt. Beim Einschalten zentriert
+`centerOnQuestion()` auf `#tst_output`, und ein Ruhezonen-Hinweis
+(gestrichelter Rahmen + Label, `js_deadzone_push`/`js_deadzone_glide`)
+wird 2,5 s eingeblendet.
+
+**Erprobungs-Umschalter (seit 1.0.3):** Weil sich keine Variante klar
+als „natürlich" durchgesetzt hat, sind alle vier Steuerungen im Player
+umschaltbar (`MODES = ['push', 'glide', 'prop', 'reflow']`,
+`state.m`, Toolbar-Button `exammagnifier-modebtn` bzw. Strg+Alt+M,
+`cycleMode()`): **push** = Schiebe-Steuerung (siehe oben), **glide** =
+1.0.1-Verhalten (positionsbasiertes Gleiten, quadratische Kennlinie in
+der 22-%-Zone), **prop** = 1.0.0-Verhalten (Origin lerpt mit Faktor
+0.18 zur Zeigerposition), **reflow** = Umbruch-Zoom
+(`body{width: 100%/s}` + `scale(s)` mit Origin `0 0` → Text bricht um,
+kein Panning, nur normales Scrollen; kein Ruhezonen-Hinweis). Ein
+einziger rAF-Loop (`panTick`) bedient Nachgleiten (push), Gleiten
+(glide) und Lerp (prop); `cycleMode()` räumt mit `clearZoomStyles()`
+auf und wendet den neuen Modus frisch an. Nach der Erprobung soll die
+Auswahl wieder auf die beste(n) Variante(n) eingedampft werden.
 
 **Kein DOM-Umbau:** Bewusst kein Wrapper-Element um die Body-Kinder —
 das würde iframes (TinyMCE-Essay-Editor!) neu laden. Eigene UI (Toolbar,
@@ -161,6 +176,7 @@ exammessage/examalert oben, examresourcesheet links Mitte.
 
 | Version | Datum | Änderungen |
 |---|---|---|
+| 1.0.3 | 2026-07-23 | Erprobungsversion: vier umschaltbare Steuerungen (push/glide/prop/reflow), Strg+Alt+M, Modus in sessionStorage |
 | 1.0.2 | 2026-07-23 | Schiebe-Steuerung (Delta-basiert, Ratsche, Klick-Stabilität), Nachgleiten nur ganz außen; maturity → experimentell |
 | 1.0.1 | 2026-07-23 | Rand-Schwenk statt Zeiger-Kopplung, Zentrierung auf `#tst_output`, Ruhezonen-Hinweis, `maturity`-Feld |
 | 1.0.0 | 2026-07-21 | Erstversion |

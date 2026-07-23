@@ -228,7 +228,13 @@ class ilExamMagnifierHandler implements ilExamModuleInterface
                 'zoom_out'  => $this->lng->txt('js_zoom_out'),
                 'invert'    => $this->lng->txt('js_invert'),
                 'cursor'    => $this->lng->txt('js_cursor'),
-                'deadzone'  => $this->lng->txt('js_deadzone'),
+                'mode_title'     => $this->lng->txt('js_mode_title'),
+                'mode_push'      => $this->lng->txt('js_mode_push'),
+                'mode_glide'     => $this->lng->txt('js_mode_glide'),
+                'mode_prop'      => $this->lng->txt('js_mode_prop'),
+                'mode_reflow'    => $this->lng->txt('js_mode_reflow'),
+                'deadzone_push'  => $this->lng->txt('js_deadzone_push'),
+                'deadzone_glide' => $this->lng->txt('js_deadzone_glide'),
             ],
         ]);
 
@@ -360,9 +366,9 @@ class ilExamMagnifierHandler implements ilExamModuleInterface
             'title'       => $this->lng->txt('title'),
             'icon'        => '🔍',
             'description' => $this->lng->txt('description'),
-            'version'     => '1.0.2',
+            'version'     => '1.0.3',
             'features'    => [
-                'Vollbild-Zoom bis 1600 % mit Schiebe-Steuerung: Ruhezone in der Mitte, Mausbewegung am Rand schiebt den Ausschnitt (wie Windows-Bildschirmlupe)',
+                'Vollbild-Zoom bis 1600 % – Erprobung: vier umschaltbare Steuerungen (Schieben/Gleiten/Direkt/Umbruch, Toolbar-Button oder Strg+Alt+M)',
                 'Farbinvertierung (Bilder/Videos bleiben natürlich)',
                 'Großer Mauszeiger mit Klick-Hervorhebung',
                 'Schwebende Toolbar unten links + Tastatur-Shortcuts (Strg+Alt+Plus/Minus/0/I/P)',

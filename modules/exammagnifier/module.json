@@ -2,7 +2,7 @@
     "id": "exammagnifier",
     "label": "Bildschirmlupe",
     "description": "Bildschirmlupe mit Vollbild-Zoom bis 1600 %, Farbinvertierung und großem Mauszeiger – für alle Teilnehmer oder nur für hinterlegte Benutzer (Nachteilsausgleich).",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "maturity": "experimentell",
     "ilias_min": "9",
     "ilias_max": "9",

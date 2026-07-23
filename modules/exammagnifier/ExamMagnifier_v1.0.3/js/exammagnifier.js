@@ -2,18 +2,23 @@
  * exammagnifier.js - Bildschirmlupe für ILIAS Testplayer
  * Part of ExtendedTestSettings Plugin
  *
- * Vollbild-Zoom: transform auf <body>, transform-origin wird per
- * Schiebe-Steuerung bewegt (wie der Vollbildmodus der Windows-Lupe):
- * In der Bildmitte liegt eine Ruhezone — dort bewegt sich nichts.
- * Im Randbereich schiebt die Mausbewegung selbst den Ausschnitt
- * (Ratsche: nur auswärts, Zurückziehen schiebt nicht zurück — so
- * funktionieren wiederholte Wischbewegungen). Steht die Hand, steht
- * das Bild; bei gedrückter Maustaste wird nie geschoben (stabiles
- * Klicken auch am Rand). Nur ganz außen, wo der Zeiger am
- * Viewport-Rand ansteht und keine Deltas mehr liefert, gleitet der
- * Ausschnitt langsam nach. Die eigene UI (Toolbar, Zeiger-Overlay)
- * hängt direkt unter <html> und bleibt dadurch unskaliert. Kein
- * DOM-Umbau, keine iframes werden bewegt (TinyMCE-sicher).
+ * Erprobungsversion mit VIER umschaltbaren Zoom-Steuerungen (Toolbar-Button
+ * oder Strg+Alt+M, Auswahl bleibt pro Teilnehmer in sessionStorage):
+ *
+ *   push   Schieben — Mausbewegung im Randbereich schiebt den Ausschnitt
+ *          (Ratsche: nur auswärts; bei gedrückter Taste nie; ganz außen
+ *          langsames Nachgleiten, weil der angepinnte Zeiger keine
+ *          Bewegungs-Deltas mehr liefert)
+ *   glide  Gleiten — Ausschnitt gleitet von allein, solange der Zeiger im
+ *          Randband steht (je näher am Rand, desto schneller)
+ *   prop   Direkt — Ausschnitt hängt 1:1 an der Zeigerposition (geglättet)
+ *   reflow Umbruch — Layoutbreite wird verengt und hochskaliert: Text
+ *          bricht um, kein seitliches Bewegen, nur normales Scrollen
+ *
+ * Technik: transform auf <body> (push/glide/prop: Origin wandert; reflow:
+ * zusätzlich width-Kompensation). Die eigene UI (Toolbar, Zeiger-Overlay)
+ * hängt direkt unter <html> und bleibt dadurch unskaliert. Kein DOM-Umbau,
+ * keine iframes werden bewegt (TinyMCE-sicher).
  *
  * Config via window.ExamMagnifier.config (addOnLoadCode) — NIE beim
  * IIFE-Init cachen, immer live über cfg() lesen.
@@ -23,22 +28,27 @@
     'use strict';
 
     var ZOOM_STEPS = [100, 150, 200, 300, 400, 600, 800, 1200, 1600];
+    var MODES = ['push', 'glide', 'prop', 'reflow'];
 
-    // Schiebezone: äußere 18 % je Seite, innen ist Ruhezone
-    var EDGE_BAND = 0.18;
-    // Übersetzung Mausbewegung → Sichtverschiebung: 1:1 bei kleinem Zoom,
-    // moderat beschleunigt bei hohen Stufen (sonst endlose Mauswege)
-    function gear(s) {
-        return Math.min(1 + (s - 1) * 0.25, 5);
-    }
-    // Nachgleiten ganz außen: Abstand zum Viewport-Rand (px) und Basistempo
+    // push: äußere 18 % je Seite sind Schiebezone
+    var PUSH_BAND = 0.18;
+    // push: Nachgleiten ganz außen (Abstand zum Viewport-Rand, Basistempo)
     var GLIDE_MARGIN = 8;
     var GLIDE_SPEED = 6;
+    // glide: äußere 22 % je Seite, Sichtgeschwindigkeit am Rand (px/Frame)
+    var GLIDE_BAND = 0.22;
+    var GLIDE_PAN_SPEED = 26;
     // Ruhezonen-Hinweis nach dem Aktivieren (ms)
     var HINT_DURATION = 2500;
 
+    // push: Übersetzung Mausbewegung → Sichtverschiebung (1:1 bei kleinem
+    // Zoom, moderat beschleunigt bei hohen Stufen, sonst endlose Mauswege)
+    function gear(s) {
+        return Math.min(1 + (s - 1) * 0.25, 5);
+    }
+
     // Laufzeit-Zustand (wird über sessionStorage über Fragenwechsel gerettet)
-    var state = { z: 0, inv: false, cur: false, open: true };
+    var state = { z: 0, m: 'push', inv: false, cur: false, open: true };
 
     var toolbar = null, controls = null, zoomVal = null, toggleBtn = null;
     var cursorEl = null, ringEl = null, hintEl = null;
@@ -47,6 +57,7 @@
 
     // Zoom-Schwenk: Origin in Seitenkoordinaten
     var origin = { x: 0, y: 0 };
+    var target = { x: 0, y: 0 };   // prop: Ziel-Origin (lerp)
     var panRaf = null;
     var lastClient = null;
     var prevClient = null;
@@ -77,6 +88,10 @@
         return list[Math.min(state.z, list.length - 1)] || 100;
     }
 
+    function modeLabel(m) {
+        return txt('mode_' + m);
+    }
+
     // -------------------------------------------------------------------------
     // Zustand speichern / laden
     // -------------------------------------------------------------------------
@@ -93,6 +108,7 @@
             if (!raw) return;
             var parsed = JSON.parse(raw);
             state.z    = Math.max(0, Math.min(parseInt(parsed.z, 10) || 0, steps().length - 1));
+            state.m    = MODES.indexOf(parsed.m) >= 0 ? parsed.m : 'push';
             state.inv  = !!parsed.inv;
             state.cur  = !!parsed.cur;
             state.open = parsed.open !== false;
@@ -102,7 +118,7 @@
     }
 
     // -------------------------------------------------------------------------
-    // Vollbild-Zoom mit Rand-Schwenk
+    // Vollbild-Zoom — gemeinsame Helfer
     // -------------------------------------------------------------------------
 
     function clampOriginToViewport() {
@@ -110,6 +126,10 @@
         var minY = window.pageYOffset, maxY = minY + window.innerHeight;
         origin.x = Math.min(Math.max(origin.x, minX), maxX);
         origin.y = Math.min(Math.max(origin.y, minY), maxY);
+    }
+
+    function applyOrigin() {
+        document.body.style.transformOrigin = origin.x + 'px ' + origin.y + 'px';
     }
 
     // Beim Einschalten auf den Fragebereich zentrieren statt auf den Zeiger
@@ -126,33 +146,24 @@
         }
         origin.x = window.pageXOffset + cx;
         origin.y = window.pageYOffset + cy;
+        target.x = origin.x;
+        target.y = origin.y;
     }
 
     function pointerOverOwnUi(x, y) {
-        // Toolbar liegt am Rand — dort darf kein Schieben ausgelöst werden
+        // Toolbar liegt am Rand — dort darf kein Schieben/Gleiten ausgelöst werden
         if (!toolbar) return false;
         var r = toolbar.getBoundingClientRect();
         return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
     }
 
-    function applyOrigin() {
-        document.body.style.transformOrigin = origin.x + 'px ' + origin.y + 'px';
-    }
+    // -------------------------------------------------------------------------
+    // Steuerung "push": Mausbewegung im Randbereich schiebt (Ratsche)
+    // -------------------------------------------------------------------------
 
-    /**
-     * Schiebe-Steuerung: Mausbewegung im Randbereich schiebt den Ausschnitt.
-     * Ratsche: nur die auswärts gerichtete Komponente schiebt — Zurückziehen
-     * bewegt nichts, dadurch funktionieren wiederholte Wischbewegungen.
-     */
-    function handlePanMove(x, y, buttons) {
+    function handlePushMove(x, y, buttons, prev) {
         var s = currentZoom() / 100;
-        if (s <= 1) { prevClient = null; return; }
-
-        var prev = prevClient;
-        prevClient = { x: x, y: y };
-
-        // Bei gedrückter Maustaste oder über der Toolbar nie schieben
-        if (!prev || buttons || pointerOverOwnUi(x, y)) return;
+        if (s <= 1 || !prev || buttons || pointerOverOwnUi(x, y)) return;
 
         var w = window.innerWidth;
         var h = window.innerHeight;
@@ -161,10 +172,10 @@
         var g = gear(s);
         var vx = 0, vy = 0;
 
-        if ((x < w * EDGE_BAND && dx < 0) || (x > w * (1 - EDGE_BAND) && dx > 0)) {
+        if ((x < w * PUSH_BAND && dx < 0) || (x > w * (1 - PUSH_BAND) && dx > 0)) {
             vx = dx * g;
         }
-        if ((y < h * EDGE_BAND && dy < 0) || (y > h * (1 - EDGE_BAND) && dy > 0)) {
+        if ((y < h * PUSH_BAND && dy < 0) || (y > h * (1 - PUSH_BAND) && dy > 0)) {
             vy = dy * g;
         }
 
@@ -177,22 +188,33 @@
         }
     }
 
-    /**
-     * Nachgleiten nur ganz außen: Steht der Zeiger am Viewport-Rand an,
-     * liefert der Browser keine Bewegungs-Deltas mehr — dort gleitet der
-     * Ausschnitt langsam weiter, solange der Zeiger dort verharrt.
-     */
-    function glideTick() {
+    // -------------------------------------------------------------------------
+    // rAF-Loop: bedient Nachgleiten (push), Rand-Gleiten (glide), Lerp (prop)
+    // -------------------------------------------------------------------------
+
+    function edgeVelocityQuad(frac) {
+        var v = 0;
+        if (frac < GLIDE_BAND) {
+            v = -(GLIDE_BAND - frac) / GLIDE_BAND;
+        } else if (frac > 1 - GLIDE_BAND) {
+            v = (frac - (1 - GLIDE_BAND)) / GLIDE_BAND;
+        }
+        return v * Math.abs(v);
+    }
+
+    function panTick() {
         panRaf = null;
         var s = currentZoom() / 100;
-        if (s <= 1) return;
+        if (s <= 1 || state.m === 'reflow') return;
 
-        if (pointerInWindow && lastClient && !lastButtons
-            && !pointerOverOwnUi(lastClient.x, lastClient.y)) {
+        var pointerUsable = pointerInWindow && lastClient && !lastButtons
+            && !pointerOverOwnUi(lastClient.x, lastClient.y);
 
+        if (state.m === 'push' && pointerUsable) {
+            // Nachgleiten nur ganz außen, wo der Zeiger keine Deltas mehr liefert
             var w = window.innerWidth;
             var h = window.innerHeight;
-            var v = GLIDE_SPEED * Math.sqrt(s); // moderat mit dem Zoom skaliert
+            var v = GLIDE_SPEED * Math.sqrt(s);
             var vx = 0, vy = 0;
 
             if (lastClient.x <= GLIDE_MARGIN)          vx = -v;
@@ -206,14 +228,29 @@
                 clampOriginToViewport();
                 applyOrigin();
             }
+        } else if (state.m === 'glide' && pointerUsable) {
+            var gx = edgeVelocityQuad(lastClient.x / window.innerWidth);
+            var gy = edgeVelocityQuad(lastClient.y / window.innerHeight);
+            if (gx || gy) {
+                var f = GLIDE_PAN_SPEED * s / (s - 1);
+                origin.x += gx * f;
+                origin.y += gy * f;
+                clampOriginToViewport();
+                applyOrigin();
+            }
+        } else if (state.m === 'prop') {
+            origin.x += (target.x - origin.x) * 0.18;
+            origin.y += (target.y - origin.y) * 0.18;
+            clampOriginToViewport();
+            applyOrigin();
         }
 
-        panRaf = requestAnimationFrame(glideTick);
+        panRaf = requestAnimationFrame(panTick);
     }
 
     function startPanLoop() {
         if (!panRaf) {
-            panRaf = requestAnimationFrame(glideTick);
+            panRaf = requestAnimationFrame(panTick);
         }
     }
 
@@ -225,22 +262,43 @@
         prevClient = null;
     }
 
+    // -------------------------------------------------------------------------
+    // Ruhezonen-Hinweis (nur push/glide)
+    // -------------------------------------------------------------------------
+
     function showDeadzoneHint() {
+        if (state.m !== 'push' && state.m !== 'glide') {
+            if (hintEl) { hintEl.style.display = 'none'; }
+            return;
+        }
         if (!hintEl) {
             hintEl = document.createElement('div');
             hintEl.id = 'exammagnifier-deadzone';
             hintEl.className = 'exammagnifier-ui';
             hintEl.setAttribute('aria-hidden', 'true');
-            var label = document.createElement('span');
-            label.textContent = txt('deadzone');
-            hintEl.appendChild(label);
+            hintEl.appendChild(document.createElement('span'));
             document.documentElement.appendChild(hintEl);
         }
+        hintEl.firstChild.textContent = txt(state.m === 'push' ? 'deadzone_push' : 'deadzone_glide');
+        hintEl.style.inset = (state.m === 'push' ? PUSH_BAND : GLIDE_BAND) * 100 + '%';
         hintEl.style.display = 'block';
         clearTimeout(hintTimer);
         hintTimer = setTimeout(function () {
             hintEl.style.display = 'none';
         }, HINT_DURATION);
+    }
+
+    // -------------------------------------------------------------------------
+    // Zoom anwenden / Modus wechseln
+    // -------------------------------------------------------------------------
+
+    function clearZoomStyles() {
+        stopPanLoop();
+        document.body.style.transform = '';
+        document.body.style.transformOrigin = '';
+        document.body.style.width = '';
+        document.documentElement.classList.remove('exammagnifier-zoomed');
+        if (hintEl) { hintEl.style.display = 'none'; }
     }
 
     function applyZoom() {
@@ -250,14 +308,27 @@
         }
 
         if (z <= 100) {
-            stopPanLoop();
-            document.body.style.transform = '';
-            document.body.style.transformOrigin = '';
-            document.documentElement.classList.remove('exammagnifier-zoomed');
-            if (hintEl) { hintEl.style.display = 'none'; }
+            clearZoomStyles();
             wasZoomed = false;
             return;
         }
+
+        var s = z / 100;
+        document.documentElement.classList.add('exammagnifier-zoomed');
+
+        if (state.m === 'reflow') {
+            // Layoutbreite verengen und hochskalieren: Text bricht um,
+            // kein seitliches Bewegen, nur normales Scrollen
+            stopPanLoop();
+            document.body.style.width = (100 / s) + '%';
+            document.body.style.transformOrigin = '0 0';
+            document.body.style.transform = 'scale(' + s + ')';
+            if (hintEl) { hintEl.style.display = 'none'; }
+            wasZoomed = true;
+            return;
+        }
+
+        document.body.style.width = '';
 
         if (!wasZoomed) {
             centerOnQuestion();
@@ -266,9 +337,8 @@
         wasZoomed = true;
 
         clampOriginToViewport();
-        document.documentElement.classList.add('exammagnifier-zoomed');
-        document.body.style.transformOrigin = origin.x + 'px ' + origin.y + 'px';
-        document.body.style.transform = 'scale(' + (z / 100) + ')';
+        applyOrigin();
+        document.body.style.transform = 'scale(' + s + ')';
         startPanLoop();
     }
 
@@ -283,6 +353,24 @@
         if (!cfg().allow_zoom) return;
         state.z = 0;
         applyZoom();
+        saveState();
+    }
+
+    function cycleMode() {
+        if (!cfg().allow_zoom) return;
+        var idx = MODES.indexOf(state.m);
+        state.m = MODES[(idx + 1) % MODES.length];
+        if (btns.mode) {
+            btns.mode.textContent = modeLabel(state.m);
+        }
+        // Umschalten setzt die Darstellung sauber neu auf
+        var restoreHint = wasZoomed;
+        clearZoomStyles();
+        wasZoomed = false;
+        applyZoom();
+        if (restoreHint && currentZoom() > 100) {
+            showDeadzoneHint();
+        }
         saveState();
     }
 
@@ -401,6 +489,12 @@
             controls.appendChild(btns.zoomOut);
             controls.appendChild(zoomVal);
             controls.appendChild(btns.zoomIn);
+
+            // Erprobung: Steuerungs-Modus umschaltbar (Schieben/Gleiten/Direkt/Umbruch)
+            btns.mode = makeButton('mode', txt('mode_title'), modeLabel(state.m));
+            btns.mode.classList.add('exammagnifier-modebtn');
+            btns.mode.addEventListener('click', cycleMode);
+            controls.appendChild(btns.mode);
         }
 
         if (cfg().allow_invert) {
@@ -442,11 +536,18 @@
 
     function bindMouse() {
         document.addEventListener('mousemove', function (e) {
+            var prev = prevClient;
             lastClient = { x: e.clientX, y: e.clientY };
+            prevClient = { x: e.clientX, y: e.clientY };
             lastButtons = e.buttons || 0;
             pointerInWindow = true;
 
-            handlePanMove(e.clientX, e.clientY, e.buttons || 0);
+            if (state.m === 'push') {
+                handlePushMove(e.clientX, e.clientY, e.buttons || 0, prev);
+            } else if (state.m === 'prop' && currentZoom() > 100) {
+                target.x = window.pageXOffset + e.clientX;
+                target.y = window.pageYOffset + e.clientY;
+            }
 
             if (state.cur && cursorEl) {
                 cursorEl.style.left = (e.clientX - 6) + 'px';
@@ -454,7 +555,7 @@
             }
         }, { passive: true });
 
-        // Zeiger verlässt das Fenster: Schieben/Nachgleiten anhalten,
+        // Zeiger verlässt das Fenster: Schieben/Gleiten anhalten,
         // Delta-Kette zurücksetzen (sonst Sprung beim Wiedereintritt)
         document.documentElement.addEventListener('mouseleave', function () {
             pointerInWindow = false;
@@ -495,6 +596,9 @@
                 handled = true;
             } else if (code === 'Digit0' || code === 'Numpad0') {
                 zoomReset();
+                handled = true;
+            } else if (code === 'KeyM') {
+                cycleMode();
                 handled = true;
             } else if (code === 'KeyI') {
                 toggleInvert();

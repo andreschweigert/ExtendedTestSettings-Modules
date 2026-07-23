@@ -179,3 +179,9 @@ html.exammagnifier-bigcursor #exammagnifier-toolbar * {
     border-radius: 999px;
     white-space: nowrap;
 }
+
+/* Modus-Umschalter (Erprobung: Schieben/Gleiten/Direkt/Umbruch) */
+.exammagnifier-btn.exammagnifier-modebtn {
+    font-size: 14px;
+    min-width: 88px;
+}
