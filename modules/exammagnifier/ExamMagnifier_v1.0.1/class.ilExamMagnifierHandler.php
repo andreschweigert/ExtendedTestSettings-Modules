@@ -228,6 +228,7 @@ class ilExamMagnifierHandler implements ilExamModuleInterface
                 'zoom_out'  => $this->lng->txt('js_zoom_out'),
                 'invert'    => $this->lng->txt('js_invert'),
                 'cursor'    => $this->lng->txt('js_cursor'),
+                'deadzone'  => $this->lng->txt('js_deadzone'),
             ],
         ]);
 
@@ -359,9 +360,9 @@ class ilExamMagnifierHandler implements ilExamModuleInterface
             'title'       => $this->lng->txt('title'),
             'icon'        => '🔍',
             'description' => $this->lng->txt('description'),
-            'version'     => '1.0.0',
+            'version'     => '1.0.1',
             'features'    => [
-                'Vollbild-Zoom bis 1600 % – Ausschnitt folgt der Maus (wie Windows-Bildschirmlupe)',
+                'Vollbild-Zoom bis 1600 % mit Rand-Schwenk: Ruhezone in der Mitte, Schwenken am Bildschirmrand (wie Windows-Bildschirmlupe)',
                 'Farbinvertierung (Bilder/Videos bleiben natürlich)',
                 'Großer Mauszeiger mit Klick-Hervorhebung',
                 'Schwebende Toolbar unten links + Tastatur-Shortcuts (Strg+Alt+Plus/Minus/0/I/P)',

@@ -2,10 +2,13 @@
  * exammagnifier.js - Bildschirmlupe für ILIAS Testplayer
  * Part of ExtendedTestSettings Plugin
  *
- * Vollbild-Zoom: transform auf <body>, transform-origin folgt der Maus
- * (wie der Vollbildmodus der Windows-Bildschirmlupe). Die eigene UI
- * (Toolbar, Zeiger-Overlay) hängt direkt unter <html> und bleibt dadurch
- * unskaliert. Kein DOM-Umbau, keine iframes werden bewegt (TinyMCE-sicher).
+ * Vollbild-Zoom: transform auf <body>, transform-origin wird per
+ * Rand-Schwenk gesteuert (wie der Vollbildmodus der Windows-Lupe):
+ * In der Bildmitte liegt eine Ruhezone — dort bewegt sich nichts.
+ * Erst am Rand gleitet der Ausschnitt in diese Richtung, je näher
+ * am Rand desto schneller. Die eigene UI (Toolbar, Zeiger-Overlay)
+ * hängt direkt unter <html> und bleibt dadurch unskaliert. Kein
+ * DOM-Umbau, keine iframes werden bewegt (TinyMCE-sicher).
  *
  * Config via window.ExamMagnifier.config (addOnLoadCode) — NIE beim
  * IIFE-Init cachen, immer live über cfg() lesen.
@@ -16,18 +19,27 @@
 
     var ZOOM_STEPS = [100, 150, 200, 300, 400, 600, 800, 1200, 1600];
 
+    // Rand-Schwenk: äußere 22 % je Seite schwenken, innen ist Ruhezone
+    var EDGE_BAND = 0.22;
+    // Sichtgeschwindigkeit am Rand (px pro Frame), skaliert mit dem Zoom
+    var PAN_SPEED = 26;
+    // Ruhezonen-Hinweis nach dem Aktivieren (ms)
+    var HINT_DURATION = 2500;
+
     // Laufzeit-Zustand (wird über sessionStorage über Fragenwechsel gerettet)
     var state = { z: 0, inv: false, cur: false, open: true };
 
     var toolbar = null, controls = null, zoomVal = null, toggleBtn = null;
-    var cursorEl = null, ringEl = null;
+    var cursorEl = null, ringEl = null, hintEl = null;
     var btns = {};
+    var hintTimer = 0;
 
-    // Zoom-Schwenk: Ziel-/Ist-Origin in Seitenkoordinaten, rAF-Lerp
-    var target = { x: 0, y: 0 };
-    var current = { x: 0, y: 0 };
-    var rafRunning = false;
+    // Zoom-Schwenk: Origin in Seitenkoordinaten
+    var origin = { x: 0, y: 0 };
+    var panRaf = null;
     var lastClient = null;
+    var pointerInWindow = false;
+    var wasZoomed = false;
 
     function cfg() {
         return (window.ExamMagnifier && window.ExamMagnifier.config) || {};
@@ -77,29 +89,100 @@
     }
 
     // -------------------------------------------------------------------------
-    // Vollbild-Zoom
+    // Vollbild-Zoom mit Rand-Schwenk
     // -------------------------------------------------------------------------
 
-    function setTargetFromClient(cx, cy) {
-        // Origin = Seitenkoordinate der Zeigerposition: der Punkt unter dem
-        // Zeiger bleibt fix, Bewegung zum Rand schwenkt den Ausschnitt dorthin
-        target.x = window.pageXOffset + cx;
-        target.y = window.pageYOffset + cy;
-        if (!rafRunning) {
-            rafRunning = true;
-            requestAnimationFrame(tick);
+    function clampOriginToViewport() {
+        var minX = window.pageXOffset, maxX = minX + window.innerWidth;
+        var minY = window.pageYOffset, maxY = minY + window.innerHeight;
+        origin.x = Math.min(Math.max(origin.x, minX), maxX);
+        origin.y = Math.min(Math.max(origin.y, minY), maxY);
+    }
+
+    // Beim Einschalten auf den Fragebereich zentrieren statt auf den Zeiger
+    function centerOnQuestion() {
+        var cx = window.innerWidth / 2;
+        var cy = window.innerHeight / 2;
+        var el = document.getElementById('tst_output');
+        if (el) {
+            var r = el.getBoundingClientRect();
+            if (r.width > 0 && r.height > 0) {
+                cx = Math.min(Math.max(r.left + r.width / 2, 0), window.innerWidth);
+                cy = Math.min(Math.max(r.top + Math.min(r.height, window.innerHeight) / 2, 0), window.innerHeight);
+            }
+        }
+        origin.x = window.pageXOffset + cx;
+        origin.y = window.pageYOffset + cy;
+    }
+
+    // Quadratische Kennlinie: sanfter Einstieg, schnell direkt am Rand
+    function edgeVelocity(frac) {
+        var v = 0;
+        if (frac < EDGE_BAND) {
+            v = -(EDGE_BAND - frac) / EDGE_BAND;
+        } else if (frac > 1 - EDGE_BAND) {
+            v = (frac - (1 - EDGE_BAND)) / EDGE_BAND;
+        }
+        return v * Math.abs(v);
+    }
+
+    function pointerOverOwnUi(x, y) {
+        // Toolbar liegt am Rand — dort darf kein Schwenken ausgelöst werden
+        if (!toolbar) return false;
+        var r = toolbar.getBoundingClientRect();
+        return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+    }
+
+    function panTick() {
+        panRaf = null;
+        var s = currentZoom() / 100;
+        if (s <= 1) return;
+
+        if (pointerInWindow && lastClient && !pointerOverOwnUi(lastClient.x, lastClient.y)) {
+            var vx = edgeVelocity(lastClient.x / window.innerWidth);
+            var vy = edgeVelocity(lastClient.y / window.innerHeight);
+            if (vx || vy) {
+                // Origin-Tempo so, dass die Sichtgeschwindigkeit mit dem Zoom skaliert
+                var f = PAN_SPEED * s / (s - 1);
+                origin.x += vx * f;
+                origin.y += vy * f;
+            }
+        }
+
+        clampOriginToViewport();
+        document.body.style.transformOrigin = origin.x + 'px ' + origin.y + 'px';
+        panRaf = requestAnimationFrame(panTick);
+    }
+
+    function startPanLoop() {
+        if (!panRaf) {
+            panRaf = requestAnimationFrame(panTick);
         }
     }
 
-    function tick() {
-        current.x += (target.x - current.x) * 0.18;
-        current.y += (target.y - current.y) * 0.18;
-        document.body.style.transformOrigin = current.x + 'px ' + current.y + 'px';
-        if (Math.abs(target.x - current.x) > 0.5 || Math.abs(target.y - current.y) > 0.5) {
-            requestAnimationFrame(tick);
-        } else {
-            rafRunning = false;
+    function stopPanLoop() {
+        if (panRaf) {
+            cancelAnimationFrame(panRaf);
+            panRaf = null;
         }
+    }
+
+    function showDeadzoneHint() {
+        if (!hintEl) {
+            hintEl = document.createElement('div');
+            hintEl.id = 'exammagnifier-deadzone';
+            hintEl.className = 'exammagnifier-ui';
+            hintEl.setAttribute('aria-hidden', 'true');
+            var label = document.createElement('span');
+            label.textContent = txt('deadzone');
+            hintEl.appendChild(label);
+            document.documentElement.appendChild(hintEl);
+        }
+        hintEl.style.display = 'block';
+        clearTimeout(hintTimer);
+        hintTimer = setTimeout(function () {
+            hintEl.style.display = 'none';
+        }, HINT_DURATION);
     }
 
     function applyZoom() {
@@ -109,23 +192,26 @@
         }
 
         if (z <= 100) {
+            stopPanLoop();
             document.body.style.transform = '';
             document.body.style.transformOrigin = '';
             document.documentElement.classList.remove('exammagnifier-zoomed');
+            if (hintEl) { hintEl.style.display = 'none'; }
+            wasZoomed = false;
             return;
         }
 
-        document.documentElement.classList.add('exammagnifier-zoomed');
-        document.body.style.transform = 'scale(' + (z / 100) + ')';
+        if (!wasZoomed) {
+            centerOnQuestion();
+            showDeadzoneHint();
+        }
+        wasZoomed = true;
 
-        // Ohne Sprung dort ansetzen, wo der Zeiger zuletzt war (sonst Mitte)
-        var cx = lastClient ? lastClient.x : window.innerWidth / 2;
-        var cy = lastClient ? lastClient.y : window.innerHeight / 2;
-        target.x = window.pageXOffset + cx;
-        target.y = window.pageYOffset + cy;
-        current.x = target.x;
-        current.y = target.y;
-        document.body.style.transformOrigin = current.x + 'px ' + current.y + 'px';
+        clampOriginToViewport();
+        document.documentElement.classList.add('exammagnifier-zoomed');
+        document.body.style.transformOrigin = origin.x + 'px ' + origin.y + 'px';
+        document.body.style.transform = 'scale(' + (z / 100) + ')';
+        startPanLoop();
     }
 
     function zoomBy(delta) {
@@ -299,15 +385,18 @@
     function bindMouse() {
         document.addEventListener('mousemove', function (e) {
             lastClient = { x: e.clientX, y: e.clientY };
+            pointerInWindow = true;
 
-            if (currentZoom() > 100) {
-                setTargetFromClient(e.clientX, e.clientY);
-            }
             if (state.cur && cursorEl) {
                 cursorEl.style.left = (e.clientX - 6) + 'px';
                 cursorEl.style.top  = (e.clientY - 4) + 'px';
             }
         }, { passive: true });
+
+        // Zeiger verlässt das Fenster: Schwenken anhalten
+        document.documentElement.addEventListener('mouseleave', function () {
+            pointerInWindow = false;
+        });
 
         document.addEventListener('mousedown', function (e) {
             if (!state.cur || !ringEl) return;

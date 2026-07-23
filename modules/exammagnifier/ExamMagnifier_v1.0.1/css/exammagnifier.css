@@ -151,3 +151,31 @@ html.exammagnifier-bigcursor #exammagnifier-toolbar * {
         opacity: 0;
     }
 }
+
+/* ============================================
+   RUHEZONEN-HINWEIS (kurz nach Zoom-Aktivierung)
+   ============================================ */
+
+#exammagnifier-deadzone {
+    position: fixed;
+    inset: 22%;
+    border: 2px dashed rgba(36, 86, 166, 0.55);
+    border-radius: 10px;
+    pointer-events: none;
+    display: none;
+    z-index: 99970;
+}
+
+#exammagnifier-deadzone span {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    background: rgba(36, 86, 166, 0.9);
+    color: #ffffff;
+    padding: 3px 12px;
+    border-radius: 999px;
+    white-space: nowrap;
+}

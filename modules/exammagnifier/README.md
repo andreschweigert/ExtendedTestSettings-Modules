@@ -1,12 +1,14 @@
 # ExamMagnifier
 
+![Entwicklungsstand: Im Test](https://img.shields.io/badge/Entwicklungsstand-Im%20Test-blue)
+
 Externes Modul für das ILIAS-Plugin **ExtendedTestSettings**.
 
 Bringt eine **Bildschirmlupe** in den ILIAS Test-Player — als browserbasierter Ersatz für die Windows-Bildschirmlupe in abgesicherten Kiosk-Umgebungen (z. B. Kiosk-Linux). Für Prüflinge mit Sehbeeinträchtigung oder Nachteilsausgleich.
 
 ## Features
 
-- **Vollbild-Zoom bis 1600 %** — die gesamte Seite wird vergrößert, der sichtbare Ausschnitt folgt der Maus (wie der Vollbildmodus der Windows-Bildschirmlupe). Eingaben funktionieren dabei normal, Text bleibt scharf. Stufen: 100 / 150 / 200 / 300 / 400 / 600 / 800 / 1200 / 1600 %
+- **Vollbild-Zoom bis 1600 % mit Rand-Schwenk** — die gesamte Seite wird vergrößert (wie der Vollbildmodus der Windows-Bildschirmlupe). In der Bildmitte liegt eine Ruhezone zum Lesen und Klicken; erst am Bildschirmrand gleitet der Ausschnitt in diese Richtung, je näher am Rand desto schneller. Beim Einschalten wird auf den Fragebereich (`#tst_output`) zentriert, ein kurzer Hinweis zeigt die Ruhezone. Eingaben funktionieren normal, Text bleibt scharf. Stufen: 100 / 150 / 200 / 300 / 400 / 600 / 800 / 1200 / 1600 %
 - **Farbinvertierung** — helle Schrift auf dunklem Grund; Bilder, Videos und Canvas bleiben in Originalfarben
 - **Großer Mauszeiger** — großer gelber Zeiger (Overlay, keine 128px-Cursor-Grenze) mit Klick-Hervorhebung (Ring-Animation)
 - **Schwebende Toolbar** — `position: fixed; bottom: 20px; left: 20px` (kein Konflikt mit examdyslexia oben rechts / examcalc und examsymbols unten rechts), einklappbar auf ein 🔍-Symbol
@@ -57,7 +59,7 @@ Eigene Tabelle: `exammagnifier_settings`
 
 ## Technische Details
 
-- **Zoom:** `transform: scale()` direkt auf `<body>`, `transform-origin` folgt der Maus (rAF-geglättet). Kein DOM-Umbau, keine iframes werden bewegt — TinyMCE-/Formular-sicher. Eigene UI hängt unter `<html>` und bleibt dadurch unskaliert.
+- **Zoom:** `transform: scale()` direkt auf `<body>`; `transform-origin` wird per Rand-Schwenk bewegt (rAF-Loop, quadratische Geschwindigkeits-Kennlinie, äußere 22 % je Seite sind Schwenkzone, Toolbar-Bereich ausgenommen). Kein DOM-Umbau, keine iframes werden bewegt — TinyMCE-/Formular-sicher. Eigene UI hängt unter `<html>` und bleibt dadurch unskaliert.
 - **Invertierung:** `filter: invert(1) hue-rotate(180deg)` auf `<html>` (Root-Filter, bricht `position: fixed` nicht); Medien und eigene UI werden per Doppel-Invertierung zurückgeholt.
 - **Zeiger:** Overlay-`<div>` mit Inline-SVG folgt `mousemove`; echter Cursor per `cursor: none` versteckt (Toolbar ausgenommen).
 - Config wird **nicht** beim IIFE-Init gecacht (live über `cfg()`), Details siehe `docs/modules/ExamMagnifier.md`.
@@ -70,4 +72,5 @@ ZIP über Administration → Plugins → ExtendedTestSettings → Module hochlad
 
 | Version | Datum | Änderungen |
 |---|---|---|
+| 1.0.1 | 2026-07-23 | Zoom-Steuerung auf Rand-Schwenk umgestellt (Ruhezone in der Mitte, Schwenken am Rand statt direkter Zeiger-Kopplung), Zentrierung auf den Fragebereich beim Einschalten, kurzer Ruhezonen-Hinweis; `maturity`-Feld |
 | 1.0.0 | 2026-07-21 | Erstversion: Vollbild-Zoom bis 1600 %, Farbinvertierung, großer Mauszeiger, Toolbar + Shortcuts, Freigabe für alle oder per Benutzerliste |

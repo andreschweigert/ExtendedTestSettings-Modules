@@ -1,8 +1,9 @@
 # ExamMagnifier — Entwicklerdokumentation
 
 **Modul-ID:** `exammagnifier`
-**Referenz-ZIP:** `modules-zip/modules/exammagnifier/ExamMagnifier_v1.0.0.zip`
-**Zuletzt aktualisiert:** 2026-07-21
+**Referenz-ZIP:** `modules-zip/modules/exammagnifier/ExamMagnifier_v1.0.1.zip`
+**Entwicklungsstand:** test
+**Zuletzt aktualisiert:** 2026-07-23
 
 ---
 
@@ -10,8 +11,8 @@
 
 Bildschirmlupe im Testplayer als browserbasierter Ersatz für die
 Windows-Bildschirmlupe in Kiosk-Linux-Umgebungen: Vollbild-Zoom bis 1600 %
-(Ausschnitt folgt der Maus), Farbinvertierung und großer Mauszeiger mit
-Klick-Hervorhebung. Bedienung über eine einklappbare Toolbar unten links
+mit Rand-Schwenk (Ruhezone in der Mitte, Schwenken am Bildschirmrand),
+Farbinvertierung und großer Mauszeiger mit Klick-Hervorhebung. Bedienung über eine einklappbare Toolbar unten links
 plus Tastatur-Shortcuts. Freigabe wahlweise für alle Teilnehmer oder nur
 für hinterlegte Benutzer (Nachteilsausgleich); nicht gelistete Teilnehmer
 bekommen keinerlei Assets injiziert.
@@ -67,11 +68,24 @@ GUI-Seite, keine AJAX-Endpoints. `tables: ["exammagnifier_settings"]`.
 
 Eine Lupen-Linse bräuchte eine DOM-Kopie (veraltet bei Eingaben) oder
 Screenshots. Der Vollbild-Zoom arbeitet auf dem echten DOM:
-`document.body.style.transform = scale(s)`, `transform-origin` = Seiten-
-koordinate des Mauszeigers, rAF-gelerpt (Faktor 0.18) für weiches
-Schwenken. Der Punkt unter dem Zeiger bleibt fix; Bewegung zum Rand
-schwenkt den Ausschnitt dorthin, vertikal bleibt normales Scrollen
-möglich (`overflow-x: hidden` auf `<html>` gegen springende Scrollbalken).
+`document.body.style.transform = scale(s)`; `transform-origin` (in
+Seitenkoordinaten, auf den sichtbaren Viewport geklemmt) bestimmt den
+Ausschnitt. Vertikal bleibt normales Scrollen möglich (`overflow-x:
+hidden` auf `<html>` gegen springende Scrollbalken).
+
+**Rand-Schwenk statt Zeiger-Kopplung (seit 1.0.1):** In 1.0.0 folgte der
+Origin direkt der Zeigerposition — Rückmeldung aus dem Test: nervöses
+Bild, Ecken nur durch Fahren in die äußerste Ecke erreichbar. Jetzt
+steuert ein rAF-Loop (`panTick`) den Origin: die äußeren 22 % je
+Viewport-Seite (`EDGE_BAND`) sind Schwenkzone mit quadratischer
+Geschwindigkeits-Kennlinie (`edgeVelocity`), die Mitte ist Ruhezone.
+Sichtgeschwindigkeit skaliert mit dem Zoom (`PAN_SPEED * s / (s - 1)`),
+Traversal-Zeit bleibt damit über alle Stufen ähnlich. Über der Toolbar
+(liegt unten links am Rand!) wird nicht geschwenkt
+(`pointerOverOwnUi`), ebenso nicht, wenn der Zeiger das Fenster
+verlässt. Beim Einschalten zentriert `centerOnQuestion()` auf
+`#tst_output`, und ein Ruhezonen-Hinweis (gestrichelter Rahmen +
+Label, `js_deadzone`) wird 2,5 s eingeblendet.
 
 **Kein DOM-Umbau:** Bewusst kein Wrapper-Element um die Body-Kinder —
 das würde iframes (TinyMCE-Essay-Editor!) neu laden. Eigene UI (Toolbar,
@@ -137,4 +151,5 @@ exammessage/examalert oben, examresourcesheet links Mitte.
 
 | Version | Datum | Änderungen |
 |---|---|---|
+| 1.0.1 | 2026-07-23 | Rand-Schwenk statt Zeiger-Kopplung, Zentrierung auf `#tst_output`, Ruhezonen-Hinweis, `maturity`-Feld |
 | 1.0.0 | 2026-07-21 | Erstversion |
