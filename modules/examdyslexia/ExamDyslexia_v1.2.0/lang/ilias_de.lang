@@ -1,0 +1,47 @@
+<!-- language file start -->
+title#:#Legasthenie-Modus
+description#:#Legasthenie-freundlicher Lesemodus mit OpenDyslexic-Schrift, angepasstem Zeilen- und Buchstabenabstand sowie optionalem Pastell-Hintergrund
+enable#:#Legasthenie-Modus aktivieren
+enable_info#:#Bietet einen barrierefreien Lesemodus mit OpenDyslexic-Schrift, erhöhtem Zeilen- und Buchstabenabstand sowie optionalem Pastell-Hintergrund.
+allow_toggle#:#Student kann selbst ein-/ausschalten
+allow_toggle_info#:#Zeigt einen Toggle-Button im Testplayer. Wenn deaktiviert, wird der Modus für alle Teilnehmer erzwungen – ohne Abschaltmöglichkeit.
+allow_customize#:#Student kann die Darstellung selbst anpassen
+allow_customize_info#:#Zeigt im Testplayer ein Zahnrad neben dem Schalter. Darüber verstellt der Studierende Hintergrundfarbe, Zeilenabstand und Zeichenabstand entlang derselben Stufen wie unten – die hier gewählten Werte sind dann nur noch die Startwerte. Ist die Einstellung deaktiviert, gelten die unten festgelegten Werte unveränderlich.
+use_font#:#OpenDyslexic Schrift verwenden
+use_font_info#:#Ersetzt die Standardschrift durch OpenDyslexic (SIL Open Font License, lokal gespeichert).
+bg_label#:#Hintergrundfarbe
+bg_none#:#Keiner
+bg_cream#:#Cremefarben (#FEFAE0)
+bg_yellow#:#Hellgelb (#FFFDE7)
+bg_blue#:#Hellblau (#E3F2FD)
+lh_label#:#Zeilenabstand
+lh_18#:#1.8 (Standard)
+ls_label#:#Buchstabenabstand
+ls_normal#:#Normal (0)
+ls_light#:#Leicht (0.05em, Standard)
+ls_medium#:#Mittel (0.12em)
+ls_strong#:#Stark (0.2em)
+js_toggle_on#:#Lesemodus: EIN
+js_toggle_off#:#Lesemodus: AUS
+js_toggle_aria#:#Legasthenie-Lesemodus umschalten
+js_toggle_title#:#Legasthenie-freundlichen Lesemodus ein-/ausschalten
+js_panel_label#:#Darstellung anpassen
+js_panel_open#:#Darstellung anpassen
+js_panel_close#:#Einstellungen schließen
+js_bg_label#:#Hintergrund
+js_bg_none#:#Ohne Farbe
+js_bg_cream#:#Creme
+js_bg_yellow#:#Hellgelb
+js_bg_blue#:#Hellblau
+js_lh_label#:#Zeilenabstand
+js_lh_inc#:#Zeilenabstand vergrößern
+js_lh_dec#:#Zeilenabstand verkleinern
+js_ls_label#:#Zeichenabstand
+js_ls_inc#:#Zeichenabstand vergrößern
+js_ls_dec#:#Zeichenabstand verkleinern
+js_ls_0#:#Normal
+js_ls_1#:#Leicht
+js_ls_2#:#Mittel
+js_ls_3#:#Stark
+js_reset#:#Zurücksetzen
+js_reset_title#:#Auf die vom Dozenten vorgegebenen Werte zurücksetzen

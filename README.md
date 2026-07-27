@@ -28,7 +28,7 @@ Jeder Branch entspricht einer ILIAS-Hauptversion:
 | [examcalc](modules/examcalc/) | ![Prüfungserprobt](https://img.shields.io/badge/Pr%C3%BCfungserprobt-brightgreen) | Taschenrechner während der Prüfung (einfach oder wissenschaftlich), Shortcut Alt + R |
 | [examchecker](modules/examchecker/) | ![In Entwicklung](https://img.shields.io/badge/In%20Entwicklung-yellow) | Prüft Test-Einstellungen gegen konfigurierbare Standards (Präsenz-/Fernprüfung) |
 | [examconnguard](modules/examconnguard/) | ![Experimentell](https://img.shields.io/badge/Experimentell-orange) | Verbindungs-Schutz: On-Demand-Probe bei Submit/Klick, Overlay + Auto-Replay bei WLAN-Ausfall |
-| [examdyslexia](modules/examdyslexia/) | ![Experimentell](https://img.shields.io/badge/Experimentell-orange) | Legasthenie-Modus: aktivierbarer Lesemodus für Studierende während der Prüfung |
+| [examdyslexia](modules/examdyslexia/) | ![Experimentell](https://img.shields.io/badge/Experimentell-orange) | Legasthenie-Modus: aktivierbarer Lesemodus für Studierende während der Prüfung, Darstellung im Testplayer selbst anpassbar |
 | [examfullscreen](modules/examfullscreen/) | ![Experimentell](https://img.shields.io/badge/Experimentell-orange) | Vollbild-Modus (F11) beim Teststart, warnt oder sperrt bei Verlassen des Vollbilds |
 | [examgrouping](modules/examgrouping/) | ![Pilotbetrieb](https://img.shields.io/badge/Pilotbetrieb-blueviolet) | Fragen zu Gruppen zusammenfassen, Ergebnisse je Gruppe auswerten, CSV-Export |
 | [examguard](modules/examguard/) | ![Prüfungserprobt](https://img.shields.io/badge/Pr%C3%BCfungserprobt-brightgreen) | Prüfungsschutz: blockiert Copy/Paste, Rechtsklick und kritische Tastenkombinationen |

@@ -1,0 +1,47 @@
+<!-- language file start -->
+title#:#Dyslexia mode
+description#:#Dyslexia-friendly reading mode with OpenDyslexic font, adjusted line and letter spacing and an optional pastel background
+enable#:#Enable dyslexia mode
+enable_info#:#Provides an accessible reading mode with OpenDyslexic font, increased line and letter spacing and an optional pastel background.
+allow_toggle#:#Student can toggle it on/off
+allow_toggle_info#:#Shows a toggle button in the test player. If disabled, the mode is enforced for all participants – with no way to turn it off.
+allow_customize#:#Student can adjust the appearance
+allow_customize_info#:#Shows a gear button next to the toggle in the test player. Students use it to change background colour, line spacing and letter spacing along the same steps as below – the values chosen here then only serve as starting values. If disabled, the values set below apply unchanged.
+use_font#:#Use OpenDyslexic font
+use_font_info#:#Replaces the default font with OpenDyslexic (SIL Open Font License, stored locally).
+bg_label#:#Background colour
+bg_none#:#None
+bg_cream#:#Cream (#FEFAE0)
+bg_yellow#:#Light yellow (#FFFDE7)
+bg_blue#:#Light blue (#E3F2FD)
+lh_label#:#Line spacing
+lh_18#:#1.8 (default)
+ls_label#:#Letter spacing
+ls_normal#:#Normal (0)
+ls_light#:#Light (0.05em, default)
+ls_medium#:#Medium (0.12em)
+ls_strong#:#Strong (0.2em)
+js_toggle_on#:#Reading mode: ON
+js_toggle_off#:#Reading mode: OFF
+js_toggle_aria#:#Toggle dyslexia reading mode
+js_toggle_title#:#Turn the dyslexia-friendly reading mode on or off
+js_panel_label#:#Adjust appearance
+js_panel_open#:#Adjust appearance
+js_panel_close#:#Close settings
+js_bg_label#:#Background
+js_bg_none#:#No colour
+js_bg_cream#:#Cream
+js_bg_yellow#:#Light yellow
+js_bg_blue#:#Light blue
+js_lh_label#:#Line spacing
+js_lh_inc#:#Increase line spacing
+js_lh_dec#:#Decrease line spacing
+js_ls_label#:#Letter spacing
+js_ls_inc#:#Increase letter spacing
+js_ls_dec#:#Decrease letter spacing
+js_ls_0#:#Normal
+js_ls_1#:#Light
+js_ls_2#:#Medium
+js_ls_3#:#Strong
+js_reset#:#Reset
+js_reset_title#:#Reset to the values specified by the instructor

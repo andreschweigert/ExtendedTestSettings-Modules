@@ -84,15 +84,26 @@ body.examdyslexia-active #tst_output label {
 }
 
 /* ============================================
-   TOGGLE-BUTTON
+   LEISTE (Toggle-Button + Zahnrad + Panel)
    top: 80px; right: 16px → kein Konflikt mit examcalc (bottom-right)
    z-index: 9000 → über ILIAS-Content, unter Modals
    ============================================ */
-#examdyslexia-toggle {
+#examdyslexia-bar {
     position: fixed !important;
     top: 80px !important;
     right: 16px !important;
     z-index: 9000 !important;
+    font-family: system-ui, -apple-system, sans-serif !important;
+}
+
+#examdyslexia-bar .examdyslexia-buttons {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 6px !important;
+}
+
+#examdyslexia-toggle {
     display: flex !important;
     align-items: center !important;
     gap: 6px !important;
@@ -156,10 +167,190 @@ body.examdyslexia-active #tst_output label {
 }
 
 /* ============================================
+   ZAHNRAD — öffnet das Einstellungs-Panel
+   ============================================ */
+#examdyslexia-gear {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 38px !important;
+    height: 38px !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    border: 2px solid #6c757d !important;
+    border-radius: 50% !important;
+    cursor: pointer !important;
+    font-size: 17px !important;
+    line-height: 1 !important;
+    color: #495057 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+    transition: all 0.2s ease !important;
+    user-select: none !important;
+}
+
+#examdyslexia-gear:hover {
+    background: #f8f9fa !important;
+    border-color: #495057 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+#examdyslexia-gear:focus-visible {
+    outline: 3px solid #0d6efd !important;
+    outline-offset: 2px !important;
+}
+
+/* Panel offen: Zahnrad bleibt sichtbar markiert */
+#examdyslexia-gear.examdyslexia-on {
+    background: #0d6efd !important;
+    border-color: #0d6efd !important;
+    color: #ffffff !important;
+}
+
+/* ============================================
+   PANEL — Studierende stellen Darstellung selbst ein
+   ============================================ */
+#examdyslexia-panel {
+    display: none;
+    margin-top: 8px !important;
+    padding: 12px 14px !important;
+    min-width: 250px !important;
+    background: #ffffff !important;
+    border: 2px solid #6c757d !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22) !important;
+    color: #212529 !important;
+    /* Panel selbst bleibt neutral gesetzt, auch wenn der Lesemodus läuft */
+    font-family: system-ui, -apple-system, sans-serif !important;
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+    letter-spacing: normal !important;
+}
+
+#examdyslexia-panel .examdyslexia-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    margin-bottom: 10px !important;
+}
+
+#examdyslexia-panel .examdyslexia-rowlabel {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #343a40 !important;
+    white-space: nowrap !important;
+}
+
+/* --- Farbfelder --- */
+#examdyslexia-panel .examdyslexia-swatches {
+    display: flex !important;
+    gap: 6px !important;
+}
+
+#examdyslexia-panel .examdyslexia-swatch {
+    width: 30px !important;
+    height: 30px !important;
+    padding: 0 !important;
+    border: 2px solid #adb5bd !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    background: #ffffff;
+}
+
+/* "Keine Farbe": diagonaler Strich statt Farbfläche */
+#examdyslexia-panel .examdyslexia-swatch-none {
+    background: linear-gradient(to top right,
+        #ffffff 0%, #ffffff 45%,
+        #dc3545 45%, #dc3545 55%,
+        #ffffff 55%, #ffffff 100%) !important;
+}
+
+#examdyslexia-panel .examdyslexia-swatch:hover {
+    border-color: #495057 !important;
+}
+
+#examdyslexia-panel .examdyslexia-swatch:focus-visible {
+    outline: 3px solid #0d6efd !important;
+    outline-offset: 2px !important;
+}
+
+#examdyslexia-panel .examdyslexia-swatch-on {
+    border-color: #0d6efd !important;
+    border-width: 3px !important;
+    box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25) !important;
+}
+
+/* --- Stufenschalter (− Wert +) --- */
+#examdyslexia-panel .examdyslexia-stepper {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+}
+
+#examdyslexia-panel .examdyslexia-step {
+    width: 30px !important;
+    height: 30px !important;
+    padding: 0 !important;
+    background: #f2f5f9 !important;
+    border: 2px solid #adb5bd !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    font-size: 17px !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    color: #212529 !important;
+}
+
+#examdyslexia-panel .examdyslexia-step:hover {
+    background: #e3eaf3 !important;
+    border-color: #495057 !important;
+}
+
+#examdyslexia-panel .examdyslexia-step:focus-visible {
+    outline: 3px solid #0d6efd !important;
+    outline-offset: 2px !important;
+}
+
+#examdyslexia-panel .examdyslexia-val {
+    min-width: 72px !important;
+    text-align: center !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    font-variant-numeric: tabular-nums !important;
+    color: #212529 !important;
+}
+
+/* --- Zurücksetzen --- */
+#examdyslexia-panel .examdyslexia-reset {
+    display: block !important;
+    width: 100% !important;
+    margin-top: 4px !important;
+    padding: 7px 10px !important;
+    background: #f2f5f9 !important;
+    border: 2px solid #adb5bd !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: #343a40 !important;
+}
+
+#examdyslexia-panel .examdyslexia-reset:hover {
+    background: #e3eaf3 !important;
+    border-color: #495057 !important;
+}
+
+#examdyslexia-panel .examdyslexia-reset:focus-visible {
+    outline: 3px solid #0d6efd !important;
+    outline-offset: 2px !important;
+}
+
+/* ============================================
    ACCESSIBILITY
    ============================================ */
 @media (prefers-reduced-motion: reduce) {
-    #examdyslexia-toggle {
+    #examdyslexia-toggle,
+    #examdyslexia-gear {
         transition: none !important;
     }
 
@@ -173,27 +364,49 @@ body.examdyslexia-active #tst_output label {
 }
 
 @media (prefers-contrast: high) {
-    #examdyslexia-toggle {
+    #examdyslexia-toggle,
+    #examdyslexia-gear,
+    #examdyslexia-panel,
+    #examdyslexia-panel .examdyslexia-step,
+    #examdyslexia-panel .examdyslexia-swatch,
+    #examdyslexia-panel .examdyslexia-reset {
         border-width: 3px !important;
         border-color: #000 !important;
         color: #000 !important;
+    }
+
+    #examdyslexia-toggle,
+    #examdyslexia-gear,
+    #examdyslexia-panel,
+    #examdyslexia-panel .examdyslexia-step,
+    #examdyslexia-panel .examdyslexia-reset {
         background: #fff !important;
     }
 
-    #examdyslexia-toggle.examdyslexia-on {
+    #examdyslexia-toggle.examdyslexia-on,
+    #examdyslexia-gear.examdyslexia-on {
         background: #000 !important;
         color: #fff !important;
         border-color: #000 !important;
     }
+
+    /* Farbfelder behalten ihre Farbe — sonst wären sie nicht unterscheidbar */
+    #examdyslexia-panel .examdyslexia-swatch-on {
+        outline: 3px solid #000 !important;
+        outline-offset: 2px !important;
+    }
 }
 
 /* ============================================
-   RESPONSIVE: Button auf kleinen Screens kompakter
+   RESPONSIVE: Leiste auf kleinen Screens kompakter
    ============================================ */
 @media (max-width: 480px) {
-    #examdyslexia-toggle {
+    #examdyslexia-bar {
         top: 60px !important;
         right: 8px !important;
+    }
+
+    #examdyslexia-toggle {
         padding: 6px 10px !important;
         font-size: 12px !important;
     }
@@ -201,13 +414,20 @@ body.examdyslexia-active #tst_output label {
     #examdyslexia-toggle .examdyslexia-label {
         display: none !important;
     }
+
+    /* Panel darf den Fragebereich nicht überlaufen */
+    #examdyslexia-panel {
+        min-width: 0 !important;
+        width: calc(100vw - 24px) !important;
+        max-width: 260px !important;
+    }
 }
 
 /* ============================================
-   PRINT: Button ausblenden
+   PRINT: Leiste ausblenden
    ============================================ */
 @media print {
-    #examdyslexia-toggle {
+    #examdyslexia-bar {
         display: none !important;
     }
 }
@@ -216,8 +436,8 @@ body.examdyslexia-active #tst_output label {
    LESESCHIENE (Reading Ruler)
    Folgt dem Cursor vertikal innerhalb #tst_output.
    pointer-events: none → Text bleibt anklickbar/markierbar.
-   Höhe wird per JS aus config.line_height berechnet.
-   z-index 8999 → unter Toggle-Button (9000), über Content.
+   Höhe wird per JS aus dem aktuellen Zeilenabstand berechnet.
+   z-index 8999 → unter der Leiste (9000), über Content.
    ============================================ */
 #examdyslexia-ruler {
     position: fixed !important;
