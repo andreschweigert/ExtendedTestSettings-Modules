@@ -50,20 +50,30 @@ eigene GUI-Seite und keine AJAX-Endpoints. `tables: ["examdyslexia_settings"]`.
 | `enabled` | integer(1) | 0 | Modul für diesen Test aktiv |
 | `allow_toggle` | integer(1) | 1 | 1 = Student schaltet selbst (Button); 0 = erzwungen, immer aktiv |
 | `allow_customize` | integer(1) | 1 | 1 = Student verstellt Darstellung im Panel; 0 = Dozentenwerte fix (ab 1.2.0) |
-| `use_font` | integer(1) | 1 | OpenDyslexic-Schrift verwenden |
+| `font_family` | text(20) | `opendyslexic` | Schlüssel aus der FONTS-Registry: default / opendyslexic / atkinson (ab 1.2.2) |
+| `use_font` | integer(1) | 1 | Altbestand vor 1.2.2; wird aus `font_family` mitgeschrieben, siehe unten |
 | `line_height` | text(10) | `1.8` | Whitelist: 1.5 / 1.8 / 2.0 / 2.5 |
 | `letter_spacing` | text(10) | `0.05em` | Whitelist: 0 / 0.05em / 0.12em / 0.2em |
+| `word_spacing` | text(10) | `0` | Whitelist: 0 / 0.16em / 0.3em / 0.5em (ab 1.2.2) |
 | `bg_color` | text(20) | `none` | Whitelist: none / #FEFAE0 (Creme) / #FFFDE7 (Gelb) / #E3F2FD (Blau) |
 | `updated_at` | timestamp | null | letzte Änderung |
 
 Schreiben per `$db->replace()` (Upsert); alle Auswahlwerte werden im Handler
-gegen `ALLOWED_*`-Whitelists validiert.
+gegen `ALLOWED_*`-Whitelists bzw. die Schlüssel der FONTS-Registry validiert.
 
-`allow_customize` kam mit 1.2.0 dazu — `install.php` legt sie im `else`-Zweig
-per `tableColumnExists()`-Guard nach. Das Update muss deshalb über den
-ZIP-Upload laufen, sonst fehlt die Spalte. `getConfig()` liest bewusst
-`SELECT *` und fällt für `allow_customize` auf `1` zurück, damit das Modul
-zwischen Datei- und Schema-Stand nicht bricht.
+Nachträglich ergänzte Spalten (`allow_customize` mit 1.2.0, `font_family` und
+`word_spacing` mit 1.2.2) legt `install.php` im `else`-Zweig per
+`tableColumnExists()`-Guard nach — Updates müssen deshalb über den ZIP-Upload
+laufen. `getConfig()` liest bewusst `SELECT *` und setzt für fehlende Spalten
+Rückfallwerte, damit das Modul zwischen Datei- und Schema-Stand nicht bricht.
+
+**Migration `use_font` → `font_family`:** Beim Anlegen der Spalte setzt
+`install.php` alle Zeilen mit `use_font = 0` auf `default`; der Spaltendefault
+`opendyslexic` deckt den Rest ab. Damit behalten bestehende Tests ihr Aussehen
+ohne Zutun. `use_font` bleibt in der Tabelle und wird von `saveSettings()`
+weiter konsistent gefüllt (`font_family = 'default'` → 0, sonst 1); `getConfig()`
+wertet es nur noch aus, wenn `font_family` fehlt. So bleibt ein Downgrade auf
+eine ältere Modulversion gefahrlos.
 
 ## Handler (ilExamDyslexiaHandler)
 
@@ -88,13 +98,41 @@ Cache-Busting nutzt `@filemtime($css_file)` auf den **web-relativen** Pfad: bei
 Web-Requests ist das CWD der Webroot (9 wie 10), während `ILIAS_ABSOLUTE_PATH`
 in ILIAS 10 wegen `public/` ins Leere zeigen würde.
 
+## Schrift-Registry
+
+`ilExamDyslexiaHandler::FONTS` ist die einzige Stelle, an der Schriften stehen.
+Jeder Eintrag hat `family` (Name fürs `@font-face`), `stack` (CSS-Wert, leer =
+Standardschrift des Testplayers) und `faces` mit Datei, Gewicht, Schnitt und
+Formaten. `getFontList()` macht daraus die Struktur, die als `config.fonts` ins
+JavaScript geht; daraus entstehen die Panel-Auswahl **und** die
+`@font-face`-Regeln. Die Dozenten-Auswahl im Formular wird ebenfalls über die
+Registry-Schlüssel aufgebaut.
+
+Eine weitere Schrift ergänzen heißt deshalb:
+
+1. woff2 (optional zusätzlich woff) nach `fonts/`, Lizenztext daneben
+2. Eintrag in `FONTS`
+3. Labels `font_<id>` (Formular) und `js_font_<id>` (Panel) in beide lang-Dateien
+
+CSS und JS bleiben unberührt. Die `@font-face`-Blöcke wurden mit 1.2.2 aus dem
+Stylesheet entfernt: sie werden im JS erzeugt, weil nur dort der Pfad absolut
+aufgelöst werden kann — und nur absolut funktionieren sie auch im
+TinyMCE-iframe. Deklariert werden immer alle Schriften; geladen wird eine Datei
+erst bei tatsächlicher Verwendung, sodass das Umschalten im Panel ohne
+Nachlade-Logik auskommt.
+
+Die Ersetzung im Stylesheet hängt an zwei Bedingungen: `body.examdyslexia-active`
+**und** `body.examdyslexia-hasfont`. Die zweite Klasse setzt das JS nur, wenn der
+Stack nicht leer ist — bei „Standard" bleibt die Schrift des Testplayers stehen,
+während Abstände und Hintergrund trotzdem wirken.
+
 ## JavaScript
 
 - Config **live** über `cfg()` lesen (addOnLoadCode läuft nach addJavaScript —
   nie beim IIFE-Init cachen). Sichtbare Texte über `txt(key)` aus `cfg().labels`.
 - Zustand pro Teilnahme als JSON in `sessionStorage`
-  (`examdyslexia_state_<active_id>`, Fallback `ref_id`): `{on, bg, lh, ls, open}`
-  — überlebt die Fragennavigation.
+  (`examdyslexia_state_<active_id>`, Fallback `ref_id`):
+  `{on, font, bg, lh, ls, ws, open}` — überlebt die Fragennavigation.
 - Stufenwechsel laufen über die Indizes der Config-Listen; jeder geladene Wert
   wird mit `pick()` gegen dieselbe Liste geprüft. Bei `allow_customize = 0`
   werden gespeicherte Stufen verworfen und die Dozentenwerte gesetzt.
@@ -159,7 +197,8 @@ Zwei Fallstricke, die der Code abfängt:
 │   ├── #examdyslexia-toggle       nur bei allow_toggle
 │   └── #examdyslexia-gear         nur bei allow_customize
 └── #examdyslexia-panel            nur bei allow_customize, display per state.open
-    ├── .examdyslexia-row × 3      Hintergrund (Farbfelder) / Zeilen- / Zeichenabstand (− Wert +)
+    ├── .examdyslexia-row × 5      Schrift (Auswahlfeld), Hintergrund (Farbfelder),
+    │                              Zeilen-, Zeichen-, Wortabstand (− Wert +)
     └── .examdyslexia-reset        zurück auf die Dozentenwerte
 ```
 
@@ -183,6 +222,7 @@ konfigurieren.
 
 | Datum | Was |
 |---|---|
+| 2026-07 | **v1.2.2:** Atkinson Hyperlegible als zweite Schrift; Schriftauswahl über eine Registry statt fester OpenDyslexic-Checkbox (Migration aus `use_font`); Wortabstand als weitere Stufe; `@font-face` wandert aus dem CSS ins JS, damit die Pfade absolut aufgelöst werden |
 | 2026-07 | **v1.2.1:** Video- und Audioplayer (MediaElement.js) von der Hintergrund-Einfärbung ausgenommen, Schrift/Zeichenabstand im Player-Teilbaum zurückgesetzt — die Steuerelemente waren auf der Pastellfarbe kaum noch erkennbar |
 | 2026-07 | **v1.2.0:** Einstellungs-Panel für Studierende (Hintergrund, Zeilen-, Zeichenabstand), Dozenten-Option `allow_customize`, JS-Texte über lang-Dateien, Zustand als JSON im sessionStorage; Leiste von oben rechts (lag auf ILIAS' „Weiter") nach unten mittig verlegt und unter `<html>` gehängt; Styles wirken jetzt auch im TinyMCE-iframe der Freitextfragen |
 | 2026-06 | **v1.1.0:** Modul-i18n DE/EN (ilModuleLanguage), sichtbare Strings über lang-Dateien |

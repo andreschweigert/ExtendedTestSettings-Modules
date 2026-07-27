@@ -5,43 +5,31 @@
  */
 
 /* ============================================
-   OPENDSYLEXIC FONT
-   ../fonts/ wird relativ zur CSS-Datei aufgelöst.
-   JS-Fallback injiziert @font-face mit absolutem Pfad,
-   falls ILIAS den CSS-Pfad umschreibt.
+   SCHRIFTEN
+   Die @font-face-Regeln erzeugt das JS aus der Schrift-Registry des Handlers
+   (config.fonts) mit absolut aufgelöstem Pfad — nur so greifen sie auch im
+   TinyMCE-iframe, dessen Basis-URL nicht der Webroot ist. Eine weitere Schrift
+   braucht deshalb keinen Eingriff in dieses Stylesheet.
    ============================================ */
-@font-face {
-    font-family: 'OpenDyslexic';
-    src: url('../fonts/OpenDyslexic-Regular.woff2') format('woff2'),
-         url('../fonts/OpenDyslexic-Regular.woff') format('woff');
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'OpenDyslexic';
-    src: url('../fonts/OpenDyslexic-Bold.woff2') format('woff2'),
-         url('../fonts/OpenDyslexic-Bold.woff') format('woff');
-    font-weight: bold;
-    font-style: normal;
-    font-display: swap;
-}
 
 /* ============================================
    LESEMODUS (aktiviert durch body.examdyslexia-active)
    ============================================ */
 
-/* Icon-Fonts ausschließen: Glyphicons (Bootstrap 3), Font Awesome, ILIAS-eigene Icons.
-   Diese Elemente nutzen spezielle Unicode-Zeichen die OpenDyslexic nicht enthält. */
-body.examdyslexia-active #tst_output,
-body.examdyslexia-active #tst_output *:not([class*="glyphicon"]):not([class*=" fa"]):not([class^="fa"]):not([class*="il-icon"]):not([class*="ilIcon"]):not([class*="icon-"]) {
-    font-family: 'OpenDyslexic', Arial, sans-serif !important;
+/* Schriftersetzung nur bei gewählter Sonderschrift (Klasse examdyslexia-hasfont).
+   Bei "Standard" bleibt die Schrift des Testplayers unangetastet, die Abstände
+   wirken trotzdem.
+   Icon-Fonts ausschließen: Glyphicons (Bootstrap 3), Font Awesome, ILIAS-eigene
+   Icons. Diese Elemente nutzen Unicode-Bereiche, die Textschriften nicht haben. */
+body.examdyslexia-active.examdyslexia-hasfont #tst_output,
+body.examdyslexia-active.examdyslexia-hasfont #tst_output *:not([class*="glyphicon"]):not([class*=" fa"]):not([class^="fa"]):not([class*="il-icon"]):not([class*="ilIcon"]):not([class*="icon-"]) {
+    font-family: var(--examdyslexia-font, inherit) !important;
 }
 
 body.examdyslexia-active #tst_output {
     line-height: var(--examdyslexia-line-height, 1.8) !important;
     letter-spacing: var(--examdyslexia-letter-spacing, 0.05em) !important;
+    word-spacing: var(--examdyslexia-word-spacing, 0) !important;
     background-color: var(--examdyslexia-bg, transparent) !important;
 }
 
@@ -101,6 +89,7 @@ body.examdyslexia-active #tst_output [class*="mejs"],
 body.examdyslexia-active #tst_output [class*="mejs"] * {
     font-family: Helvetica, Arial, sans-serif !important;
     letter-spacing: normal !important;
+    word-spacing: normal !important;
 }
 
 /* Videofläche und natives Steuerelement bleiben unangetastet */
@@ -108,6 +97,7 @@ body.examdyslexia-active #tst_output video,
 body.examdyslexia-active #tst_output audio {
     background-color: initial !important;
     letter-spacing: normal !important;
+    word-spacing: normal !important;
 }
 
 /* ============================================
@@ -314,6 +304,29 @@ body.examdyslexia-active #tst_output audio {
     border-color: #0d6efd !important;
     border-width: 3px !important;
     box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25) !important;
+}
+
+/* --- Schriftauswahl --- */
+#examdyslexia-panel .examdyslexia-select {
+    min-width: 132px !important;
+    max-width: 160px !important;
+    padding: 5px 6px !important;
+    background: #ffffff !important;
+    border: 2px solid #adb5bd !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    font-family: inherit !important;
+    font-size: 13px !important;
+    color: #212529 !important;
+}
+
+#examdyslexia-panel .examdyslexia-select:hover {
+    border-color: #495057 !important;
+}
+
+#examdyslexia-panel .examdyslexia-select:focus-visible {
+    outline: 3px solid #0d6efd !important;
+    outline-offset: 2px !important;
 }
 
 /* --- Stufenschalter (− Wert +) --- */

@@ -7,6 +7,11 @@ allow_toggle#:#Student kann selbst ein-/ausschalten
 allow_toggle_info#:#Zeigt einen Toggle-Button im Testplayer. Wenn deaktiviert, wird der Modus für alle Teilnehmer erzwungen – ohne Abschaltmöglichkeit.
 allow_customize#:#Student kann die Darstellung selbst anpassen
 allow_customize_info#:#Zeigt im Testplayer ein Zahnrad neben dem Schalter. Darüber verstellt der Studierende Hintergrundfarbe, Zeilenabstand und Zeichenabstand entlang derselben Stufen wie unten – die hier gewählten Werte sind dann nur noch die Startwerte. Ist die Einstellung deaktiviert, gelten die unten festgelegten Werte unveränderlich.
+font_label#:#Schriftart
+font_label_info#:#Ersetzt die Standardschrift des Testplayers. Beide Schriften sind für Menschen mit Leseschwäche entwickelt und liegen lokal im Modul (SIL Open Font License), es wird nichts nachgeladen. Wenn das Anpassen erlaubt ist, gilt die Auswahl als Startwert und der Studierende kann wechseln.
+font_default#:#Standardschrift des Testplayers
+font_opendyslexic#:#OpenDyslexic
+font_atkinson#:#Atkinson Hyperlegible
 use_font#:#OpenDyslexic Schrift verwenden
 use_font_info#:#Ersetzt die Standardschrift durch OpenDyslexic (SIL Open Font License, lokal gespeichert).
 bg_label#:#Hintergrundfarbe
@@ -21,6 +26,11 @@ ls_normal#:#Normal (0)
 ls_light#:#Leicht (0.05em, Standard)
 ls_medium#:#Mittel (0.12em)
 ls_strong#:#Stark (0.2em)
+ws_label#:#Wortabstand
+ws_normal#:#Normal (0, Standard)
+ws_light#:#Leicht (0.16em)
+ws_medium#:#Mittel (0.3em)
+ws_strong#:#Stark (0.5em)
 js_toggle_on#:#Lesemodus: EIN
 js_toggle_off#:#Lesemodus: AUS
 js_toggle_aria#:#Legasthenie-Lesemodus umschalten
@@ -43,5 +53,16 @@ js_ls_0#:#Normal
 js_ls_1#:#Leicht
 js_ls_2#:#Mittel
 js_ls_3#:#Stark
+js_font_label#:#Schriftart
+js_font_default#:#Standard
+js_font_opendyslexic#:#OpenDyslexic
+js_font_atkinson#:#Atkinson Hyperlegible
+js_ws_label#:#Wortabstand
+js_ws_inc#:#Wortabstand vergrößern
+js_ws_dec#:#Wortabstand verkleinern
+js_ws_0#:#Normal
+js_ws_1#:#Leicht
+js_ws_2#:#Mittel
+js_ws_3#:#Stark
 js_reset#:#Zurücksetzen
 js_reset_title#:#Auf die vom Dozenten vorgegebenen Werte zurücksetzen

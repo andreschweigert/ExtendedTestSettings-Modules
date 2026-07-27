@@ -8,9 +8,9 @@ Bietet einen **Legasthenie-freundlichen Lesemodus** im ILIAS Test-Player. Studie
 
 ## Features
 
-- **OpenDyslexic Schrift** — lokal im Modul enthalten, kein CDN
-- **Selbst anpassbare Darstellung** — Studierende verstellen Hintergrundfarbe, Zeilen- und Zeichenabstand direkt im Testplayer
-- **Erhöhter Zeilen- und Zeichenabstand** — stufenweise konfigurierbar
+- **Zwei Lesehilfe-Schriften** — OpenDyslexic und Atkinson Hyperlegible, lokal im Modul enthalten, kein CDN
+- **Selbst anpassbare Darstellung** — Studierende verstellen Schrift, Hintergrundfarbe, Zeilen-, Zeichen- und Wortabstand direkt im Testplayer
+- **Erhöhter Zeilen-, Zeichen- und Wortabstand** — stufenweise konfigurierbar
 - **Pastell-Hintergrundfarbe** — Creme, Hellgelb oder Hellblau (optional)
 - **Leseschiene** — hebt die Zeile unter dem Mauszeiger hervor
 - **Wirkt auch im Freitext-Editor** — TinyMCE rendert in einem eigenen iframe, dort werden die Styles gesondert injiziert
@@ -29,15 +29,17 @@ In den Erweiterten Test-Einstellungen des Tests:
 | Legasthenie-Modus aktivieren | `examdyslexia_enabled` | Checkbox |
 | Student kann selbst ein-/ausschalten | `examdyslexia_allow_toggle` | Checkbox (Default: an) |
 | Student kann die Darstellung selbst anpassen | `examdyslexia_allow_customize` | Checkbox (Default: an) |
-| OpenDyslexic Schrift verwenden | `examdyslexia_use_font` | Checkbox (Default: an) |
+| Schriftart | `examdyslexia_font_family` | `default` / `opendyslexic` / `atkinson` |
 | Hintergrundfarbe | `examdyslexia_bg_color` | `none` / `#FEFAE0` / `#FFFDE7` / `#E3F2FD` |
 | Zeilenabstand | `examdyslexia_line_height` | `1.5` / `1.8` / `2.0` / `2.5` |
 | Buchstabenabstand | `examdyslexia_letter_spacing` | `0` / `0.05em` / `0.12em` / `0.2em` |
+| Wortabstand | `examdyslexia_word_spacing` | `0` / `0.16em` / `0.3em` / `0.5em` |
 
 **Hinweise:**
 
 - Wenn `allow_toggle` deaktiviert ist, wird der Modus für **alle** Teilnehmer erzwungen — ohne Abschaltmöglichkeit.
-- Wenn `allow_customize` aktiv ist, sind Hintergrundfarbe, Zeilen- und Buchstabenabstand nur noch **Startwerte**; der Studierende verstellt sie im Testplayer entlang derselben Stufen. Ist die Option aus, gelten die Dozentenwerte unveränderlich (Verhalten bis 1.1.0).
+- Wenn `allow_customize` aktiv ist, sind Schriftart, Hintergrundfarbe sowie Zeilen-, Buchstaben- und Wortabstand nur noch **Startwerte**; der Studierende verstellt sie im Testplayer entlang derselben Stufen. Ist die Option aus, gelten die Dozentenwerte unveränderlich (Verhalten bis 1.1.0).
+- Die Checkbox „OpenDyslexic verwenden" wurde mit 1.2.2 zum Auswahlfeld **Schriftart**. Bestehende Tests werden beim Update übernommen: Haken gesetzt → OpenDyslexic, Haken nicht gesetzt → Standardschrift.
 
 ## Bedienung (Studierende)
 
@@ -52,9 +54,11 @@ Im Panel:
 
 | Zeile | Steuerung |
 |---|---|
+| Schriftart | Auswahlfeld (Standard / OpenDyslexic / Atkinson Hyperlegible) |
 | Hintergrund | vier Farbfelder (ohne Farbe / Creme / Hellgelb / Hellblau) |
 | Zeilenabstand | `−` / `+` über die Stufen 1.5 – 2.5 |
 | Zeichenabstand | `−` / `+` über Normal / Leicht / Mittel / Stark |
+| Wortabstand | `−` / `+` über Normal / Leicht / Mittel / Stark |
 | Zurücksetzen | stellt die vom Dozenten vorgegebenen Werte wieder her |
 
 Jede Änderung im Panel schaltet den Lesemodus mit ein, damit die Einstellung sofort wirkt. Das Panel schließt per `Esc` oder Klick daneben.
@@ -69,9 +73,11 @@ Eigene Tabelle: `examdyslexia_settings`
 | `enabled` | integer 0/1 | 0 | Modul aktiviert |
 | `allow_toggle` | integer 0/1 | 1 | Student darf selbst schalten |
 | `allow_customize` | integer 0/1 | 1 | Student darf die Darstellung anpassen |
-| `use_font` | integer 0/1 | 1 | OpenDyslexic verwenden |
+| `font_family` | text | `opendyslexic` | Schrift-ID: `default` / `opendyslexic` / `atkinson` |
+| `use_font` | integer 0/1 | 1 | Altbestand, wird aus `font_family` mitgeführt |
 | `line_height` | text | `1.8` | CSS line-height Startwert |
 | `letter_spacing` | text | `0.05em` | CSS letter-spacing Startwert |
+| `word_spacing` | text | `0` | CSS word-spacing Startwert |
 | `bg_color` | text | `none` | CSS Hintergrundfarbe oder `none` |
 | `updated_at` | timestamp | — | Letzte Änderung |
 
@@ -79,12 +85,13 @@ Eigene Tabelle: `examdyslexia_settings`
 
 | Datei | Beschreibung |
 |---|---|
-| `css/examdyslexia.css` | Styles für @font-face, Lesemodus-Scope, Leiste, Panel, Leseschiene |
-| `js/examdyslexia.js` | Toggle, Panel, sessionStorage, CSS Custom Properties, Font-Fallback |
-| `fonts/OpenDyslexic-Regular.woff2` | OpenDyslexic Regular (SIL OFL) |
-| `fonts/OpenDyslexic-Regular.woff` | OpenDyslexic Regular Fallback |
-| `fonts/OpenDyslexic-Bold.woff2` | OpenDyslexic Bold (SIL OFL) |
-| `fonts/OpenDyslexic-Bold.woff` | OpenDyslexic Bold Fallback |
+| `css/examdyslexia.css` | Styles für Lesemodus-Scope, Leiste, Panel, Leseschiene |
+| `js/examdyslexia.js` | Toggle, Panel, sessionStorage, CSS Custom Properties, @font-face-Erzeugung |
+| `fonts/OpenDyslexic-{Regular,Bold}.{woff2,woff}` | OpenDyslexic (SIL OFL), woff als Fallback |
+| `fonts/AtkinsonHyperlegible-{Regular,Bold,Italic,BoldItalic}.woff2` | Atkinson Hyperlegible (SIL OFL) |
+
+Die Schriftdateien werden erst geladen, wenn die jeweilige Schrift tatsächlich
+verwendet wird — deklariert sind immer alle.
 
 ## Technische Details
 
@@ -144,14 +151,34 @@ auf (`flex-direction: column-reverse`), damit es am unteren Rand im Viewport ble
 Die Leiste hängt direkt unter `<html>`, damit sie vom `transform` auf `<body>`
 unberührt bleibt, mit dem exammagnifier zoomt.
 
+### Weitere Schrift aufnehmen
+
+Die Schriften stehen in der Registry `ilExamDyslexiaHandler::FONTS`. Aus ihr
+entstehen Dozenten-Auswahl, Panel-Auswahl und die `@font-face`-Regeln. Eine
+weitere Schrift braucht daher:
+
+1. woff2 (und optional woff) nach `fonts/`, Lizenztext daneben
+2. Eintrag in `FONTS` mit `family`, `stack` und den Schnitten
+3. Labels `font_<id>` und `js_font_<id>` in **beide** lang-Dateien
+
+CSS und JavaScript bleiben unberührt.
+
 ### Lizenz der Fonts
 
-OpenDyslexic ist unter der **SIL Open Font License 1.1** lizenziert — frei verwendbar, auch kommerziell, auch in geschlossenen Systemen.
+Beide Schriften stehen unter der **SIL Open Font License 1.1** — frei verwendbar,
+auch kommerziell, auch in geschlossenen Systemen. Die Lizenz verlangt, dass der
+Lizenztext mitgeliefert wird; er liegt deshalb in `fonts/` neben den Dateien:
+
+| Schrift | Urheber | Lizenztext |
+|---|---|---|
+| OpenDyslexic | Abbie Gonzalez | `fonts/OFL-OpenDyslexic.txt` |
+| Atkinson Hyperlegible | Braille Institute of America | `fonts/OFL-AtkinsonHyperlegible.txt` |
 
 ## Versionen
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
+| 1.2.2 | `ExamDyslexia_v1.2.2.zip` | 9 | Zweite Schrift Atkinson Hyperlegible, Schriftauswahl ersetzt die OpenDyslexic-Checkbox (Bestand wird übernommen); Wortabstand als weitere Stufe; Schriften kommen aus einer Registry, weitere lassen sich ohne CSS-/JS-Eingriff ergänzen |
 | 1.2.1 | `ExamDyslexia_v1.2.1.zip` | 9 | Video- und Audioplayer von der Hintergrund-Einfärbung ausgenommen — die Steuerelemente waren auf der Pastellfarbe kaum noch zu erkennen |
 | 1.2.0 | `ExamDyslexia_v1.2.0.zip` | 9 | Studierende passen Hintergrund, Zeilen- und Zeichenabstand im Testplayer selbst an (Panel am Zahnrad); neue Dozenten-Option `allow_customize`; JS-Texte über lang-Dateien; Leiste nach unten mittig verlegt (lag zuvor auf ILIAS' „Weiter"-Button); Styles wirken jetzt auch im TinyMCE-Editor der Freitextfragen |
 | 1.1.0 | `ExamDyslexia_v1.1.0.zip` | 9 | Modul-i18n DE/EN (ilModuleLanguage) |
@@ -162,4 +189,4 @@ OpenDyslexic ist unter der **SIL Open Font License 1.1** lizenziert — frei ver
 
 Siehe [`/docs/how-to.md`](../../docs/how-to.md).
 
-**Update auf 1.2.0:** zwingend über den ZIP-Upload in der Administration — `sql/install.php` ergänzt dabei die Spalte `allow_customize`.
+**Update auf 1.2.2:** zwingend über den ZIP-Upload in der Administration — `sql/install.php` ergänzt dabei die Spalten `allow_customize` (1.2.0) sowie `font_family` und `word_spacing` (1.2.2) und übernimmt den bisherigen `use_font`-Haken in die Schriftauswahl.

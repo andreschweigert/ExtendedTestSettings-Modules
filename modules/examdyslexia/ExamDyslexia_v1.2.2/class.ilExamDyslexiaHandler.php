@@ -11,6 +11,41 @@ class ilExamDyslexiaHandler implements ilExamModuleInterface
     private const ALLOWED_BG_COLORS = ['none', '#FEFAE0', '#FFFDE7', '#E3F2FD'];
     private const ALLOWED_LINE_HEIGHTS = ['1.5', '1.8', '2.0', '2.5'];
     private const ALLOWED_LETTER_SPACINGS = ['0', '0.05em', '0.12em', '0.2em'];
+    private const ALLOWED_WORD_SPACINGS = ['0', '0.16em', '0.3em', '0.5em'];
+
+    /**
+     * Schrift-Registry. Weitere Schrift ergänzen heißt: Eintrag hier,
+     * woff2 nach fonts/, Lizenztext daneben und die Labels 'font_<id>' und
+     * 'js_font_<id>' in beide lang-Dateien. CSS und JS bleiben unberührt —
+     * @font-face-Regeln und Auswahlliste werden daraus erzeugt.
+     *
+     * 'stack' leer = Standardschrift des Testplayers, keine Ersetzung.
+     */
+    private const FONTS = [
+        'default' => [
+            'family' => '',
+            'stack'  => '',
+            'faces'  => [],
+        ],
+        'opendyslexic' => [
+            'family' => 'OpenDyslexic',
+            'stack'  => '"OpenDyslexic", Arial, sans-serif',
+            'faces'  => [
+                ['file' => 'OpenDyslexic-Regular', 'weight' => 'normal', 'style' => 'normal', 'formats' => ['woff2', 'woff']],
+                ['file' => 'OpenDyslexic-Bold',    'weight' => 'bold',   'style' => 'normal', 'formats' => ['woff2', 'woff']],
+            ],
+        ],
+        'atkinson' => [
+            'family' => 'Atkinson Hyperlegible',
+            'stack'  => '"Atkinson Hyperlegible", Arial, sans-serif',
+            'faces'  => [
+                ['file' => 'AtkinsonHyperlegible-Regular',    'weight' => 'normal', 'style' => 'normal', 'formats' => ['woff2']],
+                ['file' => 'AtkinsonHyperlegible-Bold',       'weight' => 'bold',   'style' => 'normal', 'formats' => ['woff2']],
+                ['file' => 'AtkinsonHyperlegible-Italic',     'weight' => 'normal', 'style' => 'italic', 'formats' => ['woff2']],
+                ['file' => 'AtkinsonHyperlegible-BoldItalic', 'weight' => 'bold',   'style' => 'italic', 'formats' => ['woff2']],
+            ],
+        ],
+    ];
 
     private ilModuleLanguage $lng;
 
@@ -65,9 +100,10 @@ class ilExamDyslexiaHandler implements ilExamModuleInterface
             'enabled'         => false,
             'allow_toggle'    => true,
             'allow_customize' => true,
-            'use_font'        => true,
+            'font_family'     => 'opendyslexic',
             'line_height'     => '1.8',
             'letter_spacing'  => '0.05em',
+            'word_spacing'    => '0',
             'bg_color'        => 'none',
         ];
 
@@ -78,19 +114,24 @@ class ilExamDyslexiaHandler implements ilExamModuleInterface
                 return $defaults;
             }
 
-            // SELECT *: allow_customize kam erst mit 1.2.0 dazu — so bleibt das
-            // Modul auch lauffähig, bevor install.php die Spalte angelegt hat
+            // SELECT *: allow_customize (1.2.0) sowie font_family und word_spacing
+            // (1.2.2) kamen nachträglich dazu — so bleibt das Modul auch lauffähig,
+            // bevor install.php die Spalten angelegt hat
             $query = "SELECT * FROM examdyslexia_settings WHERE test_id = %s";
             $result = $db->queryF($query, ['integer'], [$test_id]);
 
             if ($row = $db->fetchAssoc($result)) {
+                // Ohne font_family-Spalte greift die alte use_font-Checkbox
+                $font = $row['font_family'] ?? (empty($row['use_font']) ? 'default' : 'opendyslexic');
+
                 return [
                     'enabled'         => (bool) $row['enabled'],
                     'allow_toggle'    => (bool) $row['allow_toggle'],
                     'allow_customize' => (bool) ($row['allow_customize'] ?? 1),
-                    'use_font'        => (bool) $row['use_font'],
+                    'font_family'     => isset(self::FONTS[$font]) ? $font : 'opendyslexic',
                     'line_height'     => $row['line_height'] ?? '1.8',
                     'letter_spacing'  => $row['letter_spacing'] ?? '0.05em',
+                    'word_spacing'    => $row['word_spacing'] ?? '0',
                     'bg_color'        => $row['bg_color'] ?? 'none',
                 ];
             }
@@ -133,6 +174,45 @@ class ilExamDyslexiaHandler implements ilExamModuleInterface
     }
 
     /**
+     * Baut die Schriftliste für das JS: Auswahl-Label, CSS-Stack und die
+     * @font-face-Quellen mit web-relativem Pfad (das JS löst ihn absolut auf).
+     */
+    private function getFontList(string $font_path): array
+    {
+        $fonts = [];
+
+        foreach (self::FONTS as $id => $font) {
+            $faces = [];
+
+            foreach ($font['faces'] as $face) {
+                $sources = [];
+                foreach ($face['formats'] as $format) {
+                    $sources[] = [
+                        'url'    => $font_path . $face['file'] . '.' . $format,
+                        'format' => $format,
+                    ];
+                }
+
+                $faces[] = [
+                    'weight'  => $face['weight'],
+                    'style'   => $face['style'],
+                    'sources' => $sources,
+                ];
+            }
+
+            $fonts[] = [
+                'id'     => $id,
+                'label'  => $this->lng->txt('js_font_' . $id),
+                'family' => $font['family'],
+                'stack'  => $font['stack'],
+                'faces'  => $faces,
+            ];
+        }
+
+        return $fonts;
+    }
+
+    /**
      * Injiziert CSS, JS und Konfiguration in das Template
      */
     public function injectAssets(ilGlobalTemplateInterface $tpl, int $ref_id): void
@@ -169,14 +249,17 @@ class ilExamDyslexiaHandler implements ilExamModuleInterface
             'ref_id'          => $ref_id,
             'allow_toggle'    => $config['allow_toggle'],
             'allow_customize' => $config['allow_customize'],
-            'use_font'        => $config['use_font'],
+            'font_family'     => $config['font_family'],
             'line_height'     => $config['line_height'],
             'letter_spacing'  => $config['letter_spacing'],
+            'word_spacing'    => $config['word_spacing'],
             'bg_color'        => $config['bg_color'],
             'font_path'       => $font_path,
+            'fonts'           => $this->getFontList($font_path),
             'bg_colors'       => self::ALLOWED_BG_COLORS,
             'line_heights'    => self::ALLOWED_LINE_HEIGHTS,
             'letter_spacings' => self::ALLOWED_LETTER_SPACINGS,
+            'word_spacings'   => self::ALLOWED_WORD_SPACINGS,
             'labels'          => [
                 'toggle_on'    => $this->lng->txt('js_toggle_on'),
                 'toggle_off'   => $this->lng->txt('js_toggle_off'),
@@ -200,6 +283,14 @@ class ilExamDyslexiaHandler implements ilExamModuleInterface
                 'ls_1'         => $this->lng->txt('js_ls_1'),
                 'ls_2'         => $this->lng->txt('js_ls_2'),
                 'ls_3'         => $this->lng->txt('js_ls_3'),
+                'font_label'   => $this->lng->txt('js_font_label'),
+                'ws_label'     => $this->lng->txt('js_ws_label'),
+                'ws_inc'       => $this->lng->txt('js_ws_inc'),
+                'ws_dec'       => $this->lng->txt('js_ws_dec'),
+                'ws_0'         => $this->lng->txt('js_ws_0'),
+                'ws_1'         => $this->lng->txt('js_ws_1'),
+                'ws_2'         => $this->lng->txt('js_ws_2'),
+                'ws_3'         => $this->lng->txt('js_ws_3'),
                 'reset'        => $this->lng->txt('js_reset'),
                 'reset_title'  => $this->lng->txt('js_reset_title'),
             ],
@@ -224,7 +315,15 @@ class ilExamDyslexiaHandler implements ilExamModuleInterface
             $enabled         = isset($post_data['examdyslexia_enabled']) ? 1 : 0;
             $allow_toggle    = isset($post_data['examdyslexia_allow_toggle']) ? 1 : 0;
             $allow_customize = isset($post_data['examdyslexia_allow_customize']) ? 1 : 0;
-            $use_font        = isset($post_data['examdyslexia_use_font']) ? 1 : 0;
+
+            $font_family = $post_data['examdyslexia_font_family'] ?? 'opendyslexic';
+            if (!isset(self::FONTS[$font_family])) {
+                $font_family = 'opendyslexic';
+            }
+
+            // use_font weiterhin konsistent halten: die Spalte bleibt in der DB
+            // und wird gelesen, solange font_family fehlt (Downgrade/Altstand)
+            $use_font = $font_family === 'default' ? 0 : 1;
 
             $bg_color = $post_data['examdyslexia_bg_color'] ?? 'none';
             if (!in_array($bg_color, self::ALLOWED_BG_COLORS, true)) {
@@ -241,6 +340,11 @@ class ilExamDyslexiaHandler implements ilExamModuleInterface
                 $letter_spacing = '0.05em';
             }
 
+            $word_spacing = $post_data['examdyslexia_word_spacing'] ?? '0';
+            if (!in_array($word_spacing, self::ALLOWED_WORD_SPACINGS, true)) {
+                $word_spacing = '0';
+            }
+
             $db->replace('examdyslexia_settings', [
                 'test_id' => ['integer', $obj_id]
             ], [
@@ -248,8 +352,10 @@ class ilExamDyslexiaHandler implements ilExamModuleInterface
                 'allow_toggle'    => ['integer',   $allow_toggle],
                 'allow_customize' => ['integer',   $allow_customize],
                 'use_font'        => ['integer',   $use_font],
+                'font_family'     => ['text',      $font_family],
                 'line_height'     => ['text',      $line_height],
                 'letter_spacing'  => ['text',      $letter_spacing],
+                'word_spacing'    => ['text',      $word_spacing],
                 'bg_color'        => ['text',      $bg_color],
                 'updated_at'      => ['timestamp', date('Y-m-d H:i:s')],
             ]);
@@ -283,9 +389,15 @@ class ilExamDyslexiaHandler implements ilExamModuleInterface
         $custom->setInfo($this->lng->txt('allow_customize_info'));
         $cb->addSubItem($custom);
 
-        $font = new ilCheckboxInputGUI($this->lng->txt('use_font'), 'examdyslexia_use_font');
-        $font->setChecked($config['use_font']);
-        $font->setInfo($this->lng->txt('use_font_info'));
+        $font_options = [];
+        foreach (array_keys(self::FONTS) as $font_id) {
+            $font_options[$font_id] = $this->lng->txt('font_' . $font_id);
+        }
+
+        $font = new ilSelectInputGUI($this->lng->txt('font_label'), 'examdyslexia_font_family');
+        $font->setOptions($font_options);
+        $font->setValue($config['font_family']);
+        $font->setInfo($this->lng->txt('font_label_info'));
         $cb->addSubItem($font);
 
         $bg = new ilSelectInputGUI($this->lng->txt('bg_label'), 'examdyslexia_bg_color');
@@ -318,6 +430,16 @@ class ilExamDyslexiaHandler implements ilExamModuleInterface
         $ls->setValue($config['letter_spacing']);
         $cb->addSubItem($ls);
 
+        $ws = new ilSelectInputGUI($this->lng->txt('ws_label'), 'examdyslexia_word_spacing');
+        $ws->setOptions([
+            '0'      => $this->lng->txt('ws_normal'),
+            '0.16em' => $this->lng->txt('ws_light'),
+            '0.3em'  => $this->lng->txt('ws_medium'),
+            '0.5em'  => $this->lng->txt('ws_strong'),
+        ]);
+        $ws->setValue($config['word_spacing']);
+        $cb->addSubItem($ws);
+
         return [$cb];
     }
 
@@ -331,10 +453,10 @@ class ilExamDyslexiaHandler implements ilExamModuleInterface
             'title'       => $this->lng->txt('title'),
             'icon'        => '👁',
             'description' => $this->lng->txt('description'),
-            'version'     => '1.2.1',
+            'version'     => '1.2.2',
             'features'    => [
-                'OpenDyslexic Schrift (lokal, kein CDN)',
-                'Studierende passen Hintergrundfarbe, Zeilen- und Zeichenabstand im Testplayer selbst an',
+                'Schriftauswahl OpenDyslexic oder Atkinson Hyperlegible (lokal, kein CDN)',
+                'Studierende passen Schrift, Hintergrundfarbe, Zeilen-, Zeichen- und Wortabstand im Testplayer selbst an',
                 'Dozentenwerte sind Startwerte; „Zurücksetzen" stellt sie wieder her',
                 'Optionaler Pastell-Hintergrund (Creme/Gelb/Blau)',
                 'Leseschiene folgt dem Cursor über der aktuellen Zeile',

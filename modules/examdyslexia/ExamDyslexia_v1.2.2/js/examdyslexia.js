@@ -22,17 +22,19 @@
     var BG_FALLBACK = ['none', '#FEFAE0', '#FFFDE7', '#E3F2FD'];
     var LH_FALLBACK = ['1.5', '1.8', '2.0', '2.5'];
     var LS_FALLBACK = ['0', '0.05em', '0.12em', '0.2em'];
+    var WS_FALLBACK = ['0', '0.16em', '0.3em', '0.5em'];
 
     // Farbfelder in der Reihenfolge von BG_FALLBACK
     var BG_LABEL_KEYS = ['bg_none', 'bg_cream', 'bg_yellow', 'bg_blue'];
-    // Stufennamen für den Zeichenabstand (Zeilenabstand zeigt seinen Zahlenwert)
+    // Stufennamen für Zeichen- und Wortabstand (Zeilenabstand zeigt seinen Zahlenwert)
     var LS_LABEL_KEYS = ['ls_0', 'ls_1', 'ls_2', 'ls_3'];
+    var WS_LABEL_KEYS = ['ws_0', 'ws_1', 'ws_2', 'ws_3'];
 
     // Laufzeit-Zustand (wird über sessionStorage über Fragenwechsel gerettet)
-    var state = { on: false, bg: 'none', lh: '1.8', ls: '0.05em', open: false };
+    var state = { on: false, font: 'opendyslexic', bg: 'none', lh: '1.8', ls: '0.05em', ws: '0', open: false };
 
     var bar = null, toggleBtn = null, toggleLabel = null, gearBtn = null, panel = null;
-    var swatches = [], lhVal = null, lsVal = null;
+    var swatches = [], fontSelect = null, lhVal = null, lsVal = null, wsVal = null;
     var initialized = false;
 
     // -------------------------------------------------------------------------
@@ -51,6 +53,28 @@
     function bgList() { return cfg().bg_colors || BG_FALLBACK; }
     function lhList() { return cfg().line_heights || LH_FALLBACK; }
     function lsList() { return cfg().letter_spacings || LS_FALLBACK; }
+    function wsList() { return cfg().word_spacings || WS_FALLBACK; }
+
+    // Schriften kommen komplett aus der Registry des Handlers
+    function fontList() { return cfg().fonts || []; }
+
+    function fontIds() {
+        return fontList().map(function (font) { return font.id; });
+    }
+
+    function fontById(id) {
+        var fonts = fontList();
+        for (var i = 0; i < fonts.length; i++) {
+            if (fonts[i].id === id) return fonts[i];
+        }
+        return null;
+    }
+
+    // Leerer Stack = Standardschrift des Testplayers, keine Ersetzung
+    function fontStack() {
+        var font = fontById(state.font);
+        return (font && font.stack) || '';
+    }
 
     function storageKey() {
         var urlParams = new URLSearchParams(window.location.search);
@@ -66,54 +90,70 @@
     // Startwerte des Dozenten (auch das Ziel von "Zurücksetzen")
     function teacherDefaults() {
         var config = cfg();
+        var ids = fontIds();
         return {
+            font: pick(ids, config.font_family, ids[0] || 'default'),
             bg: pick(bgList(), config.bg_color, bgList()[0]),
             lh: pick(lhList(), config.line_height, '1.8'),
-            ls: pick(lsList(), config.letter_spacing, '0.05em')
+            ls: pick(lsList(), config.letter_spacing, '0.05em'),
+            ws: pick(wsList(), config.word_spacing, '0')
         };
     }
 
-    // Web-relativer Pfad aus der Config → absolute URL. Im TinyMCE-iframe ist die
+    // Web-relative URL aus der Config → absolut. Im TinyMCE-iframe ist die
     // Basis-URL nicht der Webroot, dort würde ein relativer Pfad ins Leere zeigen.
-    function absFontPath() {
-        var path = cfg().font_path || '';
-        if (!path) return '';
+    function absUrl(url) {
+        if (!url) return '';
         try {
-            return new URL(path, document.baseURI).href;
+            return new URL(url, document.baseURI).href;
         } catch (e) {
-            return path;
+            return url;
         }
     }
 
+    // @font-face für alle registrierten Schriften. Der Browser lädt eine Datei
+    // erst, wenn die Schrift tatsächlich verwendet wird — deklarieren kostet
+    // nichts und erspart Nachladen beim Umschalten im Panel.
     function fontFaceCss() {
-        var path = absFontPath();
-        if (!path) return '';
-        return [
-            '@font-face {',
-            '  font-family: "OpenDyslexic";',
-            '  src: url("' + path + 'OpenDyslexic-Regular.woff2") format("woff2"),',
-            '       url("' + path + 'OpenDyslexic-Regular.woff") format("woff");',
-            '  font-weight: normal; font-display: swap;',
-            '}',
-            '@font-face {',
-            '  font-family: "OpenDyslexic";',
-            '  src: url("' + path + 'OpenDyslexic-Bold.woff2") format("woff2"),',
-            '       url("' + path + 'OpenDyslexic-Bold.woff") format("woff");',
-            '  font-weight: bold; font-display: swap;',
-            '}'
-        ].join('\n');
+        var rules = [];
+
+        fontList().forEach(function (font) {
+            if (!font.family || !font.faces) return;
+
+            font.faces.forEach(function (face) {
+                var src = (face.sources || []).map(function (source) {
+                    return 'url("' + absUrl(source.url) + '") format("' + source.format + '")';
+                }).join(', ');
+
+                if (!src) return;
+
+                rules.push(
+                    '@font-face { font-family: "' + font.family + '"; src: ' + src +
+                    '; font-weight: ' + face.weight +
+                    '; font-style: ' + face.style +
+                    '; font-display: swap; }'
+                );
+            });
+        });
+
+        return rules.join('\n');
     }
 
-    function injectFontFaceFallback() {
+    function injectFontFaces() {
         var css = fontFaceCss();
         if (!css) return;
         var styleId = 'examdyslexia-fontface';
-        if (document.getElementById(styleId)) return;
+        var style = document.getElementById(styleId);
 
-        var style = document.createElement('style');
-        style.id = styleId;
-        style.textContent = css;
-        document.head.appendChild(style);
+        if (!style) {
+            style = document.createElement('style');
+            style.id = styleId;
+            document.head.appendChild(style);
+        }
+
+        if (style.textContent !== css) {
+            style.textContent = css;
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -128,9 +168,11 @@
 
     function loadState() {
         var def = teacherDefaults();
+        state.font = def.font;
         state.bg = def.bg;
         state.lh = def.lh;
         state.ls = def.ls;
+        state.ws = def.ws;
 
         try {
             var raw = sessionStorage.getItem(storageKey());
@@ -143,9 +185,11 @@
             // der Dozent das Anpassen noch erlaubt — sonst gelten seine Werte
             if (cfg().allow_customize) {
                 state.open = parsed.open === true;
+                state.font = pick(fontIds(), parsed.font, def.font);
                 state.bg = pick(bgList(), parsed.bg, def.bg);
                 state.lh = pick(lhList(), parsed.lh, def.lh);
                 state.ls = pick(lsList(), parsed.ls, def.ls);
+                state.ws = pick(wsList(), parsed.ws, def.ws);
             }
         } catch (e) {
             console.warn('[ExamDyslexia] Zustand konnte nicht geladen werden', e);
@@ -162,9 +206,18 @@
 
     function applyStyles() {
         var root = document.documentElement;
+        var stack = fontStack();
+
+        root.style.setProperty('--examdyslexia-font', stack || 'inherit');
         root.style.setProperty('--examdyslexia-line-height', state.lh);
         root.style.setProperty('--examdyslexia-letter-spacing', state.ls);
+        root.style.setProperty('--examdyslexia-word-spacing', state.ws);
         root.style.setProperty('--examdyslexia-bg', cssBg());
+
+        // Ohne Sonderschrift bleibt die Schrift des Testplayers stehen —
+        // die Abstände wirken trotzdem
+        document.body.classList.toggle('examdyslexia-hasfont', !!stack);
+
         updateRulerHeight();
         syncEditorFrames();
     }
@@ -180,19 +233,20 @@
     var FRAME_SELECTOR = 'iframe.tox-edit-area__iframe, iframe.mce-edit-area__iframe, iframe[id$="_ifr"]';
 
     function frameCss() {
-        var config = cfg();
         var rules = [];
-
-        if (config.use_font) {
-            rules.push(fontFaceCss());
-        }
-
+        var stack = fontStack();
         var body = [];
-        if (config.use_font) {
-            body.push('font-family: "OpenDyslexic", Arial, sans-serif !important;');
+
+        if (stack) {
+            // Die @font-face-Regeln gelten nur im jeweiligen Dokument und
+            // müssen deshalb auch hier hinein
+            rules.push(fontFaceCss());
+            body.push('font-family: ' + stack + ' !important;');
         }
+
         body.push('line-height: ' + state.lh + ' !important;');
         body.push('letter-spacing: ' + state.ls + ' !important;');
+        body.push('word-spacing: ' + state.ws + ' !important;');
 
         // Auch Kindelemente: TinyMCE verpackt Eingaben in <p>, <span> usw.
         rules.push('body, body * { ' + body.join(' ') + ' }');
@@ -341,12 +395,19 @@
             swatches[i].classList.toggle('examdyslexia-swatch-on', isOn);
             swatches[i].setAttribute('aria-pressed', String(isOn));
         }
+        if (fontSelect) {
+            fontSelect.value = state.font;
+        }
         if (lhVal) {
             lhVal.textContent = state.lh;
         }
         if (lsVal) {
-            var idx = lsList().indexOf(state.ls);
-            lsVal.textContent = txt(LS_LABEL_KEYS[idx] || 'ls_1');
+            var lsIdx = lsList().indexOf(state.ls);
+            lsVal.textContent = txt(LS_LABEL_KEYS[lsIdx] || 'ls_1');
+        }
+        if (wsVal) {
+            var wsIdx = wsList().indexOf(state.ws);
+            wsVal.textContent = txt(WS_LABEL_KEYS[wsIdx] || 'ws_0');
         }
     }
 
@@ -360,6 +421,11 @@
             applyActive();
         }
         saveState();
+    }
+
+    function setFont(value) {
+        state.font = pick(fontIds(), value, state.font);
+        changed();
     }
 
     function setBg(value) {
@@ -381,11 +447,20 @@
         changed();
     }
 
+    function stepWs(delta) {
+        var list = wsList();
+        var idx = Math.max(0, Math.min(list.indexOf(state.ws) + delta, list.length - 1));
+        state.ws = list[idx];
+        changed();
+    }
+
     function resetToTeacher() {
         var def = teacherDefaults();
+        state.font = def.font;
         state.bg = def.bg;
         state.lh = def.lh;
         state.ls = def.ls;
+        state.ws = def.ws;
         applyStyles();
         refreshPanel();
         saveState();
@@ -439,6 +514,35 @@
         panel.setAttribute('role', 'group');
         panel.setAttribute('aria-label', txt('panel_label'));
 
+        // Schriftauswahl — Einträge kommen aus der Registry des Handlers,
+        // eine weitere Schrift erscheint hier automatisch
+        var fonts = fontList();
+        if (fonts.length > 1) {
+            var fontRow = makeRow(txt('font_label'));
+
+            fontSelect = document.createElement('select');
+            fontSelect.className = 'examdyslexia-select';
+            fontSelect.setAttribute('aria-label', txt('font_label'));
+
+            fonts.forEach(function (font) {
+                var option = document.createElement('option');
+                option.value = font.id;
+                option.textContent = font.label;
+                // Eintrag in der Schrift zeigen, die er auswählt
+                if (font.stack) {
+                    option.style.fontFamily = font.stack;
+                }
+                fontSelect.appendChild(option);
+            });
+
+            fontSelect.addEventListener('change', function () {
+                setFont(this.value);
+            });
+
+            fontRow.appendChild(fontSelect);
+            panel.appendChild(fontRow);
+        }
+
         // Hintergrundfarbe als Farbfelder
         var bgRow = makeRow(txt('bg_label'));
         var swatchWrap = document.createElement('span');
@@ -486,6 +590,17 @@
         lsVal = lsStepper.val;
         lsRow.appendChild(lsStepper.wrap);
         panel.appendChild(lsRow);
+
+        // Wortabstand
+        var wsRow = makeRow(txt('ws_label'));
+        var wsStepper = buildStepper(
+            txt('ws_dec'), txt('ws_inc'),
+            function () { stepWs(-1); },
+            function () { stepWs(1); }
+        );
+        wsVal = wsStepper.val;
+        wsRow.appendChild(wsStepper.wrap);
+        panel.appendChild(wsRow);
 
         // Zurücksetzen auf die Dozentenwerte
         var reset = document.createElement('button');
@@ -613,10 +728,7 @@
             state.on = true;
         }
 
-        if (config.use_font) {
-            injectFontFaceFallback();
-        }
-
+        injectFontFaces();
         applyStyles();
         buildBar();
         bindDismiss();
