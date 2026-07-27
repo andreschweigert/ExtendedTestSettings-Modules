@@ -1,7 +1,7 @@
 # ExamDyslexia — Entwicklerdokumentation
 
 **Modul-ID:** `examdyslexia`
-**Referenz-ZIP:** `modules-zip/modules/examdyslexia/ExamDyslexia_v1.2.0.zip`
+**Referenz-ZIP:** `modules-zip/modules/examdyslexia/ExamDyslexia_v1.2.1.zip`
 **Zuletzt aktualisiert:** 2026-07-27
 
 ---
@@ -108,6 +108,28 @@ in ILIAS 10 wegen `public/` ins Leere zeigen würde.
   `pointer-events: none`, Höhe aus dem aktuellen Zeilenabstand; das Rect des
   Zielelements wird gecacht und nur bei `resize` verworfen.
 
+### Medienplayer (Video-/Audiofragen)
+
+ILIAS 9 nutzt MediaElement.js 4.2 — sämtliche Elemente tragen das Klassenpräfix
+`mejs__` (`mejs__container`, `mejs__controls`, `mejs__button`, `mejs__time` …).
+Der Player zeichnet helle Symbole auf dunklen Grund. Bis 1.2.0 traf ihn die
+Regel `#tst_output div:not(...)`, wodurch Container und Steuerleiste
+pastellfarben wurden und Play, Zeitleiste und Lautstärke praktisch verschwanden.
+
+Behandlung seit 1.2.1, rein in CSS:
+
+- **Hintergrund:** `:not([class*="mejs"])` in der div-Regel — nicht überschreiben
+  statt zurücksetzen. Ein Rücksetzen ginge nicht sinnvoll, weil die Farbwerte aus
+  dem Player-CSS stammen; wird die Regel gar nicht erst angewendet, greift dieses
+  wieder. In MEJS 4 trägt jedes Container-Element eine `mejs__`-Klasse, der
+  Ausschluss deckt den Teilbaum also vollständig ab.
+- **Schrift und Zeichenabstand:** eigene Rücksetz-Regel auf
+  `[class*="mejs"]` samt Nachfahren. Nötig, weil beide von `#tst_output` vererbt
+  werden — vererbte Werte lassen sich **nicht** per `:not()` ausschließen. Ohne
+  das zerläuft die Zeitanzeige durch das `letter-spacing`.
+- `line-height` wird dort bewusst **nicht** angefasst: MEJS setzt für seine
+  Controls feste Werte, ein `!important` darauf würde deren Layout brechen.
+
 ### TinyMCE (Freitextfragen)
 
 ILIAS 9 nutzt TinyMCE 5. Der Editor rendert in einem eigenen iframe-Dokument —
@@ -161,6 +183,7 @@ konfigurieren.
 
 | Datum | Was |
 |---|---|
+| 2026-07 | **v1.2.1:** Video- und Audioplayer (MediaElement.js) von der Hintergrund-Einfärbung ausgenommen, Schrift/Zeichenabstand im Player-Teilbaum zurückgesetzt — die Steuerelemente waren auf der Pastellfarbe kaum noch erkennbar |
 | 2026-07 | **v1.2.0:** Einstellungs-Panel für Studierende (Hintergrund, Zeilen-, Zeichenabstand), Dozenten-Option `allow_customize`, JS-Texte über lang-Dateien, Zustand als JSON im sessionStorage; Leiste von oben rechts (lag auf ILIAS' „Weiter") nach unten mittig verlegt und unter `<html>` gehängt; Styles wirken jetzt auch im TinyMCE-iframe der Freitextfragen |
 | 2026-06 | **v1.1.0:** Modul-i18n DE/EN (ilModuleLanguage), sichtbare Strings über lang-Dateien |
 | 2026 | **v1.0.1:** ILIAS-Kompatibilität auf 9 beschränkt |

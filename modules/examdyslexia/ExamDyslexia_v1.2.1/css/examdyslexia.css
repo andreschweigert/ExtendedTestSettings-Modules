@@ -52,8 +52,9 @@ body.examdyslexia-active {
 
 /* Alle Container-Divs im Testbereich überschreiben.
    Interaktive Elemente (Buttons, Inputs, Selects, Dropdowns) werden ausgespart.
+   Ebenso der Medienplayer — siehe eigener Abschnitt weiter unten.
    ILIAS Testplayer nutzt Bootstrap 3 + eigene ilTest*-Klassen. */
-body.examdyslexia-active #tst_output div:not(.btn):not(.btn-group):not(.dropdown-menu):not([class*="btn-"]) {
+body.examdyslexia-active #tst_output div:not(.btn):not(.btn-group):not(.dropdown-menu):not([class*="btn-"]):not([class*="mejs"]) {
     background-color: var(--examdyslexia-bg, transparent) !important;
 }
 
@@ -81,6 +82,32 @@ body.examdyslexia-active #tst_output td,
 body.examdyslexia-active #tst_output th,
 body.examdyslexia-active #tst_output label {
     line-height: var(--examdyslexia-line-height, 1.8) !important;
+}
+
+/* ============================================
+   MEDIENPLAYER AUSNEHMEN (Video-/Audiofragen)
+   ILIAS 9 nutzt MediaElement.js 4.2 → alle Klassen tragen das Präfix mejs__.
+   Der Player zeichnet helle Symbole auf dunklen Grund; färbt man seine
+   Container pastellfarben ein, verschwinden Play, Zeitleiste und Lautstärke
+   praktisch. Deshalb: Hintergrund gar nicht erst überschreiben (Ausschluss
+   in der div-Regel oben), damit das Player-eigene CSS wieder greift.
+
+   Schrift und Zeichenabstand werden hier zusätzlich zurückgesetzt: beide
+   werden von #tst_output vererbt, und Vererbung lässt sich nicht per :not()
+   ausschließen. Ohne das zerläuft die Zeitanzeige und die Symbolbreiten
+   passen nicht mehr zu den Schaltflächen.
+   ============================================ */
+body.examdyslexia-active #tst_output [class*="mejs"],
+body.examdyslexia-active #tst_output [class*="mejs"] * {
+    font-family: Helvetica, Arial, sans-serif !important;
+    letter-spacing: normal !important;
+}
+
+/* Videofläche und natives Steuerelement bleiben unangetastet */
+body.examdyslexia-active #tst_output video,
+body.examdyslexia-active #tst_output audio {
+    background-color: initial !important;
+    letter-spacing: normal !important;
 }
 
 /* ============================================

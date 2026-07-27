@@ -14,6 +14,7 @@ Bietet einen **Legasthenie-freundlichen Lesemodus** im ILIAS Test-Player. Studie
 - **Pastell-Hintergrundfarbe** — Creme, Hellgelb oder Hellblau (optional)
 - **Leseschiene** — hebt die Zeile unter dem Mauszeiger hervor
 - **Wirkt auch im Freitext-Editor** — TinyMCE rendert in einem eigenen iframe, dort werden die Styles gesondert injiziert
+- **Medienplayer ausgenommen** — Video- und Audiofragen behalten ihre Player-Farben, damit die Steuerelemente sichtbar bleiben
 - **Toggle-Button + Zahnrad** — `position: fixed; bottom: 16px`, horizontal zentriert (kein Konflikt mit ILIAS-Navigation, examcalc oder exammagnifier)
 - **sessionStorage** — Zustand und gewählte Stufen überleben den Fragenwechsel (Page-Reload in ILIAS)
 - **Erzwingungsmodus** — Dozent kann Toggle deaktivieren, Modus ist dann für alle aktiv
@@ -95,6 +96,16 @@ Eigene Tabelle: `examdyslexia_settings`
 - Leiste und Panel hängen außerhalb von `#tst_output` und setzen Schrift/Abstände neutral — sie bleiben auch bei starken Werten lesbar
 - `@font-face` in CSS + JS-Fallback mit absolutem Pfad (für den Fall dass ILIAS CSS-Pfade umschreibt)
 
+### Video- und Audiofragen
+
+ILIAS 9 nutzt MediaElement.js 4.2, dessen Elemente alle das Klassenpräfix
+`mejs__` tragen. Der Player zeichnet helle Symbole auf dunklen Grund — würde man
+seine Container mit einfärben, wären Play, Zeitleiste und Lautstärke praktisch
+unsichtbar. Die Hintergrund-Regel schließt `[class*="mejs"]` deshalb aus, sodass
+das Player-eigene CSS wieder greift. Schrift und Zeichenabstand werden im
+Player-Teilbaum zusätzlich zurückgesetzt: beide werden von `#tst_output` vererbt,
+und Vererbung lässt sich nicht per `:not()` ausschließen.
+
 ### Freitextfragen / TinyMCE
 
 ILIAS 9 nutzt TinyMCE 5; der Editor rendert die Eingabe in einem eigenen
@@ -141,6 +152,7 @@ OpenDyslexic ist unter der **SIL Open Font License 1.1** lizenziert — frei ver
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
+| 1.2.1 | `ExamDyslexia_v1.2.1.zip` | 9 | Video- und Audioplayer von der Hintergrund-Einfärbung ausgenommen — die Steuerelemente waren auf der Pastellfarbe kaum noch zu erkennen |
 | 1.2.0 | `ExamDyslexia_v1.2.0.zip` | 9 | Studierende passen Hintergrund, Zeilen- und Zeichenabstand im Testplayer selbst an (Panel am Zahnrad); neue Dozenten-Option `allow_customize`; JS-Texte über lang-Dateien; Leiste nach unten mittig verlegt (lag zuvor auf ILIAS' „Weiter"-Button); Styles wirken jetzt auch im TinyMCE-Editor der Freitextfragen |
 | 1.1.0 | `ExamDyslexia_v1.1.0.zip` | 9 | Modul-i18n DE/EN (ilModuleLanguage) |
 | 1.0.1 | `ExamDyslexia_v1.0.1.zip` | 9 | ILIAS-Kompatibilität auf 9 beschränkt |

@@ -331,7 +331,7 @@ class ilExamDyslexiaHandler implements ilExamModuleInterface
             'title'       => $this->lng->txt('title'),
             'icon'        => '👁',
             'description' => $this->lng->txt('description'),
-            'version'     => '1.2.0',
+            'version'     => '1.2.1',
             'features'    => [
                 'OpenDyslexic Schrift (lokal, kein CDN)',
                 'Studierende passen Hintergrundfarbe, Zeilen- und Zeichenabstand im Testplayer selbst an',
@@ -339,6 +339,7 @@ class ilExamDyslexiaHandler implements ilExamModuleInterface
                 'Optionaler Pastell-Hintergrund (Creme/Gelb/Blau)',
                 'Leseschiene folgt dem Cursor über der aktuellen Zeile',
                 'Wirkt auch im TinyMCE-Editor der Freitextfragen',
+                'Video- und Audioplayer bleiben von der Einfärbung ausgenommen (Steuerelemente bleiben sichtbar)',
                 'Bedienleiste unten mittig (frei von ILIAS-Navigation, examcalc und exammagnifier)',
                 'Zustand in sessionStorage (überlebt Fragenwechsel)',
                 'Default: deaktiviert – Student schaltet selbst ein',
