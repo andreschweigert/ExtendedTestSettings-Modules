@@ -11,10 +11,10 @@
 Legasthenie-freundlicher Lesemodus im Testplayer: OpenDyslexic-Schrift (lokal
 mitgeliefert, kein CDN), konfigurierbarer Zeilen- und Zeichenabstand, optionaler
 Pastell-Hintergrund und eine Leseschiene, die der Maus folgt. Standardmäßig
-schaltet der Studierende den Modus selbst über einen Toggle-Button ein (oben
-rechts, bewusst kein Konflikt mit dem examcalc-Button unten rechts und der
-exammagnifier-Leiste unten links); alternativ kann der Modus per Test erzwungen
-werden (`allow_toggle` aus → immer aktiv, kein Button).
+schaltet der Studierende den Modus selbst über einen Toggle-Button ein (unten
+mittig — ILIAS legt seine Testnavigation links und rechts ab, examcalc sitzt
+unten rechts, exammagnifier unten links); alternativ kann der Modus per Test
+erzwungen werden (`allow_toggle` aus → immer aktiv, kein Button).
 
 Seit 1.2.0 sind die Dozentenwerte für Hintergrundfarbe, Zeilen- und
 Zeichenabstand nur noch **Startwerte**: Über ein Zahnrad neben dem Schalter
@@ -108,17 +108,44 @@ in ILIAS 10 wegen `public/` ins Leere zeigen würde.
   `pointer-events: none`, Höhe aus dem aktuellen Zeilenabstand; das Rect des
   Zielelements wird gecacht und nur bei `resize` verworfen.
 
+### TinyMCE (Freitextfragen)
+
+ILIAS 9 nutzt TinyMCE 5. Der Editor rendert in einem eigenen iframe-Dokument —
+Seiten-CSS greift dort **nicht**, die Eingabe der Studierenden bliebe sonst in
+der Standardschrift. `syncEditorFrames()` injiziert deshalb einen `<style>` mit
+der ID `examdyslexia-frame-style` in den `<head>` jedes Editor-iframes
+(`iframe.tox-edit-area__iframe`, Fallback `iframe[id$="_ifr"]`) und aktualisiert
+ihn aus `applyStyles()` und `applyActive()`, also bei jeder Stufenänderung und
+beim Ein-/Ausschalten (aus → leerer Style).
+
+Zwei Fallstricke, die der Code abfängt:
+
+- **Font-Pfad:** im iframe ist die Basis-URL nicht der Webroot; `absFontPath()`
+  löst `config.font_path` über `document.baseURI` absolut auf. Derselbe absolute
+  Pfad wird auch für den `@font-face`-Fallback im Hauptdokument verwendet.
+- **Zeitpunkt:** TinyMCE baut den Editor asynchron auf, teils lange nach
+  DOM-Ready. `observeEditorFrames()` hängt einen MutationObserver (debounced,
+  200 ms) an `document.body`; zusätzlich bekommt jeder iframe einmalig einen
+  `load`-Handler (Marker `dataset.examdyslexiaBound`), weil das Element vor
+  seinem Inhalt eingehängt wird.
+
 ### DOM der Leiste
 
 ```
-#examdyslexia-bar                  fixed, top 80 / right 16, z-index 9000
-├── .examdyslexia-buttons
+#examdyslexia-bar                  fixed, bottom 16 / horizontal zentriert, z-index 9000
+├── .examdyslexia-buttons          (unten dargestellt)
 │   ├── #examdyslexia-toggle       nur bei allow_toggle
 │   └── #examdyslexia-gear         nur bei allow_customize
 └── #examdyslexia-panel            nur bei allow_customize, display per state.open
     ├── .examdyslexia-row × 3      Hintergrund (Farbfelder) / Zeilen- / Zeichenabstand (− Wert +)
     └── .examdyslexia-reset        zurück auf die Dozentenwerte
 ```
+
+Die Leiste hängt direkt unter `<html>` (nicht unter `<body>`), damit sie vom
+`transform` unberührt bleibt, mit dem exammagnifier den `<body>` zoomt — dieselbe
+Regel wie dort. Das Panel steht im DOM **nach** den Buttons;
+`flex-direction: column-reverse` dreht nur die Darstellung um, sodass es am
+unteren Bildschirmrand nach oben aufklappt statt aus dem Viewport zu laufen.
 
 Sind beide Optionen aus, wird gar keine Leiste gebaut und der Modus läuft
 erzwungen im Hintergrund.
@@ -134,7 +161,7 @@ konfigurieren.
 
 | Datum | Was |
 |---|---|
-| 2026-07 | **v1.2.0:** Einstellungs-Panel für Studierende (Hintergrund, Zeilen-, Zeichenabstand), Dozenten-Option `allow_customize`, JS-Texte über lang-Dateien, Zustand als JSON im sessionStorage |
+| 2026-07 | **v1.2.0:** Einstellungs-Panel für Studierende (Hintergrund, Zeilen-, Zeichenabstand), Dozenten-Option `allow_customize`, JS-Texte über lang-Dateien, Zustand als JSON im sessionStorage; Leiste von oben rechts (lag auf ILIAS' „Weiter") nach unten mittig verlegt und unter `<html>` gehängt; Styles wirken jetzt auch im TinyMCE-iframe der Freitextfragen |
 | 2026-06 | **v1.1.0:** Modul-i18n DE/EN (ilModuleLanguage), sichtbare Strings über lang-Dateien |
 | 2026 | **v1.0.1:** ILIAS-Kompatibilität auf 9 beschränkt |
 | 2026 | **v1.0.0:** Erstveröffentlichung (OpenDyslexic, Abstände, Pastell-Hintergrund, Toggle) |

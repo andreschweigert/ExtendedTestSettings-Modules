@@ -73,27 +73,46 @@
         };
     }
 
-    function injectFontFaceFallback(fontPath) {
-        if (!fontPath) return;
+    // Web-relativer Pfad aus der Config → absolute URL. Im TinyMCE-iframe ist die
+    // Basis-URL nicht der Webroot, dort würde ein relativer Pfad ins Leere zeigen.
+    function absFontPath() {
+        var path = cfg().font_path || '';
+        if (!path) return '';
+        try {
+            return new URL(path, document.baseURI).href;
+        } catch (e) {
+            return path;
+        }
+    }
+
+    function fontFaceCss() {
+        var path = absFontPath();
+        if (!path) return '';
+        return [
+            '@font-face {',
+            '  font-family: "OpenDyslexic";',
+            '  src: url("' + path + 'OpenDyslexic-Regular.woff2") format("woff2"),',
+            '       url("' + path + 'OpenDyslexic-Regular.woff") format("woff");',
+            '  font-weight: normal; font-display: swap;',
+            '}',
+            '@font-face {',
+            '  font-family: "OpenDyslexic";',
+            '  src: url("' + path + 'OpenDyslexic-Bold.woff2") format("woff2"),',
+            '       url("' + path + 'OpenDyslexic-Bold.woff") format("woff");',
+            '  font-weight: bold; font-display: swap;',
+            '}'
+        ].join('\n');
+    }
+
+    function injectFontFaceFallback() {
+        var css = fontFaceCss();
+        if (!css) return;
         var styleId = 'examdyslexia-fontface';
         if (document.getElementById(styleId)) return;
 
         var style = document.createElement('style');
         style.id = styleId;
-        style.textContent = [
-            '@font-face {',
-            '  font-family: "OpenDyslexic";',
-            '  src: url("' + fontPath + 'OpenDyslexic-Regular.woff2") format("woff2"),',
-            '       url("' + fontPath + 'OpenDyslexic-Regular.woff") format("woff");',
-            '  font-weight: normal; font-display: swap;',
-            '}',
-            '@font-face {',
-            '  font-family: "OpenDyslexic";',
-            '  src: url("' + fontPath + 'OpenDyslexic-Bold.woff2") format("woff2"),',
-            '       url("' + fontPath + 'OpenDyslexic-Bold.woff") format("woff");',
-            '  font-weight: bold; font-display: swap;',
-            '}'
-        ].join('\n');
+        style.textContent = css;
         document.head.appendChild(style);
     }
 
@@ -137,12 +156,101 @@
     // Darstellung anwenden
     // -------------------------------------------------------------------------
 
+    function cssBg() {
+        return state.bg === 'none' ? 'transparent' : state.bg;
+    }
+
     function applyStyles() {
         var root = document.documentElement;
         root.style.setProperty('--examdyslexia-line-height', state.lh);
         root.style.setProperty('--examdyslexia-letter-spacing', state.ls);
-        root.style.setProperty('--examdyslexia-bg', state.bg === 'none' ? 'transparent' : state.bg);
+        root.style.setProperty('--examdyslexia-bg', cssBg());
         updateRulerHeight();
+        syncEditorFrames();
+    }
+
+    // -------------------------------------------------------------------------
+    // TinyMCE (Freitextfragen)
+    // Der Editor rendert in einem eigenen iframe-Dokument — Seiten-CSS greift
+    // dort nicht. Styles müssen deshalb direkt in dessen <head> injiziert werden.
+    // ILIAS 9 nutzt TinyMCE 5 (iframe.tox-edit-area__iframe, id endet auf _ifr).
+    // -------------------------------------------------------------------------
+
+    var FRAME_STYLE_ID = 'examdyslexia-frame-style';
+    var FRAME_SELECTOR = 'iframe.tox-edit-area__iframe, iframe.mce-edit-area__iframe, iframe[id$="_ifr"]';
+
+    function frameCss() {
+        var config = cfg();
+        var rules = [];
+
+        if (config.use_font) {
+            rules.push(fontFaceCss());
+        }
+
+        var body = [];
+        if (config.use_font) {
+            body.push('font-family: "OpenDyslexic", Arial, sans-serif !important;');
+        }
+        body.push('line-height: ' + state.lh + ' !important;');
+        body.push('letter-spacing: ' + state.ls + ' !important;');
+
+        // Auch Kindelemente: TinyMCE verpackt Eingaben in <p>, <span> usw.
+        rules.push('body, body * { ' + body.join(' ') + ' }');
+        rules.push('body { background-color: ' + cssBg() + ' !important; }');
+
+        return rules.join('\n');
+    }
+
+    function styleEditorFrame(frame) {
+        var doc;
+        try {
+            doc = frame.contentDocument;
+        } catch (e) {
+            return; // fremde Herkunft — nicht unser Editor
+        }
+        if (!doc || !doc.head) return;
+
+        var style = doc.getElementById(FRAME_STYLE_ID);
+        if (!style) {
+            style = doc.createElement('style');
+            style.id = FRAME_STYLE_ID;
+            doc.head.appendChild(style);
+        }
+
+        var css = state.on ? frameCss() : '';
+        if (style.textContent !== css) {
+            style.textContent = css;
+        }
+    }
+
+    function syncEditorFrames() {
+        var frames = document.querySelectorAll(FRAME_SELECTOR);
+        for (var i = 0; i < frames.length; i++) {
+            var frame = frames[i];
+
+            // Der iframe wird vor seinem Inhalt eingehängt — beim load erneut setzen
+            if (!frame.dataset.examdyslexiaBound) {
+                frame.dataset.examdyslexiaBound = '1';
+                frame.addEventListener('load', function () {
+                    styleEditorFrame(this);
+                });
+            }
+
+            styleEditorFrame(frame);
+        }
+    }
+
+    // TinyMCE baut den Editor asynchron auf, teils lange nach DOM-Ready
+    function observeEditorFrames() {
+        if (typeof MutationObserver !== 'function' || !document.body) return;
+
+        var pending = 0;
+        var observer = new MutationObserver(function () {
+            clearTimeout(pending);
+            pending = setTimeout(syncEditorFrames, 200);
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true });
     }
 
     // -------------------------------------------------------------------------
@@ -212,6 +320,9 @@
             toggleBtn.setAttribute('aria-pressed', String(state.on));
             toggleLabel.textContent = txt(state.on ? 'toggle_on' : 'toggle_off');
         }
+
+        // Freitext-Editoren mitziehen bzw. zurücksetzen
+        syncEditorFrames();
     }
 
     function setActive(on) {
@@ -454,7 +565,9 @@
         }
 
         bar.appendChild(buttons);
-        document.body.appendChild(bar);
+        // Direkt unter <html>: bleibt von einem body-transform unberührt
+        // (exammagnifier skaliert beim Zoom den ganzen <body>)
+        document.documentElement.appendChild(bar);
 
         if (config.allow_customize) {
             buildPanel();
@@ -500,14 +613,14 @@
             state.on = true;
         }
 
-        applyStyles();
-
-        if (config.use_font && config.font_path) {
-            injectFontFaceFallback(config.font_path);
+        if (config.use_font) {
+            injectFontFaceFallback();
         }
 
+        applyStyles();
         buildBar();
         bindDismiss();
+        observeEditorFrames();
         applyActive();
     }
 

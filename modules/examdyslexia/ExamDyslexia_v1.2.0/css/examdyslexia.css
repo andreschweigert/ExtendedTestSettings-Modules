@@ -85,14 +85,23 @@ body.examdyslexia-active #tst_output label {
 
 /* ============================================
    LEISTE (Toggle-Button + Zahnrad + Panel)
-   top: 80px; right: 16px → kein Konflikt mit examcalc (bottom-right)
+   bottom: 16px, horizontal zentriert. ILIAS legt seine Navigation
+   (.ilTstNavigationBtn_Prev/_Next) links und rechts ab — oben wie unten —,
+   die Mitte bleibt frei. Unten rechts sitzt examcalc, unten links
+   exammagnifier, also auch dorthin kein Konflikt.
+   Panel klappt nach oben auf (column-reverse), damit es am unteren
+   Bildschirmrand nicht aus dem Viewport läuft.
    z-index: 9000 → über ILIAS-Content, unter Modals
    ============================================ */
 #examdyslexia-bar {
     position: fixed !important;
-    top: 80px !important;
-    right: 16px !important;
+    bottom: 16px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
     z-index: 9000 !important;
+    display: flex !important;
+    flex-direction: column-reverse !important;
+    align-items: center !important;
     font-family: system-ui, -apple-system, sans-serif !important;
 }
 
@@ -211,7 +220,7 @@ body.examdyslexia-active #tst_output label {
    ============================================ */
 #examdyslexia-panel {
     display: none;
-    margin-top: 8px !important;
+    margin-bottom: 8px !important;
     padding: 12px 14px !important;
     min-width: 250px !important;
     background: #ffffff !important;
@@ -402,8 +411,7 @@ body.examdyslexia-active #tst_output label {
    ============================================ */
 @media (max-width: 480px) {
     #examdyslexia-bar {
-        top: 60px !important;
-        right: 8px !important;
+        bottom: 8px !important;
     }
 
     #examdyslexia-toggle {

@@ -13,7 +13,8 @@ Bietet einen **Legasthenie-freundlichen Lesemodus** im ILIAS Test-Player. Studie
 - **Erhöhter Zeilen- und Zeichenabstand** — stufenweise konfigurierbar
 - **Pastell-Hintergrundfarbe** — Creme, Hellgelb oder Hellblau (optional)
 - **Leseschiene** — hebt die Zeile unter dem Mauszeiger hervor
-- **Toggle-Button + Zahnrad** — `position: fixed; top: 80px; right: 16px` (kein Konflikt mit examcalc)
+- **Wirkt auch im Freitext-Editor** — TinyMCE rendert in einem eigenen iframe, dort werden die Styles gesondert injiziert
+- **Toggle-Button + Zahnrad** — `position: fixed; bottom: 16px`, horizontal zentriert (kein Konflikt mit ILIAS-Navigation, examcalc oder exammagnifier)
 - **sessionStorage** — Zustand und gewählte Stufen überleben den Fragenwechsel (Page-Reload in ILIAS)
 - **Erzwingungsmodus** — Dozent kann Toggle deaktivieren, Modus ist dann für alle aktiv
 - **Default: deaktiviert** — Student muss bewusst einschalten
@@ -39,7 +40,7 @@ In den Erweiterten Test-Einstellungen des Tests:
 
 ## Bedienung (Studierende)
 
-Oben rechts im Testplayer erscheint die Leiste:
+Unten mittig im Testplayer erscheint die Leiste:
 
 | Element | Wirkung |
 |---|---|
@@ -94,6 +95,17 @@ Eigene Tabelle: `examdyslexia_settings`
 - Leiste und Panel hängen außerhalb von `#tst_output` und setzen Schrift/Abstände neutral — sie bleiben auch bei starken Werten lesbar
 - `@font-face` in CSS + JS-Fallback mit absolutem Pfad (für den Fall dass ILIAS CSS-Pfade umschreibt)
 
+### Freitextfragen / TinyMCE
+
+ILIAS 9 nutzt TinyMCE 5; der Editor rendert die Eingabe in einem eigenen
+iframe-Dokument, an das kein Seiten-CSS herankommt. Das JS injiziert deshalb
+einen eigenen `<style>`-Block in den `<head>` jedes Editor-iframes
+(`iframe.tox-edit-area__iframe`, Fallback `iframe[id$="_ifr"]`) und hält ihn bei
+jeder Änderung aktuell. Die Font-URL wird dafür über `document.baseURI` absolut
+aufgelöst — im iframe ist die Basis-URL nicht der Webroot. Ein MutationObserver
+plus `load`-Handler pro iframe fängt ab, dass TinyMCE den Editor erst nach
+DOM-Ready aufbaut.
+
 ### JS-Strategie
 
 - Liest `window.ExamDyslexia.config` live über `cfg()` — nie beim IIFE-Init cachen, da `addJavaScript` vor `addOnLoadCode` läuft
@@ -106,12 +118,20 @@ Eigene Tabelle: `examdyslexia_settings`
 ### Button-Position
 
 ```
-top: 80px; right: 16px; z-index: 9000
+bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 9000
 ```
 
+ILIAS legt seine Testnavigation (`.ilTstNavigationBtn_Prev` / `_Next`) links und
+rechts ab — oben wie unten —, die Mitte bleibt frei. Das Panel klappt nach oben
+auf (`flex-direction: column-reverse`), damit es am unteren Rand im Viewport bleibt.
+
+- ILIAS „Weiter"/„Zurück": links und rechts → kein Konflikt
 - examcalc: `bottom: 20px; right: 20px` → kein Konflikt
 - exammagnifier: `bottom: 20px; left: 20px` → kein Konflikt
 - examfullscreen: eigener Button (andere Position) → kein Konflikt
+
+Die Leiste hängt direkt unter `<html>`, damit sie vom `transform` auf `<body>`
+unberührt bleibt, mit dem exammagnifier zoomt.
 
 ### Lizenz der Fonts
 
@@ -121,7 +141,7 @@ OpenDyslexic ist unter der **SIL Open Font License 1.1** lizenziert — frei ver
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
-| 1.2.0 | `ExamDyslexia_v1.2.0.zip` | 9 | Studierende passen Hintergrund, Zeilen- und Zeichenabstand im Testplayer selbst an (Panel am Zahnrad); neue Dozenten-Option `allow_customize`; JS-Texte über lang-Dateien |
+| 1.2.0 | `ExamDyslexia_v1.2.0.zip` | 9 | Studierende passen Hintergrund, Zeilen- und Zeichenabstand im Testplayer selbst an (Panel am Zahnrad); neue Dozenten-Option `allow_customize`; JS-Texte über lang-Dateien; Leiste nach unten mittig verlegt (lag zuvor auf ILIAS' „Weiter"-Button); Styles wirken jetzt auch im TinyMCE-Editor der Freitextfragen |
 | 1.1.0 | `ExamDyslexia_v1.1.0.zip` | 9 | Modul-i18n DE/EN (ilModuleLanguage) |
 | 1.0.1 | `ExamDyslexia_v1.0.1.zip` | 9 | ILIAS-Kompatibilität auf 9 beschränkt |
 | 1.0.0 | `ExamDyslexia_v1.0.0.zip` | 9–12 | Erstveröffentlichung |
