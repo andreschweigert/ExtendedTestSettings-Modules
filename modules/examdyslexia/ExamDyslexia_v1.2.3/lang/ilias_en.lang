@@ -6,14 +6,12 @@ enable_info#:#Provides an accessible reading mode with OpenDyslexic font, increa
 allow_toggle#:#Student can toggle it on/off
 allow_toggle_info#:#Shows a toggle button in the test player. If disabled, the mode is enforced for all participants – with no way to turn it off.
 allow_customize#:#Student can adjust the appearance
-allow_customize_info#:#Shows a gear button next to the toggle in the test player. Students use it to change background colour, line spacing and letter spacing along the same steps as below – the values chosen here then only serve as starting values. If disabled, the values set below apply unchanged.
+allow_customize_info#:#Shows a gear button next to the toggle in the test player. Students use it to change font, background colour, line, letter and word spacing as well as the reading ruler along the same steps as below – the values chosen here then only serve as starting values. If disabled, the values set below apply unchanged.
 font_label#:#Font
 font_label_info#:#Replaces the test player's default font. Both fonts are designed for people with reading difficulties and ship with the module (SIL Open Font License) — nothing is loaded from outside. If adjusting is allowed, this choice acts as the starting value and students can switch.
 font_default#:#Test player default font
 font_opendyslexic#:#OpenDyslexic
 font_atkinson#:#Atkinson Hyperlegible
-use_font#:#Use OpenDyslexic font
-use_font_info#:#Replaces the default font with OpenDyslexic (SIL Open Font License, stored locally).
 bg_label#:#Background colour
 bg_none#:#None
 bg_cream#:#Cream (#FEFAE0)
@@ -31,6 +29,8 @@ ws_normal#:#Normal (0, default)
 ws_light#:#Light (0.16em)
 ws_medium#:#Medium (0.3em)
 ws_strong#:#Strong (0.5em)
+ruler#:#Show reading ruler
+ruler_info#:#Highlights the line under the mouse pointer. If adjusting is allowed, students can additionally switch the ruler on and off in the test player.
 js_toggle_on#:#Reading mode: ON
 js_toggle_off#:#Reading mode: OFF
 js_toggle_aria#:#Toggle dyslexia reading mode
@@ -64,5 +64,9 @@ js_ws_0#:#Normal
 js_ws_1#:#Light
 js_ws_2#:#Medium
 js_ws_3#:#Strong
+js_ruler_label#:#Reading ruler
+js_ruler_on#:#On
+js_ruler_off#:#Off
+js_ruler_title#:#Turn the highlight of the line under the mouse pointer on or off
 js_reset#:#Reset
 js_reset_title#:#Reset to the values specified by the instructor

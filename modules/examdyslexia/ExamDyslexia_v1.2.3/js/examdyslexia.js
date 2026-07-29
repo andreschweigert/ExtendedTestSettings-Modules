@@ -31,10 +31,10 @@
     var WS_LABEL_KEYS = ['ws_0', 'ws_1', 'ws_2', 'ws_3'];
 
     // Laufzeit-Zustand (wird über sessionStorage über Fragenwechsel gerettet)
-    var state = { on: false, font: 'opendyslexic', bg: 'none', lh: '1.8', ls: '0.05em', ws: '0', open: false };
+    var state = { on: false, font: 'opendyslexic', bg: 'none', lh: '1.8', ls: '0.05em', ws: '0', ruler: true, open: false };
 
     var bar = null, toggleBtn = null, toggleLabel = null, gearBtn = null, panel = null;
-    var swatches = [], fontSelect = null, lhVal = null, lsVal = null, wsVal = null;
+    var swatches = [], fontSelect = null, lhVal = null, lsVal = null, wsVal = null, rulerBtn = null;
     var initialized = false;
 
     // -------------------------------------------------------------------------
@@ -96,7 +96,8 @@
             bg: pick(bgList(), config.bg_color, bgList()[0]),
             lh: pick(lhList(), config.line_height, '1.8'),
             ls: pick(lsList(), config.letter_spacing, '0.05em'),
-            ws: pick(wsList(), config.word_spacing, '0')
+            ws: pick(wsList(), config.word_spacing, '0'),
+            ruler: config.ruler !== false
         };
     }
 
@@ -173,6 +174,7 @@
         state.lh = def.lh;
         state.ls = def.ls;
         state.ws = def.ws;
+        state.ruler = def.ruler;
 
         try {
             var raw = sessionStorage.getItem(storageKey());
@@ -190,6 +192,7 @@
                 state.lh = pick(lhList(), parsed.lh, def.lh);
                 state.ls = pick(lsList(), parsed.ls, def.ls);
                 state.ws = pick(wsList(), parsed.ws, def.ws);
+                state.ruler = typeof parsed.ruler === 'boolean' ? parsed.ruler : def.ruler;
             }
         } catch (e) {
             console.warn('[ExamDyslexia] Zustand konnte nicht geladen werden', e);
@@ -318,6 +321,40 @@
         ruler.style.height = (lh * 1.15).toFixed(2) + 'em';
     }
 
+    // Sichtbar nur, wenn Lesemodus läuft UND die Schiene eingeschaltet ist.
+    // Das Element bleibt im DOM, damit Re-Aktivieren ohne Neuaufbau geht.
+    function applyRuler() {
+        if (state.on && state.ruler) {
+            initReadingRuler();
+        } else {
+            var ruler = document.getElementById('examdyslexia-ruler');
+            if (ruler) {
+                ruler.style.display = 'none';
+            }
+        }
+
+        if (rulerBtn) {
+            rulerBtn.classList.toggle('examdyslexia-switch-on', state.ruler);
+            rulerBtn.setAttribute('aria-pressed', String(state.ruler));
+            rulerBtn.textContent = txt(state.ruler ? 'ruler_on' : 'ruler_off');
+        }
+    }
+
+    function toggleRuler() {
+        state.ruler = !state.ruler;
+
+        // Einschalten aktiviert den Lesemodus mit (wie jede andere Panel-Bedienung),
+        // Ausschalten lässt ihn in Ruhe
+        if (state.ruler && !state.on) {
+            state.on = true;
+            applyActive();
+        } else {
+            applyRuler();
+        }
+
+        saveState();
+    }
+
     function initReadingRuler() {
         if (document.getElementById('examdyslexia-ruler')) return;
 
@@ -336,7 +373,7 @@
         }, { passive: true });
 
         target.addEventListener('mousemove', function (e) {
-            if (!document.body.classList.contains('examdyslexia-active')) return;
+            if (!state.ruler || !document.body.classList.contains('examdyslexia-active')) return;
             if (!cachedRect) {
                 cachedRect = target.getBoundingClientRect();
             }
@@ -358,15 +395,11 @@
 
     function applyActive() {
         document.body.classList.toggle('examdyslexia-active', state.on);
+        applyRuler();
 
-        if (state.on) {
-            initReadingRuler();
-        } else {
-            // Leseschiene ausblenden (Element bleibt im DOM für schnelles Re-Aktivieren)
-            var ruler = document.getElementById('examdyslexia-ruler');
-            if (ruler) {
-                ruler.style.display = 'none';
-            }
+        // Ausgeschaltet bleiben keine Markierungen zurück
+        if (!state.on) {
+            clearMatchHighlight();
         }
 
         if (toggleBtn) {
@@ -383,6 +416,62 @@
         state.on = on;
         applyActive();
         saveState();
+    }
+
+    // -------------------------------------------------------------------------
+    // Zuordnungsfragen: zusammengehörende Begriffe hervorheben
+    //
+    // ILIAS legt einen zugeordneten Begriff als Kopie in die Ablagefläche der
+    // Definition — Original und Kopie tragen dieselbe data-id (siehe
+    // Modules/TestQuestionPool/js/ilMatchingQuestion.js). Ein Klick auf einen
+    // Begriff markiert deshalb beide, sodass sichtbar wird, wohin er schon
+    // zugeordnet ist. Bei n:n-Zuordnung sind das auch mehrere Stellen.
+    // -------------------------------------------------------------------------
+
+    var MATCH_CLASS = 'examdyslexia-match';
+    var MATCH_SCOPE = '[data-type="ilMatchingQuestion"]';
+
+    function clearMatchHighlight(root) {
+        var marked = (root || document).querySelectorAll('.' + MATCH_CLASS);
+        for (var i = 0; i < marked.length; i++) {
+            marked[i].classList.remove(MATCH_CLASS);
+        }
+    }
+
+    function highlightMatchingTerm(term) {
+        var scope = term.closest(MATCH_SCOPE) || document;
+        var id = term.getAttribute('data-id');
+        var wasMarked = term.classList.contains(MATCH_CLASS);
+
+        clearMatchHighlight(scope);
+
+        // Erneuter Klick hebt die Markierung wieder auf
+        if (wasMarked || !id || !/^[\w-]+$/.test(id)) {
+            return;
+        }
+
+        var partners = scope.querySelectorAll(
+            '.draggable[data-type="term"][data-id="' + id + '"]'
+        );
+
+        for (var i = 0; i < partners.length; i++) {
+            partners[i].classList.add(MATCH_CLASS);
+        }
+    }
+
+    function bindMatchingHighlight() {
+        document.addEventListener('click', function (e) {
+            if (!state.on) return;
+
+            var term = e.target.closest ? e.target.closest('.draggable[data-type="term"]') : null;
+
+            if (term) {
+                highlightMatchingTerm(term);
+            } else if (!e.target.closest || !e.target.closest(MATCH_SCOPE)) {
+                // Klick außerhalb der Frage räumt die Markierung ab
+                clearMatchHighlight();
+            }
+        });
     }
 
     // -------------------------------------------------------------------------
@@ -408,6 +497,11 @@
         if (wsVal) {
             var wsIdx = wsList().indexOf(state.ws);
             wsVal.textContent = txt(WS_LABEL_KEYS[wsIdx] || 'ws_0');
+        }
+        if (rulerBtn) {
+            rulerBtn.classList.toggle('examdyslexia-switch-on', state.ruler);
+            rulerBtn.setAttribute('aria-pressed', String(state.ruler));
+            rulerBtn.textContent = txt(state.ruler ? 'ruler_on' : 'ruler_off');
         }
     }
 
@@ -461,7 +555,9 @@
         state.lh = def.lh;
         state.ls = def.ls;
         state.ws = def.ws;
+        state.ruler = def.ruler;
         applyStyles();
+        applyRuler();
         refreshPanel();
         saveState();
     }
@@ -602,6 +698,18 @@
         wsRow.appendChild(wsStepper.wrap);
         panel.appendChild(wsRow);
 
+        // Leseschiene an/aus
+        var rulerRow = makeRow(txt('ruler_label'));
+        rulerBtn = document.createElement('button');
+        rulerBtn.type = 'button';
+        rulerBtn.className = 'examdyslexia-switch';
+        rulerBtn.title = txt('ruler_title');
+        rulerBtn.setAttribute('aria-label', txt('ruler_title'));
+        rulerBtn.setAttribute('aria-pressed', 'false');
+        rulerBtn.addEventListener('click', toggleRuler);
+        rulerRow.appendChild(rulerBtn);
+        panel.appendChild(rulerRow);
+
         // Zurücksetzen auf die Dozentenwerte
         var reset = document.createElement('button');
         reset.type = 'button';
@@ -732,6 +840,7 @@
         applyStyles();
         buildBar();
         bindDismiss();
+        bindMatchingHighlight();
         observeEditorFrames();
         applyActive();
     }

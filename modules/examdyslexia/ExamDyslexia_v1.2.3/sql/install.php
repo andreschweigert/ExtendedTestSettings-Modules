@@ -63,6 +63,12 @@ if (!$db->tableExists('examdyslexia_settings')) {
             'notnull' => true,
             'default' => '0',
         ],
+        'ruler' => [
+            'type'    => 'integer',
+            'length'  => 1,
+            'notnull' => true,
+            'default' => 1,
+        ],
         'updated_at' => [
             'type'    => 'timestamp',
             'notnull' => false,
@@ -98,13 +104,23 @@ if (!$db->tableExists('examdyslexia_settings')) {
         );
     }
 
-    // 1.3.0: Wortabstand
+    // 1.2.2: Wortabstand
     if (!$db->tableColumnExists('examdyslexia_settings', 'word_spacing')) {
         $db->addTableColumn('examdyslexia_settings', 'word_spacing', [
             'type'    => 'text',
             'length'  => 10,
             'notnull' => true,
             'default' => '0',
+        ]);
+    }
+
+    // 1.2.3: Leseschiene abschaltbar — Default 1 hält das bisherige Verhalten
+    if (!$db->tableColumnExists('examdyslexia_settings', 'ruler')) {
+        $db->addTableColumn('examdyslexia_settings', 'ruler', [
+            'type'    => 'integer',
+            'length'  => 1,
+            'notnull' => true,
+            'default' => 1,
         ]);
     }
 }

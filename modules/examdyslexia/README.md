@@ -12,9 +12,10 @@ Bietet einen **Legasthenie-freundlichen Lesemodus** im ILIAS Test-Player. Studie
 - **Selbst anpassbare Darstellung** — Studierende verstellen Schrift, Hintergrundfarbe, Zeilen-, Zeichen- und Wortabstand direkt im Testplayer
 - **Erhöhter Zeilen-, Zeichen- und Wortabstand** — stufenweise konfigurierbar
 - **Pastell-Hintergrundfarbe** — Creme, Hellgelb oder Hellblau (optional)
-- **Leseschiene** — hebt die Zeile unter dem Mauszeiger hervor
+- **Leseschiene** — hebt die Zeile unter dem Mauszeiger hervor, im Panel abschaltbar
 - **Wirkt auch im Freitext-Editor** — TinyMCE rendert in einem eigenen iframe, dort werden die Styles gesondert injiziert
 - **Medienplayer ausgenommen** — Video- und Audiofragen behalten ihre Player-Farben, damit die Steuerelemente sichtbar bleiben
+- **Zuordnungsfragen** — ein Klick auf einen Begriff hebt ihn und alle Stellen hervor, an denen er bereits zugeordnet ist
 - **Toggle-Button + Zahnrad** — `position: fixed; bottom: 16px`, horizontal zentriert (kein Konflikt mit ILIAS-Navigation, examcalc oder exammagnifier)
 - **sessionStorage** — Zustand und gewählte Stufen überleben den Fragenwechsel (Page-Reload in ILIAS)
 - **Erzwingungsmodus** — Dozent kann Toggle deaktivieren, Modus ist dann für alle aktiv
@@ -34,6 +35,7 @@ In den Erweiterten Test-Einstellungen des Tests:
 | Zeilenabstand | `examdyslexia_line_height` | `1.5` / `1.8` / `2.0` / `2.5` |
 | Buchstabenabstand | `examdyslexia_letter_spacing` | `0` / `0.05em` / `0.12em` / `0.2em` |
 | Wortabstand | `examdyslexia_word_spacing` | `0` / `0.16em` / `0.3em` / `0.5em` |
+| Leseschiene anzeigen | `examdyslexia_ruler` | Checkbox (Default: an) |
 
 **Hinweise:**
 
@@ -59,9 +61,12 @@ Im Panel:
 | Zeilenabstand | `−` / `+` über die Stufen 1.5 – 2.5 |
 | Zeichenabstand | `−` / `+` über Normal / Leicht / Mittel / Stark |
 | Wortabstand | `−` / `+` über Normal / Leicht / Mittel / Stark |
+| Leseschiene | Ein/Aus-Schalter |
 | Zurücksetzen | stellt die vom Dozenten vorgegebenen Werte wieder her |
 
-Jede Änderung im Panel schaltet den Lesemodus mit ein, damit die Einstellung sofort wirkt. Das Panel schließt per `Esc` oder Klick daneben.
+Jede Änderung im Panel schaltet den Lesemodus mit ein, damit die Einstellung sofort wirkt; das Abschalten der Leseschiene lässt ihn erwartungsgemäß in Ruhe. Das Panel schließt per `Esc` oder Klick daneben.
+
+Nach dem Einschalten erscheint die Leseschiene erst, sobald die Maus bewegt wird; andernfalls stünde sie an der zuletzt bekannten Zeigerposition.
 
 ## Datenbank
 
@@ -79,6 +84,7 @@ Eigene Tabelle: `examdyslexia_settings`
 | `letter_spacing` | text | `0.05em` | CSS letter-spacing Startwert |
 | `word_spacing` | text | `0` | CSS word-spacing Startwert |
 | `bg_color` | text | `none` | CSS Hintergrundfarbe oder `none` |
+| `ruler` | integer 0/1 | 1 | Leseschiene anzeigen |
 | `updated_at` | timestamp | — | Letzte Änderung |
 
 ## Geladene Assets im Testplayer
@@ -102,6 +108,19 @@ verwendet wird — deklariert sind immer alle.
 - CSS Custom Properties (`--examdyslexia-line-height`, `--examdyslexia-letter-spacing`, `--examdyslexia-bg`) — vom JS via `document.documentElement.style.setProperty()` gesetzt; das Panel schreibt in dieselben Variablen, dadurch wirkt jede Änderung sofort
 - Leiste und Panel hängen außerhalb von `#tst_output` und setzen Schrift/Abstände neutral — sie bleiben auch bei starken Werten lesbar
 - `@font-face` in CSS + JS-Fallback mit absolutem Pfad (für den Fall dass ILIAS CSS-Pfade umschreibt)
+
+### Zuordnungsfragen
+
+Bei aktivem Lesemodus markiert ein Klick auf einen Begriff diesen und alle
+Stellen, an denen er bereits zugeordnet ist — bei n:n-Zuordnung also mehrere
+gleichzeitig. Ein erneuter Klick oder ein Klick daneben hebt die Markierung auf,
+das Ausschalten des Lesemodus ebenfalls.
+
+ILIAS legt einen zugeordneten Begriff als Kopie mit derselben `data-id` in die
+Ablagefläche der Definition; darüber findet das JS die zusammengehörenden
+Elemente. Die Markierung ist doppelt kodiert (Füllfarbe **und** Rahmen), damit
+sie auch bei Farbfehlsichtigkeit erkennbar bleibt. Sie hat keine eigene Option —
+sie gehört zum Lesemodus und verschwindet mit ihm.
 
 ### Video- und Audiofragen
 
@@ -178,6 +197,7 @@ Lizenztext mitgeliefert wird; er liegt deshalb in `fonts/` neben den Dateien:
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
+| 1.2.3 | `ExamDyslexia_v1.2.3.zip` | 9 | Leseschiene per Schalter im Panel ein-/ausschaltbar, Dozenten-Checkbox als Startwert (Default an = bisheriges Verhalten); Zuordnungsfragen: Klick auf einen Begriff hebt ihn und seine Zuordnungen hervor |
 | 1.2.2 | `ExamDyslexia_v1.2.2.zip` | 9 | Zweite Schrift Atkinson Hyperlegible, Schriftauswahl ersetzt die OpenDyslexic-Checkbox (Bestand wird übernommen); Wortabstand als weitere Stufe; Schriften kommen aus einer Registry, weitere lassen sich ohne CSS-/JS-Eingriff ergänzen |
 | 1.2.1 | `ExamDyslexia_v1.2.1.zip` | 9 | Video- und Audioplayer von der Hintergrund-Einfärbung ausgenommen — die Steuerelemente waren auf der Pastellfarbe kaum noch zu erkennen |
 | 1.2.0 | `ExamDyslexia_v1.2.0.zip` | 9 | Studierende passen Hintergrund, Zeilen- und Zeichenabstand im Testplayer selbst an (Panel am Zahnrad); neue Dozenten-Option `allow_customize`; JS-Texte über lang-Dateien; Leiste nach unten mittig verlegt (lag zuvor auf ILIAS' „Weiter"-Button); Styles wirken jetzt auch im TinyMCE-Editor der Freitextfragen |
@@ -189,4 +209,4 @@ Lizenztext mitgeliefert wird; er liegt deshalb in `fonts/` neben den Dateien:
 
 Siehe [`/docs/how-to.md`](../../docs/how-to.md).
 
-**Update auf 1.2.2:** zwingend über den ZIP-Upload in der Administration — `sql/install.php` ergänzt dabei die Spalten `allow_customize` (1.2.0) sowie `font_family` und `word_spacing` (1.2.2) und übernimmt den bisherigen `use_font`-Haken in die Schriftauswahl.
+**Update auf 1.2.3:** zwingend über den ZIP-Upload in der Administration — `sql/install.php` ergänzt dabei die Spalten `allow_customize` (1.2.0), `font_family` und `word_spacing` (1.2.2) sowie `ruler` (1.2.3) und übernimmt den bisherigen `use_font`-Haken in die Schriftauswahl.

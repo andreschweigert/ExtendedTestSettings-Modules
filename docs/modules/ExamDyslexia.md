@@ -1,26 +1,27 @@
 # ExamDyslexia — Entwicklerdokumentation
 
 **Modul-ID:** `examdyslexia`
-**Referenz-ZIP:** `modules-zip/modules/examdyslexia/ExamDyslexia_v1.2.1.zip`
-**Zuletzt aktualisiert:** 2026-07-27
+**Referenz-ZIP:** `modules-zip/modules/examdyslexia/ExamDyslexia_v1.2.3.zip`
+**Zuletzt aktualisiert:** 2026-07-29
 
 ---
 
 ## Was ist ExamDyslexia?
 
-Legasthenie-freundlicher Lesemodus im Testplayer: OpenDyslexic-Schrift (lokal
-mitgeliefert, kein CDN), konfigurierbarer Zeilen- und Zeichenabstand, optionaler
-Pastell-Hintergrund und eine Leseschiene, die der Maus folgt. Standardmäßig
+Legasthenie-freundlicher Lesemodus im Testplayer: Lesehilfe-Schrift nach Wahl
+(OpenDyslexic oder Atkinson Hyperlegible, lokal mitgeliefert, kein CDN),
+konfigurierbarer Zeilen-, Zeichen- und Wortabstand, optionaler Pastell-Hintergrund
+und eine abschaltbare Leseschiene, die der Maus folgt. Standardmäßig
 schaltet der Studierende den Modus selbst über einen Toggle-Button ein (unten
 mittig — ILIAS legt seine Testnavigation links und rechts ab, examcalc sitzt
 unten rechts, exammagnifier unten links); alternativ kann der Modus per Test
 erzwungen werden (`allow_toggle` aus → immer aktiv, kein Button).
 
-Seit 1.2.0 sind die Dozentenwerte für Hintergrundfarbe, Zeilen- und
-Zeichenabstand nur noch **Startwerte**: Über ein Zahnrad neben dem Schalter
-öffnet der Studierende ein Panel und verstellt sie selbst (`allow_customize`,
-Default an). Der Dozent kann das pro Test abschalten — dann gelten seine Werte
-unveränderlich wie bis 1.1.0.
+Seit 1.2.0 sind die Dozentenwerte nur noch **Startwerte**: Über ein Zahnrad neben
+dem Schalter öffnet der Studierende ein Panel und verstellt Schrift,
+Hintergrundfarbe, Zeilen-, Zeichen- und Wortabstand sowie die Leseschiene selbst
+(`allow_customize`, Default an). Der Dozent kann das pro Test abschalten — dann
+gelten seine Werte unveränderlich wie bis 1.1.0.
 
 ## Dateistruktur
 
@@ -31,6 +32,8 @@ modules/examdyslexia/
 ├── js/examdyslexia.js                   Leiste, Panel, Leseschiene, sessionStorage
 ├── css/examdyslexia.css                 Klassen-basierte Styles + Leiste/Panel/Schiene
 ├── fonts/OpenDyslexic-{Regular,Bold}.{woff2,woff}
+├── fonts/AtkinsonHyperlegible-{Regular,Bold,Italic,BoldItalic}.woff2
+├── fonts/OFL-{OpenDyslexic,AtkinsonHyperlegible}.txt   Lizenztexte (OFL-Pflicht)
 ├── lang/ilias_de.lang / ilias_en.lang
 └── sql/install.php / uninstall.php
 ```
@@ -56,13 +59,14 @@ eigene GUI-Seite und keine AJAX-Endpoints. `tables: ["examdyslexia_settings"]`.
 | `letter_spacing` | text(10) | `0.05em` | Whitelist: 0 / 0.05em / 0.12em / 0.2em |
 | `word_spacing` | text(10) | `0` | Whitelist: 0 / 0.16em / 0.3em / 0.5em (ab 1.2.2) |
 | `bg_color` | text(20) | `none` | Whitelist: none / #FEFAE0 (Creme) / #FFFDE7 (Gelb) / #E3F2FD (Blau) |
+| `ruler` | integer(1) | 1 | Leseschiene anzeigen (ab 1.2.3); Default 1 hält das Verhalten bis 1.2.2 |
 | `updated_at` | timestamp | null | letzte Änderung |
 
 Schreiben per `$db->replace()` (Upsert); alle Auswahlwerte werden im Handler
 gegen `ALLOWED_*`-Whitelists bzw. die Schlüssel der FONTS-Registry validiert.
 
 Nachträglich ergänzte Spalten (`allow_customize` mit 1.2.0, `font_family` und
-`word_spacing` mit 1.2.2) legt `install.php` im `else`-Zweig per
+`word_spacing` mit 1.2.2, `ruler` mit 1.2.3) legt `install.php` im `else`-Zweig per
 `tableColumnExists()`-Guard nach — Updates müssen deshalb über den ZIP-Upload
 laufen. `getConfig()` liest bewusst `SELECT *` und setzt für fehlende Spalten
 Rückfallwerte, damit das Modul zwischen Datei- und Schema-Stand nicht bricht.
@@ -81,13 +85,15 @@ eine ältere Modulversion gefahrlos.
 isEnabled(ref_id)          → examdyslexia_settings.enabled (defensiv, false bei Fehler)
 injectAssets(tpl, ref_id)  → nur im Testplayer-Kontext (isTestPlayerContext()):
                              CSS+JS mit filemtime-Cache-Busting, Config via addOnLoadCode
-                             in window.ExamDyslexia.config — inkl. font_path für den
-                             @font-face-Fallback, der Stufen-Whitelisten (bg_colors,
-                             line_heights, letter_spacings) und aller sichtbaren
+                             in window.ExamDyslexia.config — inkl. font_path, der
+                             Schriftliste (fonts, siehe Registry unten), der
+                             Stufen-Whitelisten (bg_colors, line_heights,
+                             letter_spacings, word_spacings) und aller sichtbaren
                              JS-Texte im labels-Block
 saveSettings(ref_id, post) → Whitelist-Validierung, replace()
 getFormItems(ref_id)       → Haupt-Checkbox mit SubItems: allow_toggle, allow_customize,
-                             use_font, bg_color, line_height, letter_spacing
+                             font_family, bg_color, line_height, letter_spacing,
+                             word_spacing, ruler
 ```
 
 `isTestPlayerContext()` ist der übliche bewusst duplizierte Helper (cmdClass-
@@ -132,19 +138,51 @@ während Abstände und Hintergrund trotzdem wirken.
   nie beim IIFE-Init cachen). Sichtbare Texte über `txt(key)` aus `cfg().labels`.
 - Zustand pro Teilnahme als JSON in `sessionStorage`
   (`examdyslexia_state_<active_id>`, Fallback `ref_id`):
-  `{on, font, bg, lh, ls, ws, open}` — überlebt die Fragennavigation.
+  `{on, font, bg, lh, ls, ws, ruler, open}` — überlebt die Fragennavigation.
 - Stufenwechsel laufen über die Indizes der Config-Listen; jeder geladene Wert
   wird mit `pick()` gegen dieselbe Liste geprüft. Bei `allow_customize = 0`
   werden gespeicherte Stufen verworfen und die Dozentenwerte gesetzt.
 - Panel-Änderungen schalten den Lesemodus mit ein (`changed()`) — sonst bliebe
-  die Einstellung ohne sichtbare Wirkung.
-- `@font-face`-Fallback wird per JS injiziert (`font_path` aus der Config), falls
-  das CSS die Fonts wegen relativer Pfade nicht findet.
+  die Einstellung ohne sichtbare Wirkung. `toggleRuler()` macht das ebenso,
+  aber nur beim Einschalten; das Abschalten der Schiene darf den Modus nicht
+  anwerfen.
+- `@font-face` wird komplett per JS aus `config.fonts` erzeugt (siehe
+  Schrift-Registry), mit über `document.baseURI` absolut aufgelöstem Pfad.
 - Anwendung der Styles ausschließlich über CSS Custom Properties auf
   `documentElement` plus die Klasse `examdyslexia-active` auf `<body>`.
 - Leseschiene (`#examdyslexia-ruler`): folgt dem Cursor innerhalb `#tst_output`,
   `pointer-events: none`, Höhe aus dem aktuellen Zeilenabstand; das Rect des
   Zielelements wird gecacht und nur bei `resize` verworfen.
+  `applyRuler()` ist die einzige Stelle, die über Sichtbarkeit entscheidet
+  (`state.on && state.ruler`); der `mousemove`-Handler prüft `state.ruler`
+  zusätzlich, damit eine abgeschaltete Schiene nicht durch Mausbewegung
+  wieder auftaucht. Nach dem Einschalten wird sie bewusst erst bei der
+  nächsten Mausbewegung sichtbar — sonst erschiene sie an der veralteten
+  Zeigerposition. Das Element bleibt beim Ausschalten im DOM.
+
+### Zuordnungsfragen (assMatchingQuestion)
+
+Klick auf einen Begriff markiert ihn und jede Stelle, an der er bereits
+zugeordnet ist. ILIAS legt einen zugeordneten Begriff als **Kopie mit derselben
+`data-id`** in die `.ilMatchingQuestionTerm`-Fläche der Definition — genau
+darüber prüft auch ILIAS' eigenes JS die Zugehörigkeit
+(`Modules/TestQuestionPool/js/ilMatchingQuestion.js`, `isDraggableToBeReactivated`).
+Der Selektor ist deshalb `.draggable[data-type="term"][data-id="…"]`, auf den
+Fragencontainer `[data-type="ilMatchingQuestion"]` begrenzt, damit mehrere
+Fragen auf einer Seite sich nicht ins Gehege kommen. Die `data-id` wird vor dem
+Einsetzen in den Selektor gegen `/^[\w-]+$/` geprüft.
+
+Der Klick-Handler ist delegiert auf `document` und prüft `state.on` — ohne
+aktiven Lesemodus passiert nichts. Es gibt bewusst **keine** eigene Einstellung
+dafür; die Hervorhebung gehört zum Lesemodus und wird mit ihm abgeräumt
+(`applyActive()`).
+
+Zur Spezifität im CSS: Die allgemeine Hintergrund-Regel
+(`#tst_output div:not(…)`) ist mit fünf `:not()`-Argumenten spezifischer als ein
+schlichter `.examdyslexia-match`-Selektor und würde die Markierungsfarbe
+überschreiben. Deshalb zwei Kunstgriffe: die Klasse wird in jener Regel per
+`:not(.examdyslexia-match)` ausgeklammert, und die Rücknahme für die
+Kindelemente trägt dieselbe `:not()`-Kette, um sie zu übertreffen.
 
 ### Medienplayer (Video-/Audiofragen)
 
@@ -197,8 +235,9 @@ Zwei Fallstricke, die der Code abfängt:
 │   ├── #examdyslexia-toggle       nur bei allow_toggle
 │   └── #examdyslexia-gear         nur bei allow_customize
 └── #examdyslexia-panel            nur bei allow_customize, display per state.open
-    ├── .examdyslexia-row × 5      Schrift (Auswahlfeld), Hintergrund (Farbfelder),
-    │                              Zeilen-, Zeichen-, Wortabstand (− Wert +)
+    ├── .examdyslexia-row × 6      Schrift (Auswahlfeld), Hintergrund (Farbfelder),
+    │                              Zeilen-, Zeichen-, Wortabstand (− Wert +),
+    │                              Leseschiene (Ein/Aus-Schalter)
     └── .examdyslexia-reset        zurück auf die Dozentenwerte
 ```
 
@@ -222,6 +261,7 @@ konfigurieren.
 
 | Datum | Was |
 |---|---|
+| 2026-07 | **v1.2.3:** Leseschiene über einen Schalter im Panel ein-/ausschaltbar, neue Spalte `ruler` als Dozenten-Startwert (Default 1 = Verhalten wie bisher); Zuordnungsfragen: Klick auf einen Begriff hebt ihn und seine Zuordnungen hervor |
 | 2026-07 | **v1.2.2:** Atkinson Hyperlegible als zweite Schrift; Schriftauswahl über eine Registry statt fester OpenDyslexic-Checkbox (Migration aus `use_font`); Wortabstand als weitere Stufe; `@font-face` wandert aus dem CSS ins JS, damit die Pfade absolut aufgelöst werden |
 | 2026-07 | **v1.2.1:** Video- und Audioplayer (MediaElement.js) von der Hintergrund-Einfärbung ausgenommen, Schrift/Zeichenabstand im Player-Teilbaum zurückgesetzt — die Steuerelemente waren auf der Pastellfarbe kaum noch erkennbar |
 | 2026-07 | **v1.2.0:** Einstellungs-Panel für Studierende (Hintergrund, Zeilen-, Zeichenabstand), Dozenten-Option `allow_customize`, JS-Texte über lang-Dateien, Zustand als JSON im sessionStorage; Leiste von oben rechts (lag auf ILIAS' „Weiter") nach unten mittig verlegt und unter `<html>` gehängt; Styles wirken jetzt auch im TinyMCE-iframe der Freitextfragen |

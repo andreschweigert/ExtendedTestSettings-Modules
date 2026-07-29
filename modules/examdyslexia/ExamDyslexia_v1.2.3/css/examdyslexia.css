@@ -42,7 +42,7 @@ body.examdyslexia-active {
    Interaktive Elemente (Buttons, Inputs, Selects, Dropdowns) werden ausgespart.
    Ebenso der Medienplayer — siehe eigener Abschnitt weiter unten.
    ILIAS Testplayer nutzt Bootstrap 3 + eigene ilTest*-Klassen. */
-body.examdyslexia-active #tst_output div:not(.btn):not(.btn-group):not(.dropdown-menu):not([class*="btn-"]):not([class*="mejs"]) {
+body.examdyslexia-active #tst_output div:not(.btn):not(.btn-group):not(.dropdown-menu):not([class*="btn-"]):not([class*="mejs"]):not(.examdyslexia-match) {
     background-color: var(--examdyslexia-bg, transparent) !important;
 }
 
@@ -70,6 +70,46 @@ body.examdyslexia-active #tst_output td,
 body.examdyslexia-active #tst_output th,
 body.examdyslexia-active #tst_output label {
     line-height: var(--examdyslexia-line-height, 1.8) !important;
+}
+
+/* ============================================
+   ZUORDNUNGSFRAGEN — zusammengehörende Begriffe hervorheben
+   Klick auf einen Begriff markiert ihn und alle Stellen, an denen er bereits
+   zugeordnet ist (JS vergibt .examdyslexia-match anhand der data-id).
+
+   Zwei Eigenheiten:
+   - Die Hintergrund-Regel oben klammert .examdyslexia-match per :not() aus,
+     sonst überschriebe sie die Markierungsfarbe.
+   - Für die Kindelemente muss die Rücknahme dieselbe :not()-Kette tragen,
+     um spezifischer zu sein als jene Regel — sonst läge die Pastellfarbe
+     über der Markierung.
+   Markiert wird doppelt kodiert (Farbe + Rahmen), damit die Hervorhebung
+   auch bei Farbfehlsichtigkeit erkennbar bleibt.
+   ============================================ */
+body.examdyslexia-active #tst_output .examdyslexia-match {
+    background-color: #ffe082 !important;
+    outline: 3px solid #e65100 !important;
+    outline-offset: 2px !important;
+    border-radius: 4px !important;
+}
+
+body.examdyslexia-active #tst_output .examdyslexia-match div:not(.btn):not(.btn-group):not(.dropdown-menu):not([class*="btn-"]):not([class*="mejs"]) {
+    background-color: transparent !important;
+}
+
+@media (prefers-contrast: high) {
+    body.examdyslexia-active #tst_output .examdyslexia-match {
+        background-color: #ffff00 !important;
+        outline-color: #000 !important;
+        outline-width: 4px !important;
+    }
+}
+
+@media print {
+    body.examdyslexia-active #tst_output .examdyslexia-match {
+        outline: none !important;
+        background-color: transparent !important;
+    }
 }
 
 /* ============================================
@@ -369,6 +409,41 @@ body.examdyslexia-active #tst_output audio {
     color: #212529 !important;
 }
 
+/* --- Ein/Aus-Schalter (Leseschiene) --- */
+#examdyslexia-panel .examdyslexia-switch {
+    min-width: 66px !important;
+    padding: 6px 12px !important;
+    background: #f2f5f9 !important;
+    border: 2px solid #adb5bd !important;
+    border-radius: 14px !important;
+    cursor: pointer !important;
+    font-family: inherit !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: #343a40 !important;
+}
+
+#examdyslexia-panel .examdyslexia-switch:hover {
+    background: #e3eaf3 !important;
+    border-color: #495057 !important;
+}
+
+#examdyslexia-panel .examdyslexia-switch:focus-visible {
+    outline: 3px solid #0d6efd !important;
+    outline-offset: 2px !important;
+}
+
+#examdyslexia-panel .examdyslexia-switch-on {
+    background: #0d6efd !important;
+    border-color: #0d6efd !important;
+    color: #ffffff !important;
+}
+
+#examdyslexia-panel .examdyslexia-switch-on:hover {
+    background: #0b5ed7 !important;
+    border-color: #0b5ed7 !important;
+}
+
 /* --- Zurücksetzen --- */
 #examdyslexia-panel .examdyslexia-reset {
     display: block !important;
@@ -418,6 +493,8 @@ body.examdyslexia-active #tst_output audio {
     #examdyslexia-panel,
     #examdyslexia-panel .examdyslexia-step,
     #examdyslexia-panel .examdyslexia-swatch,
+    #examdyslexia-panel .examdyslexia-switch,
+    #examdyslexia-panel .examdyslexia-select,
     #examdyslexia-panel .examdyslexia-reset {
         border-width: 3px !important;
         border-color: #000 !important;
@@ -428,12 +505,15 @@ body.examdyslexia-active #tst_output audio {
     #examdyslexia-gear,
     #examdyslexia-panel,
     #examdyslexia-panel .examdyslexia-step,
+    #examdyslexia-panel .examdyslexia-switch,
+    #examdyslexia-panel .examdyslexia-select,
     #examdyslexia-panel .examdyslexia-reset {
         background: #fff !important;
     }
 
     #examdyslexia-toggle.examdyslexia-on,
-    #examdyslexia-gear.examdyslexia-on {
+    #examdyslexia-gear.examdyslexia-on,
+    #examdyslexia-panel .examdyslexia-switch-on {
         background: #000 !important;
         color: #fff !important;
         border-color: #000 !important;

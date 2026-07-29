@@ -105,6 +105,7 @@ class ilExamDyslexiaHandler implements ilExamModuleInterface
             'letter_spacing'  => '0.05em',
             'word_spacing'    => '0',
             'bg_color'        => 'none',
+            'ruler'           => true,
         ];
 
         try {
@@ -114,9 +115,9 @@ class ilExamDyslexiaHandler implements ilExamModuleInterface
                 return $defaults;
             }
 
-            // SELECT *: allow_customize (1.2.0) sowie font_family und word_spacing
-            // (1.2.2) kamen nachträglich dazu — so bleibt das Modul auch lauffähig,
-            // bevor install.php die Spalten angelegt hat
+            // SELECT *: allow_customize (1.2.0), font_family und word_spacing
+            // (1.2.2) sowie ruler (1.2.3) kamen nachträglich dazu — so bleibt das
+            // Modul auch lauffähig, bevor install.php die Spalten angelegt hat
             $query = "SELECT * FROM examdyslexia_settings WHERE test_id = %s";
             $result = $db->queryF($query, ['integer'], [$test_id]);
 
@@ -133,6 +134,7 @@ class ilExamDyslexiaHandler implements ilExamModuleInterface
                     'letter_spacing'  => $row['letter_spacing'] ?? '0.05em',
                     'word_spacing'    => $row['word_spacing'] ?? '0',
                     'bg_color'        => $row['bg_color'] ?? 'none',
+                    'ruler'           => (bool) ($row['ruler'] ?? 1),
                 ];
             }
 
@@ -254,6 +256,7 @@ class ilExamDyslexiaHandler implements ilExamModuleInterface
             'letter_spacing'  => $config['letter_spacing'],
             'word_spacing'    => $config['word_spacing'],
             'bg_color'        => $config['bg_color'],
+            'ruler'           => $config['ruler'],
             'font_path'       => $font_path,
             'fonts'           => $this->getFontList($font_path),
             'bg_colors'       => self::ALLOWED_BG_COLORS,
@@ -291,6 +294,10 @@ class ilExamDyslexiaHandler implements ilExamModuleInterface
                 'ws_1'         => $this->lng->txt('js_ws_1'),
                 'ws_2'         => $this->lng->txt('js_ws_2'),
                 'ws_3'         => $this->lng->txt('js_ws_3'),
+                'ruler_label'  => $this->lng->txt('js_ruler_label'),
+                'ruler_on'     => $this->lng->txt('js_ruler_on'),
+                'ruler_off'    => $this->lng->txt('js_ruler_off'),
+                'ruler_title'  => $this->lng->txt('js_ruler_title'),
                 'reset'        => $this->lng->txt('js_reset'),
                 'reset_title'  => $this->lng->txt('js_reset_title'),
             ],
@@ -345,6 +352,8 @@ class ilExamDyslexiaHandler implements ilExamModuleInterface
                 $word_spacing = '0';
             }
 
+            $ruler = isset($post_data['examdyslexia_ruler']) ? 1 : 0;
+
             $db->replace('examdyslexia_settings', [
                 'test_id' => ['integer', $obj_id]
             ], [
@@ -357,6 +366,7 @@ class ilExamDyslexiaHandler implements ilExamModuleInterface
                 'letter_spacing'  => ['text',      $letter_spacing],
                 'word_spacing'    => ['text',      $word_spacing],
                 'bg_color'        => ['text',      $bg_color],
+                'ruler'           => ['integer',   $ruler],
                 'updated_at'      => ['timestamp', date('Y-m-d H:i:s')],
             ]);
 
@@ -440,6 +450,11 @@ class ilExamDyslexiaHandler implements ilExamModuleInterface
         $ws->setValue($config['word_spacing']);
         $cb->addSubItem($ws);
 
+        $ruler = new ilCheckboxInputGUI($this->lng->txt('ruler'), 'examdyslexia_ruler');
+        $ruler->setChecked($config['ruler']);
+        $ruler->setInfo($this->lng->txt('ruler_info'));
+        $cb->addSubItem($ruler);
+
         return [$cb];
     }
 
@@ -453,14 +468,15 @@ class ilExamDyslexiaHandler implements ilExamModuleInterface
             'title'       => $this->lng->txt('title'),
             'icon'        => '👁',
             'description' => $this->lng->txt('description'),
-            'version'     => '1.2.2',
+            'version'     => '1.2.3',
             'features'    => [
                 'Schriftauswahl OpenDyslexic oder Atkinson Hyperlegible (lokal, kein CDN)',
                 'Studierende passen Schrift, Hintergrundfarbe, Zeilen-, Zeichen- und Wortabstand im Testplayer selbst an',
                 'Dozentenwerte sind Startwerte; „Zurücksetzen" stellt sie wieder her',
                 'Optionaler Pastell-Hintergrund (Creme/Gelb/Blau)',
-                'Leseschiene folgt dem Cursor über der aktuellen Zeile',
+                'Leseschiene folgt dem Cursor über der aktuellen Zeile, im Panel abschaltbar',
                 'Wirkt auch im TinyMCE-Editor der Freitextfragen',
+                'Zuordnungsfragen: Klick auf einen Begriff hebt ihn und seine Zuordnungen hervor',
                 'Video- und Audioplayer bleiben von der Einfärbung ausgenommen (Steuerelemente bleiben sichtbar)',
                 'Bedienleiste unten mittig (frei von ILIAS-Navigation, examcalc und exammagnifier)',
                 'Zustand in sessionStorage (überlebt Fragenwechsel)',

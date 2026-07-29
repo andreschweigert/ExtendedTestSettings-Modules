@@ -6,14 +6,12 @@ enable_info#:#Bietet einen barrierefreien Lesemodus mit OpenDyslexic-Schrift, er
 allow_toggle#:#Student kann selbst ein-/ausschalten
 allow_toggle_info#:#Zeigt einen Toggle-Button im Testplayer. Wenn deaktiviert, wird der Modus für alle Teilnehmer erzwungen – ohne Abschaltmöglichkeit.
 allow_customize#:#Student kann die Darstellung selbst anpassen
-allow_customize_info#:#Zeigt im Testplayer ein Zahnrad neben dem Schalter. Darüber verstellt der Studierende Hintergrundfarbe, Zeilenabstand und Zeichenabstand entlang derselben Stufen wie unten – die hier gewählten Werte sind dann nur noch die Startwerte. Ist die Einstellung deaktiviert, gelten die unten festgelegten Werte unveränderlich.
+allow_customize_info#:#Zeigt im Testplayer ein Zahnrad neben dem Schalter. Darüber verstellt der Studierende Schriftart, Hintergrundfarbe, Zeilen-, Zeichen- und Wortabstand sowie die Leseschiene entlang derselben Stufen wie unten – die hier gewählten Werte sind dann nur noch die Startwerte. Ist die Einstellung deaktiviert, gelten die unten festgelegten Werte unveränderlich.
 font_label#:#Schriftart
 font_label_info#:#Ersetzt die Standardschrift des Testplayers. Beide Schriften sind für Menschen mit Leseschwäche entwickelt und liegen lokal im Modul (SIL Open Font License), es wird nichts nachgeladen. Wenn das Anpassen erlaubt ist, gilt die Auswahl als Startwert und der Studierende kann wechseln.
 font_default#:#Standardschrift des Testplayers
 font_opendyslexic#:#OpenDyslexic
 font_atkinson#:#Atkinson Hyperlegible
-use_font#:#OpenDyslexic Schrift verwenden
-use_font_info#:#Ersetzt die Standardschrift durch OpenDyslexic (SIL Open Font License, lokal gespeichert).
 bg_label#:#Hintergrundfarbe
 bg_none#:#Keiner
 bg_cream#:#Cremefarben (#FEFAE0)
@@ -31,6 +29,8 @@ ws_normal#:#Normal (0, Standard)
 ws_light#:#Leicht (0.16em)
 ws_medium#:#Mittel (0.3em)
 ws_strong#:#Stark (0.5em)
+ruler#:#Leseschiene anzeigen
+ruler_info#:#Hebt die Zeile unter dem Mauszeiger farbig hervor. Wenn das Anpassen erlaubt ist, kann der Studierende die Schiene im Testplayer zusätzlich selbst ein- und ausschalten.
 js_toggle_on#:#Lesemodus: EIN
 js_toggle_off#:#Lesemodus: AUS
 js_toggle_aria#:#Legasthenie-Lesemodus umschalten
@@ -64,5 +64,9 @@ js_ws_0#:#Normal
 js_ws_1#:#Leicht
 js_ws_2#:#Mittel
 js_ws_3#:#Stark
+js_ruler_label#:#Leseschiene
+js_ruler_on#:#Ein
+js_ruler_off#:#Aus
+js_ruler_title#:#Farbige Hervorhebung der Zeile unter dem Mauszeiger ein-/ausschalten
 js_reset#:#Zurücksetzen
 js_reset_title#:#Auf die vom Dozenten vorgegebenen Werte zurücksetzen
