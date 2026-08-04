@@ -46,3 +46,51 @@ Jeder Branch entspricht einer ILIAS-Hauptversion:
 ## Modul installieren
 
 Siehe [docs/how-to.md](docs/how-to.md) für eine Schritt-für-Schritt-Anleitung.
+
+---
+
+## Tests
+
+**Stand: im Aufbau (2026-08-04).** Die Tests des Plugin-**Kerns** liegen im
+Plugin-Repository (`tests/`); hier in `tests/` entsteht der Prüfsatz für die
+**Module**. Er läuft ohne ILIAS — kein Webserver, keine Datenbank, kein Netz —
+und prüft die Modulquellen statisch:
+
+- **Manifest-Integrität:** die in `module.json` genannten Dateien existieren;
+  Root-, Quell- und ZIP-Manifest sowie `getInfo()` nennen dieselbe Version
+- **Sprachdateien:** `ilias_de.lang` und `ilias_en.lang` mit demselben
+  Schlüsselsatz — fehlt ein Schlüssel, steht im UI der rohe Schlüsselname
+- **Regelprüfungen** aus dem verbindlichen Regelwerk des Plugins (R4/R5/R7–R10):
+  keine schreibende Aktion an einem Link statt an einem Formular, kein
+  `json_encode()` ohne HEX-Flags in Inline-JavaScript, kein `tst_active` ohne
+  `submitted`, kein ungeprüftes `X-Forwarded-For`, keine CSV-Zelle ohne
+  Formel-Neutralisierung, kein `return true` im `catch`
+
+### Zwei Läufe, ein Prüfsatz
+
+| Lauf | Basis | beantwortet |
+|---|---|---|
+| `modules-source` | `modules/<id>/<Name>_v<version>/` | Ist der freigegebene Code in Ordnung? → Freigabe-Gate vor einem Release |
+| `modules-installed` | `<Plugin>/modules/<id>/` | Läuft auf der Plattform der geprüfte Stand? → Nachweis im Betrieb |
+
+Der Plugin-Pfad für den zweiten Lauf kommt aus `ETS_PLUGIN_PATH`; Vorgabe ist
+das Elternverzeichnis dieses Repositories. Ist er nicht erreichbar, überspringt
+sich der Lauf mit Begründung — er meldet nie stillschweigend „grün".
+
+Ist ein Modul unter `modules/` älter als die freigegebene Version, ist das
+**kein Regelverstoß**, sondern die Ansage „erst installieren, dann erneut
+prüfen". Ein Verstoß, der nur im Installations-Lauf auftritt, ist ein Befund
+über den *installierten* Stand.
+
+### Zwei Regeln dazu
+
+1. **Repariert wird immer in der Quelle.** `<Plugin>/modules/` ist gitignored —
+   eine Korrektur dort ist beim nächsten Release wieder weg.
+2. **Ein rot markierter Test wird nicht „grün gemacht".** Die Modul-Findings aus
+   dem Audit vom 2026-08-03 sind noch offen; die Tests schreiben das
+   Sollverhalten fest, nicht den Ist-Zustand. Bekannte Verstöße sind mit
+   Finding-ID als „incomplete" ausgewiesen und in `tests/OFFENE_FINDINGS.md`
+   gelistet — sie sind damit die Abnahmebedingung für den späteren Fix.
+
+Eine Anleitung, wie man für ein neues Modul Tests schreibt, folgt unter
+`docs/tests-schreiben.md`.
