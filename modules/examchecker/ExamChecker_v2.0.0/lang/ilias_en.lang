@@ -1,0 +1,137 @@
+<!-- language file start -->
+title#:#Exam Settings Checker
+description#:#Checks a test's settings against configurable target values for on-site and remote exams.
+check_title#:#Check exam settings
+panel_hint#:#Checks run against the target values from the plugin configuration (Administration → Plugins → ExtendedTestSettings → ExamChecker).
+exam_type_label#:#Exam type
+type_praesenz#:#On-site exam
+type_fern#:#Remote exam
+start_check#:#Start check
+checking#:#Checking the settings ...
+checking_btn#:#Checking ...
+err_label#:#Error:
+err_no_test_data#:#No settings found for this test.
+err_not_a_test#:#The given object is not a test.
+no_standards_title#:#No checks enabled
+no_standards_text#:#No check is currently enabled for this exam type. Enable them in the plugin configuration.
+col_setting#:#Setting
+col_actual#:#Current
+col_expected#:#Target
+res_ok#:#%d matching
+res_failed#:#%d deviating
+res_unknown#:#%d not verifiable
+res_info#:#%d for visual inspection
+status_ok#:#Matches
+status_failed#:#Deviates from the target value
+status_unknown#:#Not verifiable
+status_info#:#For visual inspection
+grp_allgemein#:#General settings
+grp_zugang#:#Access
+grp_durchfuehrung#:#Test run
+grp_auswertung#:#Scoring
+grp_abschluss#:#Completion
+cfg_col_check#:#Setting
+cfg_col_expected#:#Target value
+cfg_check_enabled#:#check
+cfg_recommendation#:#Recommended: %s
+cfg_intro#:#Define per exam type which settings are checked and which value they should have. The recommendation matches the exam requirements at FAU.
+chk_fragenpools_verwenden#:#Questions originate from question pools
+chk_fragenpools_verwenden_info#:#Random tests always satisfy this; for fixed question sets all questions must be copies from a pool.
+chk_datenschutz#:#Report test results with names
+chk_datenschutz_info#:#Anonymous results cannot be attributed to individuals afterwards.
+chk_online#:#Test is online
+chk_online_info#:#Only tests that are online can be reached by participants.
+chk_zeitlich_begrenzte_verfuegbarkeit#:#Time-limited availability
+chk_zeitlich_begrenzte_verfuegbarkeit_info#:#Additional availability limit set by the course (object activation), independent of the test's own exam period.
+chk_passwort#:#Test password set
+chk_passwort_info#:#Ensures that all participants start at the same time.
+chk_nur_ausgewaehlte_teilnehmer#:#Selected participants only
+chk_nur_ausgewaehlte_teilnehmer_info#:#Restricts access to an invited list of participants.
+chk_vorbedingungen#:#Preconditions for test access
+chk_vorbedingungen_info#:#Preconditions can keep individual participants from starting.
+chk_startzeit_aktiviert#:#Start time enabled
+chk_startzeit_aktiviert_info#:#The test cannot be started before this point in time.
+chk_endzeit_aktiviert#:#End time enabled
+chk_endzeit_aktiviert_info#:#The test can no longer be started after this point in time.
+chk_pruefungszeitraum#:#Exam period
+chk_pruefungszeitraum_info#:#Please verify for plausibility — a general target value is not possible here.
+chk_testdurchlaeufe_begrenzen#:#Number of attempts
+chk_testdurchlaeufe_begrenzen_info#:#0 means an unlimited number of attempts.
+chk_wartezeit_erzwingen#:#Waiting period between attempts
+chk_wartezeit_erzwingen_info#:#Forces a pause before another attempt is possible.
+chk_pruefungsansicht#:#Exam view (kiosk mode)
+chk_pruefungsansicht_info#:#Hides the ILIAS navigation during the exam.
+chk_automatisches_speichern#:#Automatic saving
+chk_automatisches_speichern_info#:#Saves answers regularly without participant action.
+chk_autosave_intervall#:#Automatic saving interval
+chk_autosave_intervall_info#:#Only meaningful when automatic saving is enabled.
+chk_direkte_rueckmeldung#:#Instant feedback during the test
+chk_direkte_rueckmeldung_info#:#Shows participants during the exam whether an answer was correct.
+chk_fragen_markieren#:#Mark questions
+chk_fragen_markieren_info#:#Participants can mark questions for later review.
+chk_eigenstaendigkeitserklaerung#:#Require confirmation of exam conditions
+chk_eigenstaendigkeitserklaerung_info#:#In ILIAS 9 this setting is called "Exam Conditions"; it serves as the declaration of authorship for remote exams.
+chk_bearbeitungsdauer#:#Limit processing time
+chk_bearbeitungsdauer_info#:#Limits the time available from the start of an attempt.
+chk_bearbeitungsdauer_minuten#:#Processing time
+chk_bearbeitungsdauer_minuten_info#:#Must match the actual exam duration — please verify manually.
+chk_bewertungssystem#:#Scoring of partially correct answers
+chk_bewertungssystem_info#:#Determines whether incomplete answers earn partial credit.
+chk_negative_punkte#:#Handling of negative points
+chk_negative_punkte_info#:#Determines whether negative points are cut per question or only across the whole test.
+chk_besten_durchlauf_bewerten#:#Attempt used for scoring
+chk_besten_durchlauf_bewerten_info#:#Which attempt counts towards the grade.
+chk_direkte_notenuebermittlung#:#Access to test results
+chk_direkte_notenuebermittlung_info#:#When participants can see their result.
+chk_weiterleitungsmodus#:#Redirect after finishing
+chk_weiterleitungsmodus_info#:#Where participants are sent after submitting.
+chk_weiterleitungsziel#:#Redirect target
+chk_weiterleitungsziel_info#:#Evaluated for the redirect rules "Always" and "In kiosk mode only".
+opt_count_partial#:#Partially correct answers earn points
+opt_count_full#:#Only fully correct answers earn points
+opt_cut_question#:#Do not let points go negative per question
+opt_cut_test#:#Do not let points go negative across the whole test
+opt_pass_last#:#Score the last attempt
+opt_pass_best#:#Score the best attempt
+opt_report_never#:#Do not show results
+opt_report_finished#:#After finishing the attempt
+opt_report_always#:#At any time during the test
+opt_report_date#:#From a fixed date onwards
+opt_report_passed#:#After passing the test
+opt_redirect_none#:#No redirect
+opt_redirect_always#:#Always to the given address
+opt_redirect_kiosk#:#In kiosk mode only, to the given address
+opt_redirect_logout#:#Always to the logout page
+unit_seconds#:#seconds
+unit_minutes#:#minutes
+val_yes#:#Yes
+val_no#:#No
+val_empty#:#(empty)
+val_not_set#:#not set
+val_not_limited#:#not limited
+val_unknown#:#not determinable
+val_unknown_option#:#Unknown value (%d)
+val_random_pool#:#Random selection from question pools
+val_no_questions#:#Test contains no questions
+val_pool_ratio#:#%d of %d questions from question pools
+val_period#:#%s to %s
+val_conditions_count#:#%d present
+val_no_conditions#:#none
+val_kiosk_title#:#with test title
+val_kiosk_participant#:#with participant name
+cond_found#:#Preconditions found
+cond_count#:#This test has %d precondition(s) configured.
+cond_advice#:#Exams should not have preconditions so that all participants can start at the same time.
+cond_unknown#:#Unknown
+cond_must_pass#:#%s "%s" must be passed
+cond_must_finish#:#%s "%s" must be completed
+cond_op_value#:#%s "%s" %s %s
+cond_op_only#:#%s "%s" (condition: %s)
+ctype_crs#:#Course
+ctype_tst#:#Test
+ctype_lm#:#Learning module
+ctype_file#:#File
+ctype_exc#:#Exercise
+ctype_frm#:#Forum
+ctype_grp#:#Group
+ctype_cat#:#Category

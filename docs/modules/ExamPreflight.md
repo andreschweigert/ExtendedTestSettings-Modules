@@ -10,7 +10,7 @@
 ## Was ist ExamPreflight?
 
 Geführter Probedurchlauf ("Preflight" wie beim Flugzeug) durch einen Test vor der
-Prüfung. Während ExamChecker die **Einstellungen** gegen Standards prüft, prüft
+Prüfung. Während ExamChecker die **Einstellungen** gegen konfigurierte Soll-Werte prüft, prüft
 ExamPreflight das tatsächliche **Rendering** jeder Frage: Bilder, Video/Audio,
 Formeln, Layout — inklusive Screenshot pro Frage für den Prüfbericht.
 
