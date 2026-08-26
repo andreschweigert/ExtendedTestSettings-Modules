@@ -1,267 +1,264 @@
 # ExamChecker — Entwicklerdokumentation
 
-**Modul-ID:** `examchecker`  
-**Speicherort:** `modules/examchecker/` (externes Modul, nicht im Git-Repo)  
-**Referenz-ZIP:** `modules-zip/modules/examchecker/ExamChecker_v1.1.1.zip`  
-**Zuletzt aktualisiert:** 2026-05-12
+**Modul-ID:** `examchecker`
+**Speicherort:** `modules/examchecker/` (externes Modul, nicht im Haupt-Repo)
+**Referenz-ZIP:** `modules-zip/modules/examchecker/ExamChecker_v2.0.0.zip`
+**Zuletzt aktualisiert:** 2026-08-26
 
 ---
 
 ## Was ist ExamChecker?
 
-Ermöglicht es, die ILIAS-Einstellungen eines Tests gegen definierte **Prüfungsstandards**
-zu prüfen — für **Präsenzprüfungen** und **Fernprüfungen** jeweils separat konfigurierbar.
+Prüft die Einstellungen eines ILIAS-Tests gegen Soll-Werte, die in der
+Plugin-Konfiguration je Prüfungstyp (`praesenz` / `fern`) festgelegt werden.
 
-Der Prüfer wählt den Prüfungstyp und startet den Check per Button. Das Ergebnis wird
-als farbkodierte Liste (grün = korrekt, rot = abweichend) direkt in der Einstellungsseite
-angezeigt, inklusive Warnung bei vorhandenen Vorbedingungen und manuell zu prüfenden
-Feldern (Zeiten, Bearbeitungsdauer).
+Der Prüfer wählt den Prüfungstyp und startet den Check. Das Ergebnis erscheint als
+Tabelle je Themenbereich mit Ist- und Soll-Wert.
 
-**Wichtig:** ExamChecker hat **keine eigenen DB-Tabellen**. Es werden ausschließlich
-ILIAS-Kerntabellen gelesen. `isEnabled()` gibt immer `true` zurück — das Tool ist immer
-verfügbar, unabhängig vom Test.
+`isEnabled()` gibt immer `true` zurück — das Werkzeug ist unabhängig vom einzelnen
+Test verfügbar. `injectAssets()` ist ein No-op: kein Testplayer-Widget.
 
 ---
 
-## Einschränkungen
-
-- Kein Testplayer-Widget: `injectAssets()` ist ein no-op.
-- Der Check läuft als **AJAX-Request** via `saveSettings()` — ein ungewöhnliches Muster
-  (Details siehe "AJAX-Mechanismus" unten).
-- Benutzt eine **globale PHP-Variable** `$examchecker_conditions_details` um Vorbedingungs-
-  Details aus `checkKeineVorbedingungen()` an `generateCheckResultsHTML()` weiterzugeben.
-- Standards sind in `ilSetting` konfigurierbar, Fallback auf hardcodierte Defaults.
-- `checkAuswertung()` gibt immer `[]` zurück — Auswertungs-Checks sind in
-  `performAllChecks()` integriert.
-
----
-
-## Dateistruktur
+## Aufbau
 
 ```
 modules/examchecker/
-├── module.json                         ← Modul-Metadaten, require_files: Config-Klasse, tables: []
-├── class.ilExamCheckerHandler.php      ← Handler (implements ilExamModuleInterface)
-├── class.ilExamCheckerConfig.php       ← Konfigurationsklasse + E-Mail-Textbausteine
-└── sql/
-    ├── install.php                     ← no-op (keine eigenen Tabellen)
-    └── uninstall.php                   ← no-op (keine eigenen Tabellen)
+├── module.json
+├── class.ilExamCheckerDefinitions.php   ← Check-Katalog (Quelle der Wahrheit)
+├── class.ilExamCheckerRules.php         ← Tabelle examchecker_rules lesen/schreiben
+├── class.ilExamCheckerEvaluator.php     ← Ist-Werte lesen, gegen Soll vergleichen
+├── class.ilExamCheckerToken.php         ← Sessiontoken für den AJAX-Endpunkt
+├── class.ilExamCheckerHandler.php       ← Bedienblock + API für die ConfigGUI
+├── class.ilExamCheckerGUI.php           ← Proxy-Endpunkt cmd=check, Ergebnis-HTML
+├── css/examchecker.css
+├── js/examchecker.js
+├── lang/ilias_de.lang · ilias_en.lang
+└── sql/install.php · uninstall.php
 ```
+
+`require_files` lädt Definitions, Rules, Evaluator und Token — sowohl die Registry
+(vor dem Handler) als auch der Proxy (vor der GUI) arbeiten diese Liste ab.
 
 ---
 
-## module.json
+## Der Check-Katalog
 
-```json
-{
-    "id": "examchecker",
-    "label": "Prüfungs-Checker",
-    "description": "Überprüft Test-Einstellungen gegen definierte Standards für Präsenz- und Fernprüfungen.",
-    "version": "1.1.1",
-    "ilias_min": "9",
-    "ilias_max": "9",
-    "handler_class": "ilExamCheckerHandler",
-    "handler_file": "class.ilExamCheckerHandler.php",
-    "require_files": [
-        "class.ilExamCheckerConfig.php"
-    ],
-    "tables": []
-}
+`ilExamCheckerDefinitions::all()` ist die **einzige** Stelle, an der ein Check
+beschrieben wird: Herkunft des Werts, Typ, Soll-Vorgabe, Prüfungstypen. Handler,
+Evaluator und die Plugin-ConfigGUI bauen ausschließlich darauf auf.
+
+```php
+'passwort' => [
+    'group'           => 'zugang',
+    'source'          => 'tst_tests',   // oder 'custom'
+    'column'          => 'password_enabled',
+    'type'            => self::TYPE_BOOL,
+    'default'         => true,          // Soll-Vorgabe
+    'enabled_default' => true,
+    'relevant_for'    => ['praesenz', 'fern'],
+],
 ```
 
-Kein `gui_file`/`gui_class` — ExamChecker hat keine eigene Verwaltungs-GUI.
-`tables: []` — keine eigenen Datenbanktabellen.
+| Feld | Bedeutung |
+|---|---|
+| `group` | Abschnitt (`allgemein`, `zugang`, `durchfuehrung`, `auswertung`, `abschluss`) |
+| `source` | `tst_tests` = Spalte der Testtabelle · `custom` = Evaluator-Methode |
+| `column` / `evaluator` | Spaltenname bzw. Methodenname im Evaluator |
+| `type` | `bool` · `int` · `enum` · `text` · `info` |
+| `invert` | Ist-Wert negieren (DB speichert die Gegenrichtung, z. B. `anonymity`) |
+| `options` | nur `enum`: `[DB-Wert => lang-Key]` |
+| `factor` / `unit` | nur `int`: Soll-Wert × factor = DB-Wert (Sekunden → Millisekunden) |
+| `default` | Soll-Vorgabe ohne Konfiguration |
+| `relevant_for` | Prüfungstypen, für die der Check angeboten wird |
+
+`type = info` kennt keinen Soll-Wert — der Ist-Wert wird nur angezeigt, weil er sich
+nicht allgemeingültig vorgeben lässt (Prüfungszeitraum, Bearbeitungsdauer).
+
+Sprachschlüssel je Check: `chk_<key>` und `chk_<key>_info`, beide im Modul.
+
+### Einen Check hinzufügen
+
+1. Eintrag in `ilExamCheckerDefinitions::all()`
+2. Bei `source = custom`: Evaluator-Methode in `ilExamCheckerEvaluator` ergänzen
+3. `chk_<key>` und `chk_<key>_info` in **beide** Sprachdateien
+4. Version bumpen, ZIP bauen
+
+Weder die ConfigGUI noch das Formular müssen angefasst werden — beide leiten sich
+aus dem Katalog ab. Die Tabelle muss ebenfalls nicht nachgezogen werden: fehlt eine
+Zeile, gilt der Default aus dem Katalog.
 
 ---
 
 ## Datenbank
 
-### Keine eigenen Tabellen
+### Eigene Tabelle
 
-ExamChecker legt keine eigenen Tabellen an. `sql/install.php` und `sql/uninstall.php`
-sind bewusst leer (no-op).
+```
+examchecker_rules
+  exam_type       text(20)     'praesenz' | 'fern'        ┐ Primärschlüssel
+  check_key       text(64)     Schlüssel aus dem Katalog  ┘
+  enabled         integer(1)   wird dieser Check geprüft?
+  expected_value  text(255)    Soll-Wert als Text
+  updated_at      timestamp
+```
 
-### Gelesene ILIAS-Tabellen (read-only)
+Rund 50 Zeilen für die gesamte Installation. Kein Personenbezug, deshalb keine
+Aufbewahrungsfrist nötig; `sql/uninstall.php` löscht die Tabelle.
 
-| Tabelle | Wozu |
+`expected_value` ist bewusst **Text für alle Typen** — wie er zu lesen ist, sagt der
+`type` des Katalogs. Der Typ steht bewusst **nicht** in der Tabelle: was eine
+Einstellung bedeutet, weiß der Code, und eine zweite Quelle könnte davon abdriften.
+
+### Gelesene ILIAS-Kerntabellen
+
+| Tabelle | Wofür |
 |---|---|
-| `tst_tests` | Test-Einstellungen (`pool_usage`, `anonymity`, `online_status`, `password_enabled`, `nr_of_tries`, `kiosk`, `autosave`, `autosave_ival`, `instant_verification`, `show_marker`, `count_system`, `score_cutting`, `pass_scoring`, `redirection_mode`, `redirection_url`, `require_authorship_statement`, `enable_processing_time`, `processing_time`, `starting_time`, `ending_time`, `starting_time_enabled`, `ending_time_enabled`, `fixed_participants`, `pass_waiting`, `score_reporting`) |
-| `object_reference` | `ref_id` → `obj_id` Auflösung (für Vorbedingungen + Timing) |
-| `crs_items` | Kurs-Item-Timing (`timing_start`, `timing_end`) |
-| `conditions` | Vorbedingungen für den Test (`trigger_obj_id`, `trigger_ref_id`, `operator`, `value`) |
-| `object_data` | Titel und Typ des Vorbedingungsobjekts |
+| `tst_tests` | Die meisten Einstellungen, Zeile über `obj_fi` |
+| `object_data` | Online-Status (`offline`), Titel/Typ von Vorbedingungsobjekten |
+| `crs_items` | Zeitlich begrenzte Verfügbarkeit (`timing_type`) |
+| `conditions` | Vorbedingungen, gefiltert über `target_ref_id` |
+| `tst_test_question` + `qpl_questions` | Herkunft der Fragen (`original_id`) |
 
 ---
 
-## ilExamCheckerHandler
-
-Implementiert `ilExamModuleInterface`.
-
-### Interface-Methoden
+## Ablauf einer Prüfung
 
 ```
-isEnabled(ref_id)         → gibt immer true zurück (Tool ist immer verfügbar)
-injectAssets(tpl, ref_id) → no-op (ExamChecker läuft nur in Test-Einstellungen)
-getFormItems(ref_id)       → [ilCustomInputGUI] mit getSettingsHTML() als HTML-Inhalt
-saveSettings(ref_id, post)→ prüft ob post['action'] === 'exam_check':
-                            ja: handleExamCheck() → JSON-Response + exit
-                            nein: gibt true zurück (normales Speichern, keine Daten)
-getInfo()                  → title, icon, description, version
+Klick auf "Prüfung starten"
+  → js/examchecker.js liest window.ExamChecker.config (erst beim Klick!)
+  → POST auf den Proxy: cmdClass=ilextendedtestsettingsmoduleproxygui
+                        &module_id=examchecker&cmd=check&ref_id=<ref_id>
+                        Body: examchecker_token, exam_type
+
+Proxy  → Modul aktiv? ref_id ein Test? Schreibrecht?
+GUI    → POST erzwungen, Token per hash_equals geprüft
+       → ilExamCheckerEvaluator::run(ref_id, exam_type)
+           · tst_tests-Zeile laden
+           · Regeln aus examchecker_rules holen (Defaults als Unterlage)
+           · je aktivem Check: Ist-Wert lesen → casten → vergleichen
+       → Ergebnis-HTML rendern, als JSON zurückgeben
+
+Browser → HTML in #examchecker_results einsetzen
 ```
 
-### Private Methoden (Check-Pipeline)
+### Dreiwertiges Ergebnis
 
-```
-getSettingsHTML(ref_id)          → HTML: Prüfungstyp-Select + Check-Button + Result-Div
-                                   + getJavaScriptCode(ref_id) eingebettet
-getJavaScriptCode(ref_id)        → inline <script> mit AJAX-Fetch-Logik
-handleExamCheck(ref_id, post)    → performExamCheck() → generateCheckResultsHTML()
-                                   → header('Content-Type: application/json') + exit
-performExamCheck(ref_id, type)   → ruft getTestDataFromDB() + checkEinstellungen()
-                                   + checkManuellePrüfungen(); gibt {einstellungen, auswertung, manuell_check}
-getTestDataFromDB(ref_id)        → SELECT * FROM tst_tests WHERE obj_fi = obj_id;
-                                   gibt null wenn kein Test gefunden
-checkEinstellungen(data, type)   → filtert performAllChecks() via getConfiguredStandards()
-getConfiguredStandards(type)     → liest ilSetting('extendedtestsettings').'examchecker_standards_<type>';
-                                   Fallback: getHardcodedDefaults()
-getHardcodedDefaults(type)       → hardcodierte Standard-Liste (17 Checks + typ-spezifische)
-performAllChecks(data, type)     → prüft alle DB-Felder, gibt [key → bool] zurück
-checkAuswertung(data, type)      → gibt [] zurück (in performAllChecks integriert)
-checkManuellePrüfungen(data,type)→ prüft Start/Endzeit + Bearbeitungsdauer
-checkKeineVorbedingungen(data)   → liest conditions-Tabelle, speichert Details in
-                                   global $examchecker_conditions_details
-checkZeitlichBegrenzteVerfuegbarkeit(data) → prüft crs_items.timing_start/timing_end
-formatConditionDescription(cond) → formatiert Bedingungsbeschreibung für Anzeige
-generateCheckResultsHTML(results, type) → erzeugt HTML-Ergebnisblock (Zusammenfassung,
-                                   grün/rot-Listen, Vorbedingungwarnung, manuelle Checks)
-getSettingDescriptions()         → [key → DE-Beschreibung] für alle Check-Keys
-isDefaultDateTime(timestamp)     → erkennt Default-Timestamps (01.04.2022, 01.12.2022, 01.01.1970)
-```
+| Status | Bedeutung |
+|---|---|
+| `ok` | Ist-Wert entspricht dem Soll-Wert |
+| `failed` | Ist-Wert weicht ab |
+| `unknown` | Wert war technisch nicht ermittelbar — etwa weil die Spalte in dieser ILIAS-Version fehlt |
+| `info` | `type = info`: nur Anzeige, kein Vergleich |
+
+`unknown` ist der Kern von Sicherheitsregel R10 (Finding M-10): Ein Freigabewerkzeug,
+das bei technischen Fehlern grün meldet, ist schlechter als keines. Bis 1.2.0 gab
+`checkZeitlichBegrenzteVerfuegbarkeit()` im `catch` ein `return true` zurück, und
+fehlende Spalten wurden über `(int)null === 1` still zu „nicht erfüllt".
 
 ---
 
-## AJAX-Mechanismus
+## Was an den Prüfungen falsch war (behoben in 2.0.0)
 
-ExamChecker nutzt ein ungewöhnliches Muster: Der Check wird als AJAX-POST-Request an
-die URL der Einstellungsseite gesendet, wobei `cmd=show` durch `cmd=saveSettings` ersetzt
-wird.
+Alles gegen ILIAS 9.x und eine echte Installation verifiziert.
 
-```
-Browser: "Exam-Prüfungs-Check starten" Button geklickt
-  → JavaScript liest window.location.href
-  → ersetzt "cmd=show" durch "cmd=saveSettings"
-  → POST-Request: action=exam_check&ref_id=...&exam_type=praesenz|fern
-  
-Server: saveSettings() empfängt POST
-  → post_data['action'] === 'exam_check'?
-  → handleExamCheck() → performExamCheck() → generateCheckResultsHTML()
-  → header('Content-Type: application/json')
-  → echo json_encode(['html' => $html, 'success' => true])
-  → exit  ← wichtig: verhindert reguläres ILIAS-Seiten-Rendering
+| Check | Bis 1.2.0 | Problem | Jetzt |
+|---|---|---|---|
+| Fragenpools | `tst_tests.pool_usage = 1` | Spalte wird von ILIAS 9 nicht mehr gepflegt (nur noch Survey nutzt sie), Wert immer `NULL` → Check schlug **immer** fehl | `question_set_type` bzw. `qpl_questions.original_id` |
+| Online-Status | `tst_tests.online_status = 1` | Tote Spalte; der Status liegt seit ILIAS 9 in `object_data.offline`. Auch bei online geschalteten Tests stand dort `0` → Check schlug **immer** fehl | `object_data.offline = 0` |
+| Eigenständigkeitserklärung | `require_authorship_statement` | Spalte existiert im gesamten ILIAS-9-Baum nicht → PHP-Warnung, Check schlug **immer** fehl | `conditions_checkbox_enabled` („Prüfungsbedingungen") |
+| Prüfungsansicht | `kiosk = 1` | `kiosk` ist eine Bitmaske (1 = an, +2 Titel, +4 Teilnehmername); bei eingeblendetem Titel steht dort 3, 5 oder 7 | `(kiosk & 1) === 1` |
+| Zeitlich begrenzte Verfügbarkeit | `timing_start = 0 && timing_end = 0` | `timing_start`/`timing_end` bleiben als Altwerte stehen; maßgeblich ist `timing_type` (0 = begrenzt, 1 = aus) | `timing_type === 0` |
+| Bearbeitungsdauer | `processing_time > 0`, Anzeige „… Minuten" | `processing_time` ist `HH:MM:SS`; der Vergleich war ein zufällig funktionierender String-Vergleich, die Anzeige schlicht falsch | Format geparst, Anzeige in Minuten |
+| Wartezeit | `empty() \|\| === '0'` | Ein gespeichertes `"0:0:0"` bedeutet keine Wartezeit, galt aber als gesetzt | Alle Komponenten auf 0 geprüft |
+| Vorbedingungen | `target_obj_id = ? OR target_ref_id = ?` | `OR` über zwei ID-Räume; die `ref_id` wurde zudem per `LIMIT 1` neu hergeleitet statt der bekannten benutzt | `target_ref_id = <echte ref_id>` |
 
-Browser: JSON-Response empfangen
-  → data.html in #check-results einfügen
-  → Ergebnisblock einblenden
-```
-
-> **Warum `saveSettings` statt einer eigenen AJAX-URL?** ExamChecker hat keine eigene
-> GUI und keinen eigenen ilCtrl-Endpunkt. Der Umweg über `saveSettings` mit
-> `action=exam_check` ist der einfachste Weg, einen AJAX-Handler in die bestehende
-> ILIAS-Routing-Kette einzuhängen ohne eine neue GUI-Klasse zu registrieren.
+Weiter entfielen: die globale Variable `$examchecker_conditions_details`,
+`checkAuswertung()` (gab immer `[]` zurück), die Magic-Daten in `isDefaultDateTime()`
+(`01.04.2022`, `01.12.2022`) und die ungenutzte Klasse `ilExamCheckerConfig`.
 
 ---
 
-## Check-Standards
+## Endpunkt statt gekapertem saveSettings
 
-### Hardcodierte Defaults (gemeinsam für beide Typen)
+Bis 1.2.0 ersetzte das JavaScript in der URL `cmd=show` durch `cmd=saveSettings` und
+schickte dorthin seinen AJAX-POST. `ilExtendedTestSettingsAdvancedGUI::saveSettings()`
+ruft aber `saveSettings()` **aller aktiven Module** auf. Module, die ihren Zustand aus
+`isset($post_data['<modul>_enabled'])` ableiten — ExamAlert, ExamBattery, ExamCalc —
+sahen den Schlüssel im fremden POST nicht und **deaktivierten sich für den Test**.
+Das anschließende `exit` in `handleExamCheck()` brach die Schleife ab, sodass alle
+alphabetisch späteren Module gar nicht mehr gespeichert wurden.
 
-| Check-Key | DB-Feld | Erwarteter Wert |
-|---|---|---|
-| `fragenpools_verwenden` | `pool_usage` | `1` |
-| `datenschutz` | `anonymity` | `0` (mit Namen) |
-| `online` | `online_status` | `1` |
-| `passwort` | `password_enabled` | `1` |
-| `nur_ausgewaehlte_teilnehmer` | `fixed_participants` | `0` (negiert!) |
-| `testdurchlaeufe_begrenzen` | `nr_of_tries` | `1` |
-| `wartezeit_erzwingen` | `pass_waiting` | leer oder `'0'` |
-| `pruefungsansicht` | `kiosk` | `1` |
-| `automatisches_speichern` | `autosave=1` + `autosave_ival=30000` | beide Bedingungen |
-| `direkte_rueckmeldung` | `instant_verification` | `0` (soll AUS sein) |
-| `fragen_markieren` | `show_marker` | `1` |
-| `keine_vorbedingungen` | `conditions`-Tabelle | keine Einträge |
-| `direkte_notenuebermittlung` | `score_reporting` | `0` |
-| `zeitlich_begrenzte_verfuegbarkeit` | `crs_items.timing_start/end` | beide `0` |
-| `bewertungssystem` | `count_system` | `0` |
-| `negative_punkte` | `score_cutting` | `0` |
-| `besten_durchlauf_bewerten` | `pass_scoring` | `1` |
-
-### Nur bei Fernprüfung (`fern`)
-
-| Check-Key | DB-Feld | Erwarteter Wert |
-|---|---|---|
-| `eigenstaendigkeitserklaerung` | `require_authorship_statement` | `1` |
-| `bearbeitungsdauer` | `enable_processing_time` | `1` |
-
-### Nur bei Präsenzprüfung (`praesenz`)
-
-| Check-Key | DB-Feld | Erwarteter Wert |
-|---|---|---|
-| `weiterleitung` | `redirection_mode=2` + `redirection_url='logout.php'` | beide Bedingungen |
-
-### Konfigurierbare Standards
-
-Über `ilSetting('extendedtestsettings')`, Key `examchecker_standards_praesenz` bzw.
-`examchecker_standards_fern` — kommagetrennte Liste von Check-Keys. Wenn leer:
-Fallback auf hardcodierte Defaults.
+Seit 2.0.0 läuft der Check über den regulären Proxy (`cmd=check`); `saveSettings()`
+gibt nur noch `true` zurück.
 
 ---
 
-## ilExamCheckerConfig
+## API für die Plugin-ConfigGUI
 
-Enthält Prüfungstyp-Standards und E-Mail-Textbausteine.
-
-```
-get(key, default) / set(key, v)  → ilSetting-Wrapper (Namespace 'examchecker')
-getExamStandards(type)           → [required_settings: {key → bool}, manual_checks: [...]]
-                                   für 'fern' und 'praesenz' (aktuell ungenutzt im Handler,
-                                   der liest ilSetting direkt)
-getEmailBausteine()              → [startText, endText, startAllgemeineEinstellungen,
-                                   startAuswertungEinstellungen, + je Einstellung DE-Text]
-                                   (für Report-Generierung — aktuell ungenutzt)
-```
-
-> `getExamStandards()` und `getEmailBausteine()` sind in der Config-Klasse definiert
-> aber werden vom Handler **nicht** aufgerufen — der Handler verwendet
-> `getConfiguredStandards()` + `getHardcodedDefaults()` direkt. Die Config-Klasse ist
-> für zukünftige Erweiterungen (z.B. UI für konfigurierbare Standards) vorbereitet.
-
----
-
-## Installation / Update
-
-### Erstinstallation
-
-1. ZIP hochladen: `Administration → Plugins → ExtendedTestSettings → Module → ZIP hochladen`
-2. Modul in der Liste aktivieren (Standard: inaktiv nach Installation)
-3. In den Erweiterten Test-Einstellungen erscheint der Block "Prüfungs-Einstellungen prüfen"
-   mit Prüfungstyp-Auswahl und Check-Button
-
-### Update (neue ZIP-Version)
-
-Gleiches Vorgehen wie Erstinstallation — `sql/install.php` ist leer, daher kein
-DB-Effekt.
-
-### Standards konfigurieren (optional)
+Der Handler stellt bereit, was der ExamChecker-Reiter braucht. Der Plugin-Kern kennt
+dadurch weder die geprüften Spalten noch die Sprachschlüssel des Moduls.
 
 ```php
-// Beispiel: Standards für Präsenzprüfung setzen
-$settings = new ilSetting('extendedtestsettings');
-$settings->set('examchecker_standards_praesenz',
-    'fragenpools_verwenden,datenschutz,online,passwort,pruefungsansicht');
+getExamTypes(): array                       // ['praesenz' => 'Präsenzprüfung', …]
+getGroupLabels(): array                     // ['zugang' => 'Zugang', …]
+getCheckCatalogue(string $exam_type): array // übersetzte Titel, Optionen, Einheiten
+getRules(string $exam_type): array          // ['passwort' => ['enabled'=>…, 'expected'=>…]]
+saveRules(string $exam_type, array $rules): void
+txt(string $key, ?string $default = null): string
 ```
 
-Ohne Konfiguration werden die hardcodierten Defaults aus `getHardcodedDefaults()`
-verwendet.
+Die ConfigGUI prüft diese Methoden per `method_exists()`. Fehlen sie (ExamChecker
+vor 2.0.0), zeigt der Reiter einen Hinweis statt eines halb funktionierenden
+Formulars. Voraussetzung im Kern: **Plugin 2.1.1**.
+
+Aus `type` leitet die ConfigGUI das Soll-Wert-Feld ab: `bool` → Radio Ja/Nein,
+`int` → Zahlenfeld, `enum` → Auswahlliste, `text` → Textfeld, `info` → keins.
+
+---
+
+## Migration aus 1.x
+
+`sql/install.php` legt die Tabelle an und ruft **nur bei der Erstanlage**
+`ilExamCheckerRules::seedFromLegacy()` auf:
+
+- vorhandene `examchecker_standards_<typ>`-Liste aus `ilSetting` lesen
+- Schlüssel über `legacyKeyMap()` übersetzen
+  (`keine_vorbedingungen` → `vorbedingungen`, `weiterleitung` → `weiterleitungsmodus`
+  + `weiterleitungsziel`, `automatisches_speichern` → + `autosave_intervall`,
+  `start_und_ende` → `startzeit_aktiviert` + `endzeit_aktiviert`)
+- die alte Liste bestimmt, **was** geprüft wird; Soll-Werte kommen aus dem Katalog
+- Checks ohne Vorgänger in 1.x behalten ihre Vorgabe
+- ohne Altkonfiguration gelten überall die Katalogvorgaben
+
+Die alten `ilSetting`-Schlüssel bleiben unangetastet — ein Downgrade auf 1.x ist
+dadurch folgenlos.
+
+---
+
+## Sicherheitsregeln
+
+| Regel | Umsetzung |
+|---|---|
+| R1 | Einziger Scope ist die vom Proxy autorisierte `ref_id`; keine eigenen Filterparameter |
+| R2 | Objekttyp `tst` wird im Proxy und nochmals im Evaluator geprüft |
+| R3 | Modulauflösung nur über die Registry (Proxy), ConfigGUI über `getRegistry()->getHandler()` |
+| R4 | `cmd=check` erzwingt POST und prüft den Sessiontoken per `hash_equals()`; `saveExamChecker` läuft über `getFormAction()` + `requirePost()` |
+| R5 | `json_encode()` für die JS-Config mit `JSON_HEX_TAG\|AMP\|APOS\|QUOT` |
+| R6 | Jeder dynamische Wert im Ergebnis-HTML durch `htmlspecialchars(…, ENT_QUOTES)` |
+| R10 | Kein `return true` im `catch`; dreiwertiges Ergebnis, Fehler werden zu `unknown` |
+| R12 | Keine personenbezogenen Daten — die Tabelle enthält nur Konfiguration |
+| F-010 | Beim Speichern wird über den Katalog iteriert, nie über die POST-Schlüssel |
+
+---
+
+## Debugging
+
+- Fehler landen im PHP-Errorlog mit Prefix `[ExamChecker]`
+- Endpunkt direkt testen: der Proxy antwortet ohne POST/Token mit `403 {"error":"forbidden"}`
+- Fehlt die Tabelle, liefert `forExamType()` die Katalogvorgaben und `save()` wirft —
+  in dem Fall wurde das Modul nicht über den ZIP-Upload installiert
+- Zeigt der ConfigGUI-Reiter nur einen Hinweis, ist eine Modulversion vor 2.0.0 aktiv
 
 ---
 
@@ -269,9 +266,8 @@ verwendet.
 
 | Datum | Was |
 |---|---|
+| 2026-08-26 | **v2.0.0:** Soll-Werte je Check konfigurierbar (Tabelle `examchecker_rules`), Check-Katalog als Quelle der Wahrheit, eigener Proxy-Endpunkt statt gekapertem `saveSettings`, dreiwertiges Ergebnis, Korrektur von acht fehlerhaften Prüfungen, `ilExamCheckerConfig` entfernt |
+| 2026-05-12 | **v1.2.0:** Modul-i18n DE/EN inkl. AJAX-Ergebnis-Panel |
 | 2026-05-12 | **v1.1.1:** ILIAS-Kompatibilität auf 9 beschränkt |
-| 2026-04-10 | Initiale Version: Präsenz- und Fernprüfungs-Standards, AJAX-Check, HTML-Ergebnisdarstellung |
-| 2026-04-10 | Vorbedingungs-Check mit Detail-Anzeige (Objekte + Typen) |
-| 2026-04-10 | Manuelle Checks: Start/Endzeiten + Bearbeitungsdauer |
-| 2026-04-10 | In modulares System migriert (`modules/examchecker/`), `module.json` hinzugefügt |
-| 2026-04-10 | **v1.1.0:** `implements ilExamModuleInterface` vollständig, konfigurierbare Standards via ilSetting |
+| 2026-04-10 | **v1.1.0:** `implements ilExamModuleInterface`, konfigurierbare Standards via `ilSetting` |
+| 2026-04-10 | Initiale Version: Präsenz-/Fernprüfungsstandards, AJAX-Check, Vorbedingungs-Check |
