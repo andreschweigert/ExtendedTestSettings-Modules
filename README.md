@@ -27,7 +27,7 @@ Jeder Branch entspricht einer ILIAS-Hauptversion:
 | [examarchiver](modules/examarchiver/) | ![Experimentell](https://img.shields.io/badge/Experimentell-orange) | Test-Archivierung: Antworten, Punkte, Noten und Einstellungen als selbsttragendes ZIP (HTML + PDF + JSON/CSV) mit SHA-256-Manifest und Zugriffsprotokoll |
 | [exambattery](modules/exambattery/) | ![Im Test](https://img.shields.io/badge/Im%20Test-blue) | Stiller Akku-Monitor für Prüfungsgeräte: meldet Akkustände an eine Aufsichts-Ansicht, keinerlei Anzeige für Studierende |
 | [examcalc](modules/examcalc/) | ![Im Test](https://img.shields.io/badge/Im%20Test-blue) | Taschenrechner während der Prüfung (einfach oder wissenschaftlich), Shortcut Alt + R |
-| [examchecker](modules/examchecker/) | ![In Entwicklung](https://img.shields.io/badge/In%20Entwicklung-yellow) | Prüft Test-Einstellungen gegen konfigurierbare Standards (Präsenz-/Fernprüfung) |
+| [examchecker](modules/examchecker/) | ![In Entwicklung](https://img.shields.io/badge/In%20Entwicklung-yellow) | Prüft Test-Einstellungen gegen konfigurierbare Soll-Werte (Präsenz-/Fernprüfung) |
 | [examconnguard](modules/examconnguard/) | ![Experimentell](https://img.shields.io/badge/Experimentell-orange) | Verbindungs-Schutz: On-Demand-Probe bei Submit/Klick, Overlay + Auto-Replay bei WLAN-Ausfall |
 | [examdyslexia](modules/examdyslexia/) | ![Experimentell](https://img.shields.io/badge/Experimentell-orange) | Legasthenie-Modus: aktivierbarer Lesemodus für Studierende während der Prüfung |
 | [examfullscreen](modules/examfullscreen/) | ![Experimentell](https://img.shields.io/badge/Experimentell-orange) | Vollbild-Modus (F11) beim Teststart, warnt oder sperrt bei Verlassen des Vollbilds |

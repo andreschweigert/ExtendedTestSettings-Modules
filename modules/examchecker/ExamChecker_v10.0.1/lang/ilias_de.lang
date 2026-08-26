@@ -1,0 +1,137 @@
+<!-- language file start -->
+title#:#Prüfungs-Einstellungen Checker
+description#:#Prüft die Einstellungen eines Tests gegen konfigurierbare Soll-Werte für Präsenz- und Fernprüfungen.
+check_title#:#Prüfungs-Einstellungen prüfen
+panel_hint#:#Geprüft wird gegen die Soll-Werte aus der Plugin-Konfiguration (Administration → Plugins → ExtendedTestSettings → ExamChecker).
+exam_type_label#:#Prüfungstyp
+type_praesenz#:#Präsenzprüfung
+type_fern#:#Fernprüfung
+start_check#:#Prüfung starten
+checking#:#Die Einstellungen werden geprüft ...
+checking_btn#:#Wird geprüft ...
+err_label#:#Fehler:
+err_no_test_data#:#Zu diesem Test wurden keine Einstellungen gefunden.
+err_not_a_test#:#Das angegebene Objekt ist kein Test.
+no_standards_title#:#Keine Checks aktiviert
+no_standards_text#:#Für diesen Prüfungstyp ist derzeit kein Check aktiviert. Die Auswahl erfolgt in der Plugin-Konfiguration.
+col_setting#:#Einstellung
+col_actual#:#Ist
+col_expected#:#Soll
+res_ok#:#%d erfüllt
+res_failed#:#%d abweichend
+res_unknown#:#%d nicht prüfbar
+res_info#:#%d zur Sichtprüfung
+status_ok#:#Erfüllt
+status_failed#:#Weicht vom Soll-Wert ab
+status_unknown#:#Nicht prüfbar
+status_info#:#Zur Sichtprüfung
+grp_allgemein#:#Allgemeine Einstellungen
+grp_zugang#:#Zugang
+grp_durchfuehrung#:#Durchführung
+grp_auswertung#:#Auswertung
+grp_abschluss#:#Abschluss
+cfg_col_check#:#Einstellung
+cfg_col_expected#:#Soll-Wert
+cfg_check_enabled#:#prüfen
+cfg_recommendation#:#Empfohlen: %s
+cfg_intro#:#Legen Sie je Prüfungstyp fest, welche Einstellungen geprüft werden und welchen Wert sie haben sollen. Die Empfehlung entspricht den Vorgaben für Prüfungen an der FAU.
+chk_fragenpools_verwenden#:#Fragen stammen aus Fragenpools
+chk_fragenpools_verwenden_info#:#Zufallstests erfüllen dies immer; bei festem Fragenset zählt, ob alle Fragen aus einem Pool kopiert wurden.
+chk_datenschutz#:#Testergebnisse mit Namen ausgeben
+chk_datenschutz_info#:#Anonyme Testergebnisse lassen sich nachträglich nicht mehr Personen zuordnen.
+chk_online#:#Test ist online geschaltet
+chk_online_info#:#Nur online geschaltete Tests sind für Teilnehmer erreichbar.
+chk_zeitlich_begrenzte_verfuegbarkeit#:#Zeitlich begrenzte Verfügbarkeit
+chk_zeitlich_begrenzte_verfuegbarkeit_info#:#Zusätzliche Verfügbarkeitsbegrenzung über den Kurs (Objekt-Aktivierung), unabhängig vom Prüfungszeitraum des Tests.
+chk_passwort#:#Testpasswort gesetzt
+chk_passwort_info#:#Stellt sicher, dass alle Teilnehmer gleichzeitig starten.
+chk_nur_ausgewaehlte_teilnehmer#:#Nur ausgewählte Teilnehmer
+chk_nur_ausgewaehlte_teilnehmer_info#:#Beschränkt den Zugang auf eine eingeladene Teilnehmerliste.
+chk_vorbedingungen#:#Vorbedingungen für den Testzugang
+chk_vorbedingungen_info#:#Vorbedingungen können einzelne Teilnehmer am Start hindern.
+chk_startzeit_aktiviert#:#Startzeitpunkt aktiviert
+chk_startzeit_aktiviert_info#:#Der Test ist vor diesem Zeitpunkt nicht startbar.
+chk_endzeit_aktiviert#:#Endzeitpunkt aktiviert
+chk_endzeit_aktiviert_info#:#Der Test ist nach diesem Zeitpunkt nicht mehr startbar.
+chk_pruefungszeitraum#:#Prüfungszeitraum
+chk_pruefungszeitraum_info#:#Bitte auf Plausibilität prüfen — ein allgemeiner Soll-Wert ist hier nicht möglich.
+chk_testdurchlaeufe_begrenzen#:#Anzahl Testdurchläufe
+chk_testdurchlaeufe_begrenzen_info#:#0 bedeutet unbegrenzt viele Durchläufe.
+chk_wartezeit_erzwingen#:#Wartezeit zwischen Durchläufen
+chk_wartezeit_erzwingen_info#:#Erzwingt eine Pause, bevor ein weiterer Durchlauf möglich ist.
+chk_pruefungsansicht#:#Prüfungsansicht (Kiosk-Modus)
+chk_pruefungsansicht_info#:#Blendet die ILIAS-Navigation während der Prüfung aus.
+chk_automatisches_speichern#:#Automatisches Speichern
+chk_automatisches_speichern_info#:#Sichert Antworten regelmäßig ohne Zutun der Teilnehmer.
+chk_autosave_intervall#:#Intervall für automatisches Speichern
+chk_autosave_intervall_info#:#Wird nur ausgewertet, wenn automatisches Speichern aktiviert ist.
+chk_direkte_rueckmeldung#:#Direkte Rückmeldung während des Tests
+chk_direkte_rueckmeldung_info#:#Zeigt Teilnehmern bereits während der Prüfung, ob eine Antwort richtig war.
+chk_fragen_markieren#:#Fragen markieren
+chk_fragen_markieren_info#:#Teilnehmer können Fragen zur späteren Bearbeitung markieren.
+chk_eigenstaendigkeitserklaerung#:#Prüfungsbedingungen bestätigen lassen
+chk_eigenstaendigkeitserklaerung_info#:#In ILIAS 9 heißt die Einstellung „Prüfungsbedingungen"; sie dient als Eigenständigkeitserklärung bei Fernprüfungen.
+chk_bearbeitungsdauer#:#Bearbeitungsdauer begrenzen
+chk_bearbeitungsdauer_info#:#Begrenzt die Zeit ab dem Start des Durchlaufs.
+chk_bearbeitungsdauer_minuten#:#Bearbeitungsdauer
+chk_bearbeitungsdauer_minuten_info#:#Muss der tatsächlichen Prüfungszeit entsprechen — bitte manuell abgleichen.
+chk_bewertungssystem#:#Bewertung teilweise richtiger Antworten
+chk_bewertungssystem_info#:#Legt fest, ob unvollständige Antworten Teilpunkte erhalten.
+chk_negative_punkte#:#Verrechnung negativer Punkte
+chk_negative_punkte_info#:#Bestimmt, ob Minuspunkte auf Frageebene oder erst über den ganzen Test abgeschnitten werden.
+chk_besten_durchlauf_bewerten#:#Zu bewertender Durchlauf
+chk_besten_durchlauf_bewerten_info#:#Welcher Durchlauf in die Note eingeht.
+chk_direkte_notenuebermittlung#:#Zugriff auf die Testergebnisse
+chk_direkte_notenuebermittlung_info#:#Ab wann Teilnehmer ihr Ergebnis sehen.
+chk_weiterleitungsmodus#:#Weiterleitung nach Testende
+chk_weiterleitungsmodus_info#:#Wohin Teilnehmer nach Abgabe geleitet werden.
+chk_weiterleitungsziel#:#Ziel der Weiterleitung
+chk_weiterleitungsziel_info#:#Wird bei der Weiterleitungsart „Immer" und „Nur im Kiosk-Modus" ausgewertet.
+opt_count_partial#:#Auch teilweise richtige Antworten erzielen Punkte
+opt_count_full#:#Nur vollständig richtige Antworten erzielen Punkte
+opt_cut_question#:#Punkte je Frage nicht negativ werden lassen
+opt_cut_test#:#Punkte erst über den gesamten Test nicht negativ werden lassen
+opt_pass_last#:#Letzten Durchlauf bewerten
+opt_pass_best#:#Besten Durchlauf bewerten
+opt_report_never#:#Ergebnisse nicht anzeigen
+opt_report_finished#:#Nach Abschluss des Durchlaufs
+opt_report_always#:#Jederzeit während des Tests
+opt_report_date#:#Ab einem festgelegten Datum
+opt_report_passed#:#Nach Bestehen des Tests
+opt_redirect_none#:#Keine Weiterleitung
+opt_redirect_always#:#Immer zur angegebenen Adresse
+opt_redirect_kiosk#:#Nur im Kiosk-Modus zur angegebenen Adresse
+opt_redirect_logout#:#Immer zum Logout
+unit_seconds#:#Sekunden
+unit_minutes#:#Minuten
+val_yes#:#Ja
+val_no#:#Nein
+val_empty#:#(leer)
+val_not_set#:#nicht gesetzt
+val_not_limited#:#nicht begrenzt
+val_unknown#:#nicht ermittelbar
+val_unknown_option#:#Unbekannter Wert (%d)
+val_random_pool#:#Zufallsauswahl aus Fragenpools
+val_no_questions#:#Test enthält keine Fragen
+val_pool_ratio#:#%d von %d Fragen aus Fragenpools
+val_period#:#%s bis %s
+val_conditions_count#:#%d vorhanden
+val_no_conditions#:#keine
+val_kiosk_title#:#mit Testtitel
+val_kiosk_participant#:#mit Teilnehmernamen
+cond_found#:#Vorbedingungen gefunden
+cond_count#:#Für diesen Test sind %d Vorbedingung(en) hinterlegt.
+cond_advice#:#Bei Prüfungen sollten keine Vorbedingungen gesetzt sein, damit alle Teilnehmer gleichzeitig starten können.
+cond_unknown#:#Unbekannt
+cond_must_pass#:#%s "%s" muss bestanden werden
+cond_must_finish#:#%s "%s" muss abgeschlossen werden
+cond_op_value#:#%s "%s" %s %s
+cond_op_only#:#%s "%s" (Bedingung: %s)
+ctype_crs#:#Kurs
+ctype_tst#:#Test
+ctype_lm#:#Lernmodul
+ctype_file#:#Datei
+ctype_exc#:#Übung
+ctype_frm#:#Forum
+ctype_grp#:#Gruppe
+ctype_cat#:#Kategorie
