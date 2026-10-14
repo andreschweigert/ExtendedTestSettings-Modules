@@ -23,7 +23,6 @@ Jeder Branch entspricht einer ILIAS-Hauptversion:
 | Modul | Stand | Beschreibung |
 |---|---|---|
 | [examalert](modules/examalert/) | ![Prüfungserprobt](https://img.shields.io/badge/Pr%C3%BCfungserprobt-brightgreen) | Zeit-Warnung kurz vor Testende, konfigurierbare Nachricht mit HTML-Formatierung |
-| [examarchiver](modules/examarchiver/) | ![Experimentell](https://img.shields.io/badge/Experimentell-orange) | Test-Archivierung: Antworten, Punkte, Noten und Einstellungen als selbsttragendes ZIP (HTML + PDF + JSON/CSV) mit SHA-256-Manifest und Zugriffsprotokoll |
 | [exambattery](modules/exambattery/) | ![Im Test](https://img.shields.io/badge/Im%20Test-blue) | Stiller Akku-Monitor für Prüfungsgeräte: meldet Akkustände an eine Aufsichts-Ansicht, keinerlei Anzeige für Studierende |
 | [examcalc](modules/examcalc/) | ![Prüfungserprobt](https://img.shields.io/badge/Pr%C3%BCfungserprobt-brightgreen) | Taschenrechner während der Prüfung (einfach oder wissenschaftlich), Shortcut Alt + R |
 | [examchecker](modules/examchecker/) | ![In Entwicklung](https://img.shields.io/badge/In%20Entwicklung-yellow) | Prüft Test-Einstellungen gegen konfigurierbare Soll-Werte (Präsenz-/Fernprüfung) |
