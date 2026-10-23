@@ -172,7 +172,7 @@ class ilExamNetQosHandler implements ilExamModuleInterface
             'title'       => $this->lng->txt('title'),
             'icon'        => '📶',
             'description' => $this->lng->txt('description'),
-            'version'     => '1.1.0',
+            'version'     => '1.2.1',
             'features'    => [
                 'Hintergrund-RTT-Messung via HEAD-Request auf probe.txt (kein Eingriff in Testplayer)',
                 'Optionaler Paketverlust via N parallele Probes (konfigurierbar pro Test)',

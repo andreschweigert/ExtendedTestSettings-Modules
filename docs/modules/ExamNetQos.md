@@ -2,8 +2,8 @@
 
 **Modul-ID:** `examnetqos`  
 **Speicherort:** `modules/examnetqos/` (externes Modul, nicht im Git-Repo)  
-**Referenz-ZIP:** `modules-zip/modules/examnetqos/ExamNetQos_v1.0.1.zip`  
-**Zuletzt aktualisiert:** 2026-05-28
+**Referenz-ZIP:** `modules-zip/modules/examnetqos/ExamNetQos_v1.2.1.zip`
+**Zuletzt aktualisiert:** 2026-10-23
 
 ---
 
@@ -56,8 +56,13 @@ modules/examnetqos/
 
 **`allow_student_access: true`** ist nötig, damit Teilnehmer den `cmd=report`-Endpoint
 über den `ModuleProxyGUI` erreichen können (nur Lese-Recht erforderlich).
-Innerhalb von `handleReport()` wird zusätzlich geprüft, ob eine aktive Test-Session
-für den Teilnehmer existiert — Read-Recht allein reicht nicht.
+Innerhalb von `handleReport()` wird zusätzlich geprüft, ob die Messung für den Test
+aktiviert ist und der Teilnehmer einen offenen, nicht abgegebenen Testlauf hat.
+Schreibberechtigte können weiterhin Testvorschau-Messwerte melden. Read-Recht
+allein reicht nicht. Die Ansicht und der CSV-Export erzwingen für
+Nicht-System-Admins die Test-`ref_id` aus dem autorisierten Proxy-Aufruf; ein
+`filter_ref_id` kann diese Grenze nicht ersetzen. CSV-Zellen mit Formelanfang
+werden als Text ausgegeben.
 
 ---
 

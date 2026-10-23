@@ -28,6 +28,10 @@ RTT-Spike oder Paketverlust — oder lief das Netz einwandfrei?
    per `fetch()` POST an den PHP-Endpoint gesendet. Beim Seitenverlassen: `sendBeacon()`.
 6. **Kein Eingriff in Submit/Navigation** — passiver Monitor, der ExamConnGuard nicht beeinflusst.
 
+Der Report-Endpunkt akzeptiert Messwerte nur bei aktivierter Messung. Teilnehmer
+brauchen einen offenen, nicht abgegebenen Testlauf; Schreibberechtigte können
+weiterhin Messwerte aus einer Testvorschau melden.
+
 ## Admin-Ansicht
 
 `Administration → Plugins → ExtendedTestSettings → Module → examnetqos`
@@ -105,6 +109,7 @@ Assets werden nur injiziert wenn `isEnabled() && isTestPlayerContext()`.
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
+| 1.2.1 | `ExamNetQos_v1.2.1.zip` | 9 | Ansicht und Export auf berechtigten Test begrenzt; Reports nur bei aktivierter Messung und offenem Testlauf; CSV-Formeln neutralisiert |
 | 1.2.0 | `ExamNetQos_v1.2.0.zip` | 9 | i18n DE/EN von Handler und ViewGUI (Chart, Sessions-Tabelle, CSV) |
 | 1.1.0 | `archive/ExamNetQos_v1.1.0.zip` | 9 | Modul-i18n DE/EN (Handler) |
 | 1.0.1 | `ExamNetQos_v1.0.1.zip` | 9 | Detail-Link Bug fix (fehlender `cmd`-Parameter). Session-Key via `sessionStorage` (verhindert Aufsplittung in viele Kurz-Sessions bei ILIAS-Fragennavigation). SVG-Event-Labels durch Kreise + Hover-Tooltip ersetzt. `degraded`-Label: 'Verschlechterung' → 'Erhöht'. |

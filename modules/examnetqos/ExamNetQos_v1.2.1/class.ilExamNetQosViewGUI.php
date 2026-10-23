@@ -14,6 +14,7 @@ class ilExamNetQosViewGUI
 
     private string $chartCmd  = 'showChart';
     private string $exportCmd = 'exportCsv';
+    private ?int $allowedRef = null;
 
     private ilModuleLanguage $lng;
 
@@ -56,21 +57,34 @@ class ilExamNetQosViewGUI
             return;
         }
 
-        global $rbacsystem;
-        $ref_id = (int)($_GET['ref_id'] ?? 0);
-
-        if ($ref_id > 0 && !$rbacsystem->checkAccess('write', $ref_id)) {
-            global $DIC;
-            $DIC->ui()->mainTemplate()->setOnScreenMessage('failure', $this->lng->txt('access_denied'));
-            $DIC->ui()->mainTemplate()->printToStdout();
-            return;
-        }
-
         if ($cmd === 'exportcsv') {
             $this->exportCsv();
         } else {
             $this->showChart();
         }
+    }
+
+    private function authorizeView(): bool
+    {
+        global $rbacsystem;
+
+        if ($rbacsystem->checkAccess('write', SYSTEM_FOLDER_ID)) {
+            return true;
+        }
+
+        $ref_id = (int)($_GET['ref_id'] ?? 0);
+        if ($ref_id <= 0 || ilObject::_lookupType($ref_id, true) !== 'tst'
+            || !$rbacsystem->checkAccess('write', $ref_id)) {
+            return false;
+        }
+
+        $this->allowedRef = $ref_id;
+        return true;
+    }
+
+    private function selectedTestRef(): int
+    {
+        return $this->allowedRef ?? (int)($_GET['filter_ref_id'] ?? 0);
     }
 
     // ─── AJAX: Messwert-Empfang ──────────────────────────────────────────────────
@@ -81,6 +95,12 @@ class ilExamNetQosViewGUI
             ob_end_clean();
         }
         header('Content-Type: application/json');
+
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'method not allowed']);
+            exit;
+        }
 
         global $DIC;
         $user_id = $DIC->user()->getId();
@@ -159,15 +179,30 @@ class ilExamNetQosViewGUI
     {
         global $rbacsystem;
 
-        // Admin/Kursleiter darf immer
-        if ($rbacsystem->checkAccess('write', $ref_id)) {
-            return true;
-        }
-
-        // Studierende müssen eine aktive Session für diesen Test haben
         try {
             $db     = $DIC->database();
             $obj_id = (int)ilObject::_lookupObjectId($ref_id);
+            if ($obj_id <= 0) {
+                return false;
+            }
+
+            $settings = $db->queryF(
+                'SELECT enabled FROM ' . self::TABLE_SETTINGS . ' WHERE test_id = %s',
+                ['integer'],
+                [$obj_id]
+            );
+            $settingsRow = $db->fetchAssoc($settings);
+            if (!$settingsRow || (int)$settingsRow['enabled'] !== 1) {
+                return false;
+            }
+
+            // Schreibberechtigte können während eines aktivierten Tests weiter
+            // Messwerte aus der Testvorschau melden.
+            if ($rbacsystem->checkAccess('write', $ref_id)) {
+                return true;
+            }
+
+            // Studierende brauchen einen noch nicht abgegebenen Testlauf.
             $res    = $db->queryF("SELECT test_id FROM tst_tests WHERE obj_fi = %s", ['integer'], [$obj_id]);
             $row    = $db->fetchAssoc($res);
             if (!$row) {
@@ -175,9 +210,9 @@ class ilExamNetQosViewGUI
             }
             $test_id = (int)$row['test_id'];
             $res     = $db->queryF(
-                "SELECT active_id FROM tst_active WHERE test_fi = %s AND user_fi = %s",
-                ['integer', 'integer'],
-                [$test_id, $user_id]
+                "SELECT active_id FROM tst_active WHERE test_fi = %s AND user_fi = %s AND submitted = %s",
+                ['integer', 'integer', 'integer'],
+                [$test_id, $user_id, 0]
             );
             return (bool)$db->fetchAssoc($res);
         } catch (Exception $e) {
@@ -189,9 +224,14 @@ class ilExamNetQosViewGUI
 
     public function showChart(): void
     {
+        if (!$this->authorizeView()) {
+            http_response_code(403);
+            return;
+        }
+
         global $DIC;
 
-        $filter_ref        = (int)($_GET['filter_ref_id']    ?? 0);
+        $filter_ref        = $this->selectedTestRef();
         $filter_user_id    = (int)($_GET['filter_user_id']   ?? 0);
         $filter_from       = $this->sanitizeDate((string)($_GET['filter_from']       ?? ''));
         $filter_to         = $this->sanitizeDate((string)($_GET['filter_to']         ?? ''));
@@ -214,6 +254,7 @@ class ilExamNetQosViewGUI
     ): array {
         global $DIC;
         $db = $DIC->database();
+        $filter_ref = $this->allowedRef ?? $filter_ref;
 
         $where  = [];
         $types  = [];
@@ -255,14 +296,16 @@ class ilExamNetQosViewGUI
 
         // Test-Liste für Dropdown
         $testList  = [];
-        $testRes   = $db->query(
-            "SELECT DISTINCT e.test_ref_id, o.title
-             FROM " . self::TABLE_EVENTS . " e
-             LEFT JOIN object_data o ON o.obj_id = e.test_obj_id
-             ORDER BY o.title, e.test_ref_id"
-        );
-        while ($r = $db->fetchAssoc($testRes)) {
-            $testList[(int)$r['test_ref_id']] = $r['title'] ?? ('ref_id ' . $r['test_ref_id']);
+        if ($this->allowedRef === null) {
+            $testRes = $db->query(
+                "SELECT DISTINCT e.test_ref_id, o.title
+                 FROM " . self::TABLE_EVENTS . " e
+                 LEFT JOIN object_data o ON o.obj_id = e.test_obj_id
+                 ORDER BY o.title, e.test_ref_id"
+            );
+            while ($r = $db->fetchAssoc($testRes)) {
+                $testList[(int)$r['test_ref_id']] = $r['title'] ?? ('ref_id ' . $r['test_ref_id']);
+            }
         }
 
         // Nutzer-Liste (gefiltert nach Test)
@@ -737,10 +780,15 @@ class ilExamNetQosViewGUI
 
     public function exportCsv(): void
     {
+        if (!$this->authorizeView()) {
+            http_response_code(403);
+            return;
+        }
+
         global $DIC;
         $db = $DIC->database();
 
-        $filter_ref     = (int)($_GET['filter_ref_id']    ?? 0);
+        $filter_ref     = $this->selectedTestRef();
         $filter_user_id = (int)($_GET['filter_user_id']   ?? 0);
         $filter_from    = $this->sanitizeDate((string)($_GET['filter_from']       ?? ''));
         $filter_to      = $this->sanitizeDate((string)($_GET['filter_to']         ?? ''));
@@ -768,7 +816,7 @@ class ilExamNetQosViewGUI
 
         $out = fopen('php://output', 'w');
         fprintf($out, chr(0xEF) . chr(0xBB) . chr(0xBF));
-        fputcsv($out, [
+        fputcsv($out, array_map([$this, 'csvCell'], [
             $this->lng->txt('csv_date'),
             $this->lng->txt('csv_time'),
             $this->lng->txt('csv_login'),
@@ -782,12 +830,12 @@ class ilExamNetQosViewGUI
             $this->lng->txt('csv_loss'),
             $this->lng->txt('csv_conn'),
             $this->lng->txt('csv_ip'),
-        ], ';');
+        ]), ';');
 
         while ($row = $db->fetchAssoc($result)) {
             $rtt  = (int)$row['rtt_ms'] > 0  ? (int)$row['rtt_ms']  : $this->lng->txt('timeout');
             $loss = (int)$row['loss_pct'] >= 0 ? (int)$row['loss_pct'] : '';
-            fputcsv($out, [
+            fputcsv($out, array_map([$this, 'csvCell'], [
                 date('d.m.Y', (int)$row['tstamp']),
                 date('H:i:s', (int)$row['tstamp']),
                 $row['login']      ?? '',
@@ -801,13 +849,22 @@ class ilExamNetQosViewGUI
                 $loss,
                 $row['conn_type'],
                 $row['ip_addr'],
-            ], ';');
+            ]), ';');
         }
         fclose($out);
         exit;
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+    private function csvCell($value): string
+    {
+        $cell = (string)$value;
+        if (preg_match('/^[\x00-\x20]*[=+\-@]/', $cell) || preg_match('/^[\t\r\n]/', $cell)) {
+            return "'" . $cell;
+        }
+        return $cell;
+    }
 
     private function getTestSettings(int $ref_id): array
     {
