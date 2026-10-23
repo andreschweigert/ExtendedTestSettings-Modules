@@ -28,7 +28,7 @@ class ilExamKeymapAdminGUI
 
     private ilModuleLanguage $lng;
 
-    private string $saveCmd = 'saveKeymap';
+    private string $saveUrl = '';
 
     public function __construct()
     {
@@ -39,13 +39,22 @@ class ilExamKeymapAdminGUI
 
     public function setSaveCmd(string $cmd): void
     {
-        $this->saveCmd = $cmd;
+        // Kompatibilität mit der ConfigGUI; die Action kommt über setSaveUrl().
+    }
+
+    public function setSaveUrl(string $url): void
+    {
+        $this->saveUrl = $url;
     }
 
     // ─── Editor-Ansicht ──────────────────────────────────────────────────────
 
     public function showEditor(): void
     {
+        if ($this->saveUrl === '') {
+            throw new LogicException('ExamKeymap: CSRF-geschützte Formular-URL fehlt');
+        }
+
         global $DIC;
         $tpl = $DIC['tpl'];
 
@@ -84,7 +93,7 @@ class ilExamKeymapAdminGUI
         $tpl->addJavaScript($web . '/js/examkeymap_admin.js');
 
         $intro  = '<p>' . $this->lng->txt('adm_intro') . '</p>';
-        $action = htmlspecialchars($this->buildBaseUrl() . '&cmd=' . $this->saveCmd);
+        $action = htmlspecialchars($this->saveUrl, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
         $html = '<div class="examkeymap-admin">'
             . $intro
@@ -217,17 +226,4 @@ class ilExamKeymapAdminGUI
         return 'Customizing/global/plugins/Services/UIComponent/UserInterfaceHook/ExtendedTestSettings/modules/examkeymap';
     }
 
-    /**
-     * Aktuelle URL ohne cmd-Parameter (Muster: examnetqos).
-     */
-    private function buildBaseUrl(): string
-    {
-        $params = [];
-        foreach ($_GET as $key => $value) {
-            if ($key !== 'cmd') {
-                $params[$key] = $value;
-            }
-        }
-        return 'ilias.php?' . http_build_query($params);
-    }
 }

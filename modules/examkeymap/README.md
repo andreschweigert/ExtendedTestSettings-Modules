@@ -79,6 +79,7 @@ Tabelle `examkeymap_custom` (global, Übersetzungstabelle):
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
+| 1.1.2 | `ExamKeymap_v1.1.2.zip` | 9 | Admin-Formular nutzt die CSRF-geschützte Formular-URL des Plugin-Kerns |
 | 1.1.1 | `ExamKeymap_v1.1.1.zip` | 9 | Virtueller ⇪-Feststelltasten-Button im Testplayer (ChromeOS-Kioskmodus schluckt den Lupe-Einzeldruck); Lupe-Toggle bleibt als Fallback |
 | 1.1.0 | `archive/ExamKeymap_v1.1.0.zip` | 9 | Lupe-/Suchtaste als Feststelltaste (pro Test), globale Übersetzungstabelle mit virtuellem Keyboard-Editor in der Administration (benötigt Plugin-Update mit Tab „Tastatur-Layout") |
 | 1.0.0 | `archive/ExamKeymap_v1.0.0.zip` | 9 | Initiale Version: Layouts DE (ISO QWERTZ) + EN-US (QWERTY), Drei-Zustände-Button, TinyMCE-Support, sessionStorage-Persistenz |

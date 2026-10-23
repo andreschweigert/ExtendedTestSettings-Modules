@@ -267,7 +267,7 @@ class ilExamKeymapHandler implements ilExamModuleInterface
             'title'       => $this->lng->txt('title'),
             'icon'        => '⌨',
             'description' => $this->lng->txt('description'),
-            'version'     => '1.1.1',
+            'version'     => '1.1.2',
             'features'    => [
                 'Virtuelles Tastatur-Layout DE (QWERTZ) / EN-US (QWERTY), unabhängig vom OS-Layout',
                 'Umschalt-Button im Testplayer: OS → DE → EN → OS',

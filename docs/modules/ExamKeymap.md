@@ -2,8 +2,8 @@
 
 **Modul-ID:** `examkeymap`  
 **Speicherort:** `modules/examkeymap/` (externes Modul, nicht im Git-Repo)  
-**Referenz-ZIP:** `modules-zip/modules/examkeymap/ExamKeymap_v1.1.0.zip`  
-**Zuletzt aktualisiert:** 2026-06-10
+**Referenz-ZIP:** `modules-zip/modules/examkeymap/ExamKeymap_v1.1.2.zip`
+**Zuletzt aktualisiert:** 2026-10-23
 
 ---
 
@@ -195,8 +195,8 @@ mit `[msg, type]`-Rückgabe.
   per Komplettabgleich (DELETE + INSERT).
 - Asset-Pfade über `getModuleWebPath()` (Ableitung aus `__DIR__` relativ zu
   `ILIAS_ABSOLUTE_PATH`, Fallback: fester Plugin-Pfad).
-- Form-Action über `buildBaseUrl()` (aktuelle GET-Parameter ohne `cmd`,
-  Muster examnetqos).
+- Form-Action über `setSaveUrl()` aus der Plugin-ConfigGUI (`getFormAction()`
+  mit CSRF-Token); ohne diese URL wird der Editor nicht angezeigt.
 
 ### Keyboard-Editor (examkeymap_admin.js)
 
