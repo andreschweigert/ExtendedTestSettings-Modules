@@ -55,6 +55,7 @@ Alle URL/Redirect-Generierungen laufen über `proxyLink()` / `proxyFormAction()`
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
+| 1.2.3 | `ExamGrouping_v1.2.3.zip` | 9 | Gruppenlöschen nur per POST mit CSRF-Token; CSV-Formeln werden als Text ausgegeben |
 | 1.2.2 | `ExamGrouping_v1.2.2.zip` | 9 | CSV-Export: Name-Spalte enthält zusätzlich den Anmeldenamen, z.B. „Max Mustermann (mmustermann)" |
 | 1.2.1 | `archive/ExamGrouping_v1.2.1.zip` | 9 | CSV-Export kompakt: eine Zeile pro Kandidat (letzter Durchlauf), Spalten Name/Matrikelnummer/Kennung, Punkte + % je Gruppe, Gesamtpunktzahl |
 | 1.2.0 | `archive/ExamGrouping_v1.2.0.zip` | 9 | i18n DE/EN der Verwaltungs-GUI (Gruppen, Ergebnis-Tabellen Fix+Zufall, beide CSV-Exporte) |

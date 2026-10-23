@@ -75,6 +75,33 @@ class ilExamGroupingGUI
         );
     }
 
+    private function getDeleteToken(): string
+    {
+        $token = ilSession::get('examgrouping_delete_token');
+        if (!is_string($token) || $token === '') {
+            $token = bin2hex(random_bytes(16));
+            ilSession::set('examgrouping_delete_token', $token);
+        }
+        return $token;
+    }
+
+    private function renderDeleteForm(int $ref_id, int $group_id, string $name): string
+    {
+        $action = htmlspecialchars($this->proxyFormAction('deleteGroup', ['ref_id' => $ref_id]), ENT_QUOTES, 'UTF-8');
+        $token = htmlspecialchars($this->getDeleteToken(), ENT_QUOTES, 'UTF-8');
+        $message = json_encode(
+            sprintf($this->txt('confirm_delete'), $name),
+            JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR
+        );
+        $confirm = htmlspecialchars('return confirm(' . $message . ');', ENT_QUOTES, 'UTF-8');
+
+        return '<form method="post" action="' . $action . '" style="display:inline" onsubmit="' . $confirm . '">'
+            . '<input type="hidden" name="group_id" value="' . $group_id . '">'
+            . '<input type="hidden" name="examgrouping_delete_token" value="' . $token . '">'
+            . '<button type="submit" name="cmd[deleteGroup]" class="btn btn-sm btn-danger">' . htmlspecialchars($this->txt('btn_delete'), ENT_QUOTES, 'UTF-8') . '</button>'
+            . '</form>';
+    }
+
     public function performCommand(string $cmd): void
     {
         global $DIC, $rbacsystem;
@@ -248,7 +275,6 @@ class ilExamGroupingGUI
 
                 $edit_link     = $this->proxyLink('editGroup',         ['ref_id' => $ref_id, 'group_id' => $group['id']]);
                 $settings_link = $this->proxyLink('editGroupSettings', ['ref_id' => $ref_id, 'group_id' => $group['id']]);
-                $delete_link   = $this->proxyLink('deleteGroup',       ['ref_id' => $ref_id, 'group_id' => $group['id']]);
 
                 $q_display = empty($q_labels)
                     ? '<em style="color:#999;">' . $this->txt('no_questions_assigned') . '</em>'
@@ -263,8 +289,6 @@ class ilExamGroupingGUI
                     $threshold_display = number_format((float) $tval, 0) . '%';
                 }
 
-                $confirm = htmlspecialchars(addslashes(sprintf($this->txt('confirm_delete'), $group['name'])), ENT_QUOTES);
-
                 $html .= '<tr>';
                 $html .= '<td><strong>' . htmlspecialchars($group['name']) . '</strong></td>';
                 $html .= '<td>' . $q_display . '</td>';
@@ -273,9 +297,7 @@ class ilExamGroupingGUI
                 $html .= '<td style="white-space:nowrap;">';
                 $html .= '<a href="' . htmlspecialchars($settings_link) . '" class="btn btn-sm btn-default">' . $this->txt('btn_settings') . '</a> ';
                 $html .= '<a href="' . htmlspecialchars($edit_link) . '" class="btn btn-sm btn-default">' . $this->txt('btn_questions') . '</a> ';
-                $html .= '<a href="' . htmlspecialchars($delete_link) . '" class="btn btn-sm btn-danger" '
-                       . 'onclick="return confirm(\'' . $confirm . '\');">'
-                       . $this->txt('btn_delete') . '</a>';
+                $html .= $this->renderDeleteForm($ref_id, (int) $group['id'], $group['name']);
                 $html .= '</td>';
                 $html .= '</tr>';
             }
@@ -667,7 +689,17 @@ class ilExamGroupingGUI
 
     private function deleteGroup(int $ref_id): void
     {
-        $group_id = (int) ($_GET['group_id'] ?? 0);
+        $submitted_token = $_POST['examgrouping_delete_token'] ?? null;
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST'
+            || !is_string($submitted_token)
+            || !hash_equals($this->getDeleteToken(), $submitted_token)
+        ) {
+            http_response_code(403);
+            $this->tpl->setOnScreenMessage('failure', $this->txt('no_permission'));
+            return;
+        }
+
+        $group_id = (int) ($_POST['group_id'] ?? 0);
         $obj_id   = ilObject::_lookupObjectId($ref_id);
 
         if ($group_id > 0) {
@@ -682,6 +714,10 @@ class ilExamGroupingGUI
             if ($group) {
                 $this->db->manipulate(
                     "DELETE FROM examgrouping_items WHERE group_id = "
+                    . $this->db->quote($group_id, 'integer')
+                );
+                $this->db->manipulate(
+                    "DELETE FROM examgrp_pool_items WHERE group_id = "
                     . $this->db->quote($group_id, 'integer')
                 );
                 $this->db->manipulate(
@@ -1100,7 +1136,6 @@ class ilExamGroupingGUI
 
                 $edit_link     = $this->proxyLink('editGroup',         ['ref_id' => $ref_id, 'group_id' => $group['id']]);
                 $settings_link = $this->proxyLink('editGroupSettings', ['ref_id' => $ref_id, 'group_id' => $group['id']]);
-                $delete_link   = $this->proxyLink('deleteGroup',       ['ref_id' => $ref_id, 'group_id' => $group['id']]);
 
                 $pool_display = empty($pool_labels)
                     ? '<em style="color:#999;">' . $this->txt('no_pools_assigned') . '</em>'
@@ -1117,13 +1152,10 @@ class ilExamGroupingGUI
                 $html .= '<td>' . $pool_display . '</td>';
                 $html .= '<td>' . htmlspecialchars($threshold_display) . '</td>';
                 $html .= '<td style="white-space:nowrap;">';
-                $confirm = htmlspecialchars(addslashes(sprintf($this->txt('confirm_delete'), $group['name'])), ENT_QUOTES);
 
                 $html .= '<a href="' . htmlspecialchars($settings_link) . '" class="btn btn-sm btn-default">' . $this->txt('btn_settings') . '</a> ';
                 $html .= '<a href="' . htmlspecialchars($edit_link) . '" class="btn btn-sm btn-default">' . $this->txt('btn_pools') . '</a> ';
-                $html .= '<a href="' . htmlspecialchars($delete_link) . '" class="btn btn-sm btn-danger" '
-                       . 'onclick="return confirm(\'' . $confirm . '\');">'
-                       . $this->txt('btn_delete') . '</a>';
+                $html .= $this->renderDeleteForm($ref_id, (int) $group['id'], $group['name']);
                 $html .= '</td>';
                 $html .= '</tr>';
             }
@@ -1425,6 +1457,17 @@ class ilExamGroupingGUI
     // CSV-Export
     // =========================================================================
 
+    private function csvCell($value): string
+    {
+        $cell = (string) $value;
+        // Tabellenprogramme werten auch in Anführungszeichen stehende CSV-Felder
+        // als Formeln aus. Das Apostroph erzwingt Text, auch nach Leerzeichen.
+        if (preg_match('/^[\x00-\x20]*[=+\-@]/', $cell) || preg_match('/^[\t\r\n]/', $cell)) {
+            return "'" . $cell;
+        }
+        return $cell;
+    }
+
     private function exportResults(int $ref_id): void
     {
         $obj_id = ilObject::_lookupObjectId($ref_id);
@@ -1514,7 +1557,7 @@ class ilExamGroupingGUI
 
         $out = fopen('php://output', 'w');
         fputs($out, "\xEF\xBB\xBF"); // UTF-8 BOM für Excel
-        fputcsv($out, $header, ';');
+        fputcsv($out, array_map([$this, 'csvCell'], $header), ';');
 
         // ── Datenzeilen ──────────────────────────────────────────────────────
         foreach ($last_passes as $pass) {
@@ -1557,7 +1600,7 @@ class ilExamGroupingGUI
             }
             $row[] = number_format($total_reached, 2, ',', '');
 
-            fputcsv($out, $row, ';');
+            fputcsv($out, array_map([$this, 'csvCell'], $row), ';');
         }
 
         fclose($out);
@@ -1615,7 +1658,7 @@ class ilExamGroupingGUI
 
         $out = fopen('php://output', 'w');
         fputs($out, "\xEF\xBB\xBF");
-        fputcsv($out, $header, ';');
+        fputcsv($out, array_map([$this, 'csvCell'], $header), ';');
 
         foreach ($last_passes as $pass) {
             $name  = trim(($pass['firstname'] ?? '') . ' ' . ($pass['lastname'] ?? ''));
@@ -1641,7 +1684,7 @@ class ilExamGroupingGUI
             $total = $this->getRandomGroupResults($pass['active_id'], $pass['pass'], array_keys($pools));
             $row[] = number_format($total['reached'], 2, ',', '');
 
-            fputcsv($out, $row, ';');
+            fputcsv($out, array_map([$this, 'csvCell'], $row), ';');
         }
 
         fclose($out);

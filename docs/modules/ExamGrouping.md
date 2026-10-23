@@ -1,9 +1,9 @@
 # ExamGrouping — Entwicklerdokumentation
 
 **Modul-ID:** `examgrouping`  
-**Speicherort:** `modules/examgrouping/` (externes Modul, nicht im Git-Repo)  
-**Referenz-ZIP:** `ExamGrouping_v1.0.4.zip`  
-**Zuletzt aktualisiert:** 2026-05-26
+**Speicherort:** `modules/examgrouping/` im Distributions-Repository
+**Referenz-ZIP:** `modules/examgrouping/ExamGrouping_v1.2.3.zip`
+**Zuletzt aktualisiert:** 2026-10-23
 
 ---
 
@@ -47,7 +47,8 @@ modules/examgrouping/
     "id": "examgrouping",
     "label": "Fragengruppierung",
     "description": "Fragen eines Tests zu benannten Gruppen zusammenfassen ...",
-    "version": "1.0.4",
+    "version": "1.2.3",
+    "maturity": "pilot",
     "ilias_min": "9",
     "ilias_max": "9",
     "handler_class": "ilExamGroupingHandler",
@@ -144,7 +145,7 @@ isEnabled()     → gibt immer false zurück (kein Testplayer-Widget)
 injectAssets()  → no-op (kein Testplayer-Asset)
 getFormItems()  → gibt [ilCustomInputGUI] mit Info-Text + Link zur Gruppen-Verwaltung zurück
 saveSettings()  → gibt true zurück (nichts zu speichern)
-getInfo()       → liefert title, icon, description (für AdvancedGUI-Formular-Header)
+getInfo()       → liefert title, icon, description und version
 ```
 
 ---
@@ -156,7 +157,7 @@ getInfo()       → liefert title, icon, description (für AdvancedGUI-Formular-
 | `show` (default) | `show()` | Hauptansicht: erkennt Test-Typ, verzweigt in fixe oder Pool-Ansicht |
 | `addGroup` | `addGroup()` | Formular: neue Gruppe anlegen |
 | `saveGroup` | `saveGroup()` | POST: neue Gruppe speichern |
-| `deleteGroup` | `deleteGroup()` | Gruppe + Items löschen |
+| `deleteGroup` | `deleteGroup()` | POST mit Session-CSRF-Token; Gruppe + Items löschen |
 | `editGroup` | `editGroup()` | Fragen- oder Pool-Zuweisung (erkennt Test-Typ automatisch) |
 | `saveGroupQuestions` | `saveGroupQuestions()` | POST: Zuweisung speichern (fixer Test oder Zufallstest) |
 | `editGroupSettings` | `editGroupSettings()` | Name + Schwellenwert bearbeiten |
@@ -325,32 +326,16 @@ getRandomGroupResults()    → erreichte + max Punkte je Gruppe/Pass
 
 ## CSV-Export
 
-**Alle Durchläufe** aller Teilnehmer als einzelne Zeilen.
+Ein Datensatz pro Kandidat mit dem letzten abgeschlossenen Durchlauf. Der Export enthält Name, Matrikelnummer, Kennung, erreichte Punkte und Prozentsatz je Gruppe sowie die Gesamtpunktzahl.
 
 **Format:**
 - Trennzeichen: `;` (Excel-DE-kompatibel)
 - Encoding: UTF-8 mit BOM
 - Dezimaltrennzeichen: `,`
 - Dateiname: `fragengruppierung_<Testname>_<YYYYMMDD_HHmmss>.csv`
+- Formelanfänge (`=`, `+`, `-`, `@`, auch nach führendem Leerraum) werden in Kopf- und Datenzellen mit einem Apostroph als Text ausgegeben.
 
-**Spaltenstruktur fixer Test:**
-```
-Name | Login | Durchlauf | Datum |
-  [Gruppe A] F1: Titel (Pkt) | F1 Max |
-  [Gruppe A] Gesamt Pkt | Max Pkt | % | Bestanden |
-  ... weitere Gruppen ...
-  [Nicht zugeordnet] ...
-  Gesamt Test Pkt | Gesamt Test Max | Gesamt Test %
-```
-
-**Spaltenstruktur Zufallstest:**
-```
-Name | Login | Durchlauf | Datum |
-  [Gruppe A] Pools: Pool1, Pool2 | Erreicht Pkt | Max Pkt | % | Bestanden |
-  ... weitere Gruppen ...
-  [Nicht zugeordnet] Erreicht | Max | %
-  Gesamt Pkt | Gesamt Max | Gesamt %
-```
+Beide Testarten verwenden das gleiche CSV-Schema; die Gruppenergebnisse werden je nach fixer Fragenliste oder Fragenpool berechnet.
 
 ---
 
@@ -377,6 +362,7 @@ Modul-Verzeichnis. `sql/install.php` läuft erneut (daher immer `tableExists()`-
 
 | Datum | Version | Was |
 |---|---|---|
+| 2026-10-23 | **v1.2.3** | Löschen über POST und Session-CSRF-Token; CSV-Formeln neutralisiert |
 | 2026-05-26 | **v1.0.4** | Bugfix: Pass-Erkennung für Zufallstests via `tst_test_rnd_qst` statt `tst_test_result`; Pool-Matching über `qpl_questions.original_id` (ILIAS kopiert Pool-Fragen intern) |
 | 2026-05-26 | **v1.0.3** | Zufallstest-Unterstützung: Pool-basierte Gruppierung, neue Tabelle `examgrp_pool_items`, `getSubmittedPassesRandom()`, `getRandomGroupResults()`, eigener CSV-Export für Zufallstests |
 | 2026-05-12 | **v1.0.2** | ILIAS-Kompatibilität auf 9 beschränkt |

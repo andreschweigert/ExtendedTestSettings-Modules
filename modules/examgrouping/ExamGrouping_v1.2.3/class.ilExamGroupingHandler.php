@@ -25,6 +25,7 @@ class ilExamGroupingHandler implements ilExamModuleInterface
             'title'       => $this->lng->txt('title'),
             'icon'        => '📊',
             'description' => $this->lng->txt('description'),
+            'version'     => '1.2.3',
         ];
     }
 
