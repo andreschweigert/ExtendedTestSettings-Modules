@@ -1,9 +1,9 @@
 # ExamCalc — Entwicklerdokumentation
 
 **Modul-ID:** `examcalc`  
-**Speicherort:** `modules/examcalc/` (externes Modul, nicht im Git-Repo)  
-**Referenz-ZIP:** `.dev/` → `modules-zip/modules/examcalc/ExamCalc_v1.1.1.zip`  
-**Zuletzt aktualisiert:** 2026-05-12
+**Speicherort:** `modules/examcalc/` in diesem Distributions-Repository
+**Referenz-ZIP:** `modules/examcalc/ExamCalc_v1.2.1.zip`
+**Zuletzt aktualisiert:** 2026-10-14
 
 ---
 
@@ -23,6 +23,7 @@ Testplayer-Kontexts werden keine Assets injiziert. Der wissenschaftliche Modus i
 
 - Nur im Testplayer aktiv — `isTestPlayerContext()` prüft `cmdClass` und URL-Pattern.
 - Wissenschaftlicher Modus benötigt `math.min.js` (lokal gebündelt, kein CDN — Prüfungskontext).
+- Gebündelt ist math.js 15.2.0 aus dem npm-Paket `mathjs@15.2.0` (`lib/browser/math.js`). Die Lizenzdateien liegen daneben. npm-Integrität: `sha512-UAQzSVob9rNLdGpqcFMYmSu9dkuLYy7Lr2hBEQS5SHQdknA9VppJz3cy2KkpMzTODunad6V6cNv+5kOLsePLow==`.
 - `ilExamCalcConfig` ist als Dependency-Datei in `require_files` eingetragen, wird aber
   im Handler selbst nicht instanziiert — nur für zukünftige Erweiterungen vorgesehen.
 
@@ -59,7 +60,8 @@ modules/examcalc/
     "id": "examcalc",
     "label": "Wissenschaftlicher Taschenrechner",
     "description": "Stellt einen Taschenrechner während der Prüfung zur Verfügung (einfach oder wissenschaftlich).",
-    "version": "1.1.1",
+    "version": "1.2.1",
+    "maturity": "erprobt",
     "ilias_min": "9",
     "ilias_max": "9",
     "handler_class": "ilExamCalcHandler",
@@ -123,7 +125,7 @@ getInfo()                  → title, icon, description, version, features-Array
 ### Nicht-Interface-Methoden
 
 ```
-getCalculatorMode(ref_id)   → liest calculator_mode aus DB; Default 'simple'
+getCalculatorMode(ref_id)   → liest calculator_mode aus DB; nur 'simple'/'advanced', sonst 'simple'
 isTestPlayerContext()        → prüft cmdClass (iltestplayer*) + URL-Pattern (startPlayer/resumePlayer)
 getSettingsHTML(ref_id)      → raw Bootstrap-HTML (Legacy-Methode, nicht von Interface gefordert)
 ```
@@ -142,15 +144,14 @@ $tpl->addJavaScript(".../modules/examcalc/js/calculator-simple.js");
 $tpl->addCss(".../modules/examcalc/css/examcalc.css");
 $tpl->addJavaScript(".../modules/examcalc/js/examcalc-loader.js");
 
-$tpl->addOnLoadCode("
-    window.ExamCalc = window.ExamCalc || {};
-    window.ExamCalc.templatePath = '...templates/calculator_overlay.html'; // oder _simple.html
-    window.ExamCalc.calculatorMode = 'simple'; // oder 'advanced'
-");
+$template_path_js = json_encode($template_path, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR);
+$calculator_mode_js = json_encode($calculator_mode, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR);
+$tpl->addOnLoadCode("window.ExamCalc = window.ExamCalc || {}; window.ExamCalc.templatePath = $template_path_js; window.ExamCalc.calculatorMode = $calculator_mode_js;");
 ```
 
 `examcalc-loader.js` liest `window.ExamCalc.templatePath` und `window.ExamCalc.calculatorMode`
 und baut den Floating-Button + Overlay auf. Shortcut: **Alt + R**.
+Ungültige Moduswerte aus Formular oder vorhandenen Datenbankzeilen fallen auf `simple` zurück.
 
 ---
 
@@ -185,6 +186,7 @@ Gleiches Vorgehen wie Erstinstallation — `sql/install.php` läuft erneut
 
 | Datum | Was |
 |---|---|
+| 2026-10-14 | **v1.2.1:** XSS über `examcalc_mode` geschlossen, math.js auf 15.2.0 aktualisiert, beide Modi getestet |
 | 2026-05-12 | **v1.1.1:** ILIAS-Kompatibilität auf 9 beschränkt |
 | 2026-04-10 | Initiale Version: einfacher + wissenschaftlicher Modus, Testplayer-Integration |
 | 2026-04-10 | In modulares System migriert (`modules/examcalc/`), `module.json` hinzugefügt |

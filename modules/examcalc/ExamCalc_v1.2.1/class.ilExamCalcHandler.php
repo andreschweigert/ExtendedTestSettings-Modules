@@ -114,11 +114,13 @@ class ilExamCalcHandler implements ilExamModuleInterface
         $tpl->addJavaScript($js_loader_path);
 
         $template_path = $this->plugin_path . "/modules/examcalc/templates/$template_filename";
+        $template_path_js = json_encode($template_path, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR);
+        $calculator_mode_js = json_encode($calculator_mode, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR);
 
         $tpl->addOnLoadCode("
             window.ExamCalc = window.ExamCalc || {};
-            window.ExamCalc.templatePath = '$template_path';
-            window.ExamCalc.calculatorMode = '$calculator_mode';
+            window.ExamCalc.templatePath = $template_path_js;
+            window.ExamCalc.calculatorMode = $calculator_mode_js;
         ");
     }
 
@@ -141,7 +143,7 @@ class ilExamCalcHandler implements ilExamModuleInterface
             $result = $db->queryF($query, ['integer'], [$test_id]);
 
             if ($row = $db->fetchAssoc($result)) {
-                return $row['calculator_mode'] ?? 'simple';
+                return $this->normalizeCalculatorMode($row['calculator_mode'] ?? null);
             }
 
             return 'simple';
@@ -162,7 +164,7 @@ class ilExamCalcHandler implements ilExamModuleInterface
         try {
             $obj_id = ilObject::_lookupObjectId($ref_id);
             $enabled = isset($post_data['examcalc_enabled']) ? 1 : 0;
-            $calculator_mode = $post_data['examcalc_mode'] ?? 'simple';
+            $calculator_mode = $this->normalizeCalculatorMode($post_data['examcalc_mode'] ?? null);
 
             $db->replace('examcalc_settings', [
                 'test_id' => ['integer', $obj_id]
@@ -176,6 +178,13 @@ class ilExamCalcHandler implements ilExamModuleInterface
             error_log("[ExamCalc] Fehler beim Speichern: " . $e->getMessage());
             return false;
         }
+    }
+
+    private function normalizeCalculatorMode(mixed $mode): string
+    {
+        return is_string($mode) && in_array($mode, ['simple', 'advanced'], true)
+            ? $mode
+            : 'simple';
     }
 
     /**
@@ -246,7 +255,7 @@ HTML;
             'title' => $this->lng->txt('title'),
             'icon' => '🧮',
             'description' => $this->lng->txt('description'),
-            'version' => '1.2.0',
+            'version' => '1.2.1',
             'features' => [
                 'Floating Button (Alt + R)',
                 'Einfacher Modus (Grundrechenarten)',
