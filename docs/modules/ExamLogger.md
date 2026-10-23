@@ -2,8 +2,8 @@
 
 **Modul-ID:** `examlogger`  
 **Speicherort:** `modules/examlogger/` (direkt im Plugin-Repo)  
-**Referenz-ZIP:** `modules-zip/modules/examlogger/ExamLogger_v1.1.0.zip`  
-**Zuletzt aktualisiert:** 2026-05-21
+**Referenz-ZIP:** `modules-zip/modules/examlogger/ExamLogger_v1.4.1.zip`
+**Zuletzt aktualisiert:** 2026-10-23
 
 ---
 
@@ -62,7 +62,7 @@ modules/examlogger/
     "id": "examlogger",
     "label": "Prüfungs-Logging",
     "description": "Protokolliert Test-Ereignisse (Start, Navigation, Abgabe, Einstellungsänderungen) in einer eigenen Tabelle ohne ILIAS-Kernanpassungen.",
-    "version": "1.0.0",
+    "version": "1.4.1",
     "ilias_min": "9",
     "ilias_max": "9",
     "handler_class": "ilExamLoggerHandler",
@@ -187,7 +187,12 @@ Test-Einstellungen → Erweiterte Test-Einstellungen → Abschnitt "Prüfungs-Pr
 | `filter_event` | Event-Typ (validiert: `^[a-z_]{1,64}$`) |
 | `filter_from` | Von-Datum (Format: `YYYY-MM-DD`) |
 | `filter_to` | Bis-Datum (inkl. 23:59:59) |
-| `ref_id` | Automatisch aus URL — filtert auf diesen Test (nur per-Test-Ansicht) |
+| `ref_id` | Automatisch aus URL — verbindliche Testgrenze für Nicht-Administratoren |
+
+Die Modul-GUI prüft das Schreibrecht auf `ref_id` selbst. In der per-Test-Ansicht
+gilt diese Testgrenze auch für CSV-Export und Filterlisten; ein übergebener
+`filter_ref_id` kann sie nicht ersetzen. Die globale Ansicht ist System-Admins
+vorbehalten.
 
 Limit: 1000 Zeilen in der Tabellenansicht, kein Limit beim CSV-Export.
 
@@ -195,6 +200,9 @@ Limit: 1000 Zeilen in der Tabellenansicht, kein Limit beim CSV-Export.
 
 Semikolon-getrennt, UTF-8 mit BOM. Spalten:  
 `Datum ; Uhrzeit ; Login ; Vorname ; Nachname ; Test ; Ref-ID ; Ereignis ; Details ; Frage-ID ; Fragenname ; Koffer ; Gerät-Nr ; ILI-Nr ; IP-Adresse`
+
+Zellen, die Tabellenprogramme als Formel auswerten könnten, erhalten ein
+führendes Apostroph.
 
 ---
 
@@ -219,5 +227,6 @@ Gleiches Vorgehen wie Erstinstallation — `sql/install.php` läuft erneut
 
 | Datum | Was |
 |---|---|
+| 2026-10-23 | **v1.4.1:** Testgrenze im Modul-Proxy für Ansicht, Export und Filterlisten erzwungen; CSV-Formeln neutralisiert |
 | 2026-05-21 | **v1.1.0:** Fragenname (JOIN qpl_questions) in Protokoll-Spalte und CSV; Geräteverwaltung via examlogger_hosts (CSV-Import, Koffer-Filter, Gerät-Spalte mit Tooltip); `test_submit_confirmed` als eigener Event-Typ (GET vs. POST auf finishTest) |
 | 2026-05-21 | **v1.0.0:** Initiale Implementierung; onRequest()-Pattern; ViewGUI mit Filter + CSV-Export; Admin-Tab in ConfigGUI |

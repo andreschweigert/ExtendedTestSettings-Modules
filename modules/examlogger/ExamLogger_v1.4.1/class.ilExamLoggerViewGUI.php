@@ -12,6 +12,7 @@ class ilExamLoggerViewGUI
     private string $device_cmd = 'showDevices';
     private string $import_cmd = 'importDevices';
     private int    $default_ref = 0;
+    private ?int   $allowed_ref = null;
 
     public function setFormCmd(string $cmd): void   { $this->form_cmd   = $cmd; }
     public function setExportCmd(string $cmd): void { $this->export_cmd = $cmd; }
@@ -38,12 +39,39 @@ class ilExamLoggerViewGUI
 
     public function executeCommand(): void
     {
+        if (!$this->authorizeScope()) {
+            http_response_code(403);
+            return;
+        }
+
         $cmd = (string)($_REQUEST['cmd'] ?? 'showLog');
         if ($cmd === $this->export_cmd || $cmd === 'exportCsv') {
             $this->exportCsv();
         } else {
             $this->showLog();
         }
+    }
+
+    private function authorizeScope(): bool
+    {
+        global $rbacsystem;
+
+        // Die globale Ansicht gehört nur zur Plugin-Administration. Im Modul-Proxy
+        // reicht Schreibrecht an einem Test; dort müssen alle Abfragen auf genau
+        // diesen Test begrenzt bleiben, auch wenn filter_ref_id manipuliert wird.
+        if ($rbacsystem->checkAccess('write', SYSTEM_FOLDER_ID)) {
+            return true;
+        }
+
+        $ref_id = (int)($_GET['ref_id'] ?? 0);
+        if ($ref_id <= 0 || ilObject::_lookupType($ref_id, true) !== 'tst'
+            || !$rbacsystem->checkAccess('write', $ref_id)) {
+            return false;
+        }
+
+        $this->allowed_ref = $ref_id;
+        $this->default_ref = $ref_id;
+        return true;
     }
 
     // ─── LOG VIEW ────────────────────────────────────────────────────────────
@@ -53,7 +81,7 @@ class ilExamLoggerViewGUI
         global $DIC;
 
         $filter_event   = $this->sanitizeEventType((string)($_GET['filter_event']   ?? ''));
-        $filter_ref     = (int)($_GET['filter_ref_id']  ?? $this->default_ref);
+        $filter_ref     = $this->selectedTestRef();
         $filter_user_id = (int)($_GET['filter_user_id'] ?? 0);
         $filter_from    = $this->sanitizeDate((string)($_GET['filter_from']   ?? ''));
         $filter_to      = $this->sanitizeDate((string)($_GET['filter_to']     ?? ''));
@@ -75,6 +103,7 @@ class ilExamLoggerViewGUI
     ): array {
         global $DIC;
         $db = $DIC->database();
+        $filter_ref = $this->allowed_ref ?? $filter_ref;
 
         $where  = [];
         $types  = [];
@@ -131,7 +160,10 @@ class ilExamLoggerViewGUI
             $rows[] = $row;
         }
 
-        $typeResult = $db->query('SELECT DISTINCT event_type FROM ' . self::TABLE . ' ORDER BY event_type');
+        $typeSql = 'SELECT DISTINCT event_type FROM ' . self::TABLE;
+        $typeResult = $this->allowed_ref !== null
+            ? $db->queryF($typeSql . ' WHERE test_ref_id = %s ORDER BY event_type', ['integer'], [$this->allowed_ref])
+            : $db->query($typeSql . ' ORDER BY event_type');
         $eventTypes = [];
         while ($r = $db->fetchAssoc($typeResult)) {
             $eventTypes[] = $r['event_type'];
@@ -139,22 +171,31 @@ class ilExamLoggerViewGUI
 
         $kofferList = [];
         if ($db->tableExists(self::HOSTS_TABLE)) {
-            $kofferResult = $db->query("SELECT DISTINCT koffer FROM " . self::HOSTS_TABLE . " WHERE koffer != '' ORDER BY koffer");
+            $kofferSql = "SELECT DISTINCT h.koffer FROM " . self::HOSTS_TABLE . " h";
+            $kofferResult = $this->allowed_ref !== null
+                ? $db->queryF(
+                    $kofferSql . ' JOIN ' . self::TABLE . " e ON e.ip_addr = h.ip_addr WHERE e.test_ref_id = %s AND h.koffer != '' ORDER BY h.koffer",
+                    ['integer'],
+                    [$this->allowed_ref]
+                )
+                : $db->query($kofferSql . " WHERE h.koffer != '' ORDER BY h.koffer");
             while ($r = $db->fetchAssoc($kofferResult)) {
                 $kofferList[] = $r['koffer'];
             }
         }
 
-        // Test-Liste für Dropdown (immer befüllen — wird im globalen View angezeigt)
+        // Test-Liste nur für die globale Admin-Ansicht laden.
         $testList = [];
-        $testResult = $db->query(
-            "SELECT DISTINCT e.test_ref_id, o.title
-             FROM " . self::TABLE . " e
-             LEFT JOIN object_data o ON o.obj_id = e.test_obj_id
-             ORDER BY o.title, e.test_ref_id"
-        );
-        while ($r = $db->fetchAssoc($testResult)) {
-            $testList[(int)$r['test_ref_id']] = $r['title'] ?? ('ref_id ' . $r['test_ref_id']);
+        if ($this->allowed_ref === null) {
+            $testResult = $db->query(
+                "SELECT DISTINCT e.test_ref_id, o.title
+                 FROM " . self::TABLE . " e
+                 LEFT JOIN object_data o ON o.obj_id = e.test_obj_id
+                 ORDER BY o.title, e.test_ref_id"
+            );
+            while ($r = $db->fetchAssoc($testResult)) {
+                $testList[(int)$r['test_ref_id']] = $r['title'] ?? ('ref_id ' . $r['test_ref_id']);
+            }
         }
 
         // Nutzer-Liste für Dropdown — wenn Test gefiltert, nur Nutzer dieses Tests
@@ -504,7 +545,7 @@ class ilExamLoggerViewGUI
         $db = $DIC->database();
 
         $filter_event   = $this->sanitizeEventType((string)($_GET['filter_event']   ?? ''));
-        $filter_ref     = (int)($_GET['filter_ref_id']  ?? $this->default_ref);
+        $filter_ref     = $this->selectedTestRef();
         $filter_user_id = (int)($_GET['filter_user_id'] ?? 0);
         $filter_from    = $this->sanitizeDate((string)($_GET['filter_from']   ?? ''));
         $filter_to      = $this->sanitizeDate((string)($_GET['filter_to']     ?? ''));
@@ -564,7 +605,7 @@ class ilExamLoggerViewGUI
 
         $out = fopen('php://output', 'w');
         fprintf($out, chr(0xEF) . chr(0xBB) . chr(0xBF));
-        fputcsv($out, [
+        fputcsv($out, array_map([$this, 'csvCell'], [
             $this->lng->txt('csv_date'),
             $this->lng->txt('csv_time'),
             $this->lng->txt('csv_login'),
@@ -580,10 +621,10 @@ class ilExamLoggerViewGUI
             $this->lng->txt('csv_geraet'),
             $this->lng->txt('csv_ili'),
             $this->lng->txt('csv_ip'),
-        ], ';');
+        ]), ';');
 
         while ($row = $db->fetchAssoc($result)) {
-            fputcsv($out, [
+            fputcsv($out, array_map([$this, 'csvCell'], [
                 date('d.m.Y', (int)$row['tstamp']),
                 date('H:i:s', (int)$row['tstamp']),
                 $row['login']      ?? '',
@@ -599,7 +640,7 @@ class ilExamLoggerViewGUI
                 $row['geraet_nr']  ?? '',
                 $row['ili_nr']     ?? '',
                 $row['ip_addr']    ?? '',
-            ], ';');
+            ]), ';');
         }
 
         fclose($out);
@@ -607,6 +648,20 @@ class ilExamLoggerViewGUI
     }
 
     // ─── HELPERS ─────────────────────────────────────────────────────────────
+
+    private function selectedTestRef(): int
+    {
+        return $this->allowed_ref ?? (int)($_GET['filter_ref_id'] ?? $this->default_ref);
+    }
+
+    private function csvCell($value): string
+    {
+        $cell = (string)$value;
+        if (preg_match('/^[\x00-\x20]*[=+\-@]/', $cell) || preg_match('/^[\t\r\n]/', $cell)) {
+            return "'" . $cell;
+        }
+        return $cell;
+    }
 
     private function renderQuestionCell(int $question_id, string $question_title): string
     {

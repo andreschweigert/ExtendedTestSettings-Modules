@@ -71,6 +71,7 @@ und Navigation zwischen Fragen.
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
+| 1.4.1 | `ExamLogger_v1.4.1.zip` | 9 | Protokoll und Export im Modul-Proxy auf den berechtigten Test begrenzt; CSV-Formeln neutralisiert |
 | 1.4.0 | `ExamLogger_v1.4.0.zip` | 9 | Geräte-Inventar ins Plugin verlagert (`etest_hosts`, Plugin ≥ 2.0.1): Modul liest nur noch, `examlogger_hosts` wird beim Update entfernt; JOINs defensiv (Guard bei fehlender Tabelle) |
 | 1.3.0 | `archive/ExamLogger_v1.3.0.zip` | 9 | i18n DE/EN der ViewGUI (Protokoll, Geräte, CSV-Export, Geräte-Import) |
 | 1.2.0 | `archive/ExamLogger_v1.2.0.zip` | 9 | Modul-i18n DE/EN (Handler/getInfo) |
