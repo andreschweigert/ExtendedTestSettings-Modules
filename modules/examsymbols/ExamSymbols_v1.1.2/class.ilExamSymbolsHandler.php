@@ -101,8 +101,9 @@ class ilExamSymbolsHandler implements ilExamModuleInterface
         $tpl->addJavaScript($js_loader_path);
 
         $template_path = $this->plugin_path . "/modules/examsymbols/templates/symbols_overlay.html";
-        $symbols_json = json_encode($symbols);
-        $templates_json = json_encode($this->config->getAvailableTemplates());
+        $json_flags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
+        $symbols_json = json_encode($symbols, $json_flags);
+        $templates_json = json_encode($this->config->getAvailableTemplates(), $json_flags);
 
         $tpl->addOnLoadCode("
             window.ExamSymbols = window.ExamSymbols || {};
@@ -252,7 +253,7 @@ HTML;
             'title' => 'Sonderzeichen-Palette',
             'icon' => '📝',
             'description' => "Palette mit Sonderzeichen für verschiedene Fachbereiche ($template_count Templates, $total_symbols Symbole)",
-            'version' => '1.1.0',
+            'version' => '1.1.2',
             'features' => [
                 'Floating Button (Alt + S)',
                 "Multiple Templates ($template_count verfügbar)",
