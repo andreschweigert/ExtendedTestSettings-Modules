@@ -72,6 +72,7 @@ ZIP über Administration → Plugins → ExtendedTestSettings → Module hochlad
 
 | Version | Datum | Änderungen |
 |---|---|---|
+| 1.0.4 | 2026-10-26 | AGPL-3.0-only: Lizenz- und Autorenhinweise im ZIP; Fremdkomponenten gesondert ausgewiesen |
 | 1.0.3 | 2026-07-23 | Erprobungsversion: vier umschaltbare Zoom-Steuerungen (Schieben/Gleiten/Direkt/Umbruch) per Toolbar-Button oder Strg+Alt+M, Auswahl in sessionStorage |
 | 1.0.2 | 2026-07-23 | Schiebe-Steuerung: Mausbewegung am Rand schiebt den Ausschnitt (Ratsche, Klick-Stabilität bei gedrückter Taste), Nachgleiten nur ganz außen; Entwicklungsstand → experimentell |
 | 1.0.1 | 2026-07-23 | Zoom-Steuerung auf Rand-Schwenk umgestellt (Ruhezone in der Mitte, Schwenken am Rand statt direkter Zeiger-Kopplung), Zentrierung auf den Fragebereich beim Einschalten, kurzer Ruhezonen-Hinweis; `maturity`-Feld |

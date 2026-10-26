@@ -2,7 +2,7 @@
     "id": "examchecker",
     "label": "Prüfungs-Checker",
     "description": "Prüft Test-Einstellungen gegen konfigurierbare Soll-Werte für Präsenz- und Fernprüfungen.",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "maturity": "entwicklung",
     "ilias_min": "9",
     "ilias_max": "9",

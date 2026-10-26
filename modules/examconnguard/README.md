@@ -61,7 +61,8 @@ Assets werden nur injiziert, wenn `isEnabled() && isTestPlayerContext()` — kei
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
-| 1.1.0 | `ExamConnGuard_v1.1.0.zip` | 9 | Modul-i18n DE/EN (ilModuleLanguage) |
+| 1.1.1 | `ExamConnGuard_v1.1.1.zip` | 9 | AGPL-3.0-only: Lizenz- und Autorenhinweise im ZIP; Lizenzen mitgelieferter Fremdkomponenten ergänzt |
+| 1.1.0 | `archive/ExamConnGuard_v1.1.0.zip` | 9 | Modul-i18n DE/EN (ilModuleLanguage) |
 | 1.0.7 | `ExamConnGuard_v1.0.7.zip` | 9 | `exitOutage()` dispatcht `examconnguard:reconnect` CustomEvent → ExamNetQos und andere Module können Reconnect-Zeitpunkt erfassen |
 | 1.0.6 | `ExamConnGuard_v1.0.6.zip` | 9 | ILIAS-Kompatibilität auf 9 beschränkt |
 | 1.0.0 | `ExamConnGuard_v1.0.0.zip` | 9–12 | Initiale Version mit Background-Heartbeat alle 8 s gegen `/favicon.ico`. Bekannte Bugs: spurious offline durch fetch-Wrapper, kaputt wenn Server kein favicon hat. |

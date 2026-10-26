@@ -2,7 +2,7 @@
 
 **Modul-ID:** `exambattery`
 **Speicherort:** `modules/exambattery/` (externes Modul, nicht im Git-Repo)
-**Referenz-ZIP:** `modules-zip/modules/exambattery/ExamBattery_v1.3.2.zip`
+**Referenz-ZIP:** `modules-zip/modules/exambattery/ExamBattery_v1.3.3.zip`
 **Zuletzt aktualisiert:** 2026-07-03
 
 ---

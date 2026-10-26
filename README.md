@@ -1,5 +1,7 @@
 # ExtendedTestSettings — Module Repository
 
+[![License](https://img.shields.io/badge/license-AGPL--3.0--only-blue)](LICENSE)
+
 Dieses Repository enthält alle installierbaren Zusatzmodule für das ILIAS-Plugin **ExtendedTestSettings**.
 
 Das Plugin selbst ermöglicht es, die ILIAS-Testeinstellungen um prüfungsspezifische Funktionen zu erweitern. Module können über die Plugin-Administration als ZIP hochgeladen und aktiviert werden — ohne Eingriff in den Plugin-Code.
@@ -45,3 +47,15 @@ Jeder Branch entspricht einer ILIAS-Hauptversion:
 ## Modul installieren
 
 Siehe [docs/how-to.md](docs/how-to.md) für eine Schritt-für-Schritt-Anleitung.
+
+## Lizenz
+
+Die eigenen Modulbeiträge stehen unter **AGPL-3.0-only**. Der vollständige Text
+steht in [LICENSE](LICENSE). Für diese Beiträge gilt die zusätzliche
+Autorenangabe nach Abschnitt 7(b) in [NOTICE](NOTICE). Jedes neue Modul-ZIP
+enthält beide Texte als `LICENSE.txt` und `NOTICE.txt`.
+
+Mitgelieferte Fremdkomponenten behalten ihre eigenen Lizenzen: math.js
+(Apache-2.0 und Hinweise zu Abhängigkeiten), Mozilla PDF.js (Apache-2.0) und
+OpenDyslexic (SIL Open Font License 1.1). Ihre Lizenztexte liegen jeweils im
+betroffenen Modul-ZIP.

@@ -2,7 +2,7 @@
     "id": "examlogger",
     "label": "Prüfungs-Logging",
     "description": "Protokolliert Test-Ereignisse (Start, Navigation, Abgabe, Einstellungsänderungen) in einer eigenen Tabelle ohne ILIAS-Kernanpassungen.",
-    "version": "1.4.1",
+    "version": "1.4.2",
     "maturity": "experimentell",
     "ilias_min": "9",
     "ilias_max": "9",

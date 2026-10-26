@@ -46,7 +46,8 @@ Eigene Tabelle: `examalert_settings`
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
-| 1.2.1 | `ExamAlert_v1.2.1.zip` | 9 | Sicherheitsfix: Warnmeldung wird vor der Anzeige escaped (XSS). Erlaubte Format-Tags (`<strong>`, `<b>`, `<i>`, `<u>`, `<br>`) bleiben erhalten, anderes HTML wird als Text angezeigt |
+| 1.2.2 | `ExamAlert_v1.2.2.zip` | 9 | AGPL-3.0-only: Lizenz- und Autorenhinweise im ZIP; Lizenzen mitgelieferter Fremdkomponenten ergänzt |
+| 1.2.1 | `archive/ExamAlert_v1.2.1.zip` | 9 | Sicherheitsfix: Warnmeldung wird vor der Anzeige escaped (XSS). Erlaubte Format-Tags (`<strong>`, `<b>`, `<i>`, `<u>`, `<br>`) bleiben erhalten, anderes HTML wird als Text angezeigt |
 | 1.2.0 | `archive/ExamAlert_v1.2.0.zip` | 9 | Modul-eigene Sprachdateien DE/EN, Formular-Texte über ilModuleLanguage |
 | 1.1.1 | `ExamAlert_v1.1.1.zip` | 9 | ILIAS-Kompatibilität auf 9 beschränkt |
 | 1.1.0 | `ExamAlert_v1.1.0.zip` | 9–12 | Migration aus Built-in zu externem Modul, Asset-Pfade angepasst |

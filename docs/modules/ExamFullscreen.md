@@ -2,7 +2,7 @@
 
 **Modul-ID:** `examfullscreen`  
 **Speicherort:** `modules/examfullscreen/` (externes Modul, nicht im Git-Repo)  
-**Referenz-ZIP:** `modules-zip/modules/examfullscreen/ExamFullscreen_v2.0.1.zip`  
+**Referenz-ZIP:** `modules-zip/modules/examfullscreen/ExamFullscreen_v2.1.1.zip`
 **Zuletzt aktualisiert:** 2026-05-12
 
 ---

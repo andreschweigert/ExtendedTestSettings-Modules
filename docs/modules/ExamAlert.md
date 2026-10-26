@@ -2,7 +2,7 @@
 
 **Modul-ID:** `examalert`  
 **Speicherort:** `modules/examalert/` (externes Modul, nicht im Git-Repo)  
-**Referenz-ZIP:** `modules-zip/modules/examalert/ExamAlert_v1.1.1.zip`  
+**Referenz-ZIP:** `modules-zip/modules/examalert/ExamAlert_v1.2.2.zip`
 **Zuletzt aktualisiert:** 2026-05-12
 
 ---

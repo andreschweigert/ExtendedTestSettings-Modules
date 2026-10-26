@@ -2,7 +2,7 @@
 
 **Modul-ID:** `examconnguard`  
 **Speicherort:** `modules/examconnguard/` (externes Modul, nicht im Git-Repo)  
-**Referenz-ZIP:** `modules-zip/modules/examconnguard/ExamConnGuard_v1.0.7.zip`  
+**Referenz-ZIP:** `modules-zip/modules/examconnguard/ExamConnGuard_v1.1.1.zip`
 **Zuletzt aktualisiert:** 2026-05-28
 
 ---

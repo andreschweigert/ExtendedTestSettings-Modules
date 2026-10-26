@@ -71,7 +71,8 @@ Response: `{"sent_at": <ts>, "expiry": <ts>, "message": "...", "type": 0}` oder 
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
-| 1.5.0 | `ExamMessage_v1.5.0.zip` | 9 | Wegklick-Persistenz (`localStorage`, pro Test+Konto, überlebt Reload); Zustellung nur an Teilnehmer mit offenem Testlauf (`tst_active.submitted=0`, nur bei aktiver Nachricht); GUI-Klasse `ilExamMessageProxyGUI` → `ilExamMessageGUI` umbenannt |
+| 1.5.1 | `ExamMessage_v1.5.1.zip` | 9 | AGPL-3.0-only: Lizenz- und Autorenhinweise im ZIP; Lizenzen mitgelieferter Fremdkomponenten ergänzt |
+| 1.5.0 | `archive/ExamMessage_v1.5.0.zip` | 9 | Wegklick-Persistenz (`localStorage`, pro Test+Konto, überlebt Reload); Zustellung nur an Teilnehmer mit offenem Testlauf (`tst_active.submitted=0`, nur bei aktiver Nachricht); GUI-Klasse `ilExamMessageProxyGUI` → `ilExamMessageGUI` umbenannt |
 | 1.4.0 | `archive/ExamMessage_v1.4.0.zip` | 9 | i18n (DE/EN) — Sprachstrings nach `lang/` ausgelagert, `ilModuleLanguage` |
 | 1.3.0 | `archive/ExamMessage_v1.3.0.zip` | 9 | „Nachricht jetzt senden"-Button; Poll-Auth auf RBAC-read umgestellt |
 | 1.2.0 | `archive/ExamMessage_v1.2.0.zip` | 9 | AJAX-Polling (15 s), Nachrichtentypen, Versand-Log, tryStart-Retry-Fix |

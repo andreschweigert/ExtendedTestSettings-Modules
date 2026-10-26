@@ -1,0 +1,22 @@
+ExtendedTestSettings Modules
+https://github.com/andreschweigert/ExtendedTestSettings-Modules
+
+License: GNU Affero General Public License, version 3 only (AGPL-3.0-only).
+The complete, unmodified license text is provided in LICENSE.txt.
+
+Additional attribution term under section 7(b) of the GNU AGPL version 3
+------------------------------------------------------------------------
+For material originating in ExtendedTestSettings Modules and covered by this project's
+AGPL license, the following reasonable author attribution must be preserved in
+that material and in the Appropriate Legal Notices displayed by works
+containing it:
+
+    Original development: André Schweigert and Cornel Musielak.
+
+An equivalent translation of this attribution is permitted. In an interactive
+interface it may appear on a clearly accessible About or legal-notices page;
+it need not appear on every screen. Authors of subsequent contributions may
+add attribution for their own work while preserving the original attribution.
+
+This additional term applies only to the covered material originating in this
+project. Separately licensed components retain their own license terms.

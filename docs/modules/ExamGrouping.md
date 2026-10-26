@@ -2,7 +2,7 @@
 
 **Modul-ID:** `examgrouping`  
 **Speicherort:** `modules/examgrouping/` im Distributions-Repository
-**Referenz-ZIP:** `modules/examgrouping/ExamGrouping_v1.2.3.zip`
+**Referenz-ZIP:** `modules-zip/modules/examgrouping/ExamGrouping_v1.2.4.zip`
 **Zuletzt aktualisiert:** 2026-10-23
 
 ---

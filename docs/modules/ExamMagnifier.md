@@ -1,7 +1,7 @@
 # ExamMagnifier — Entwicklerdokumentation
 
 **Modul-ID:** `exammagnifier`
-**Referenz-ZIP:** `modules-zip/modules/exammagnifier/ExamMagnifier_v1.0.3.zip`
+**Referenz-ZIP:** `modules-zip/modules/exammagnifier/ExamMagnifier_v1.0.4.zip`
 **Entwicklungsstand:** experimentell
 **Zuletzt aktualisiert:** 2026-07-23
 

@@ -55,7 +55,8 @@ Symbol-Definitionen werden als JSON via `window.ExamSymbols.config` an JavaScrip
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
-| 1.1.2 | `ExamSymbols_v1.1.2.zip` | 9 | Versionsangaben und ZIP-Manifest angeglichen; JSON im Inline-JavaScript mit HEX-Flags kodiert. |
+| 1.1.3 | `ExamSymbols_v1.1.3.zip` | 9 | AGPL-3.0-only: Lizenz- und Autorenhinweise im ZIP; Lizenzen mitgelieferter Fremdkomponenten ergänzt |
+| 1.1.2 | `archive/ExamSymbols_v1.1.2.zip` | 9 | Versionsangaben und ZIP-Manifest angeglichen; JSON im Inline-JavaScript mit HEX-Flags kodiert. |
 | 1.1.1 | `ExamSymbols_v1.1.1.zip` | 9 | ILIAS-Kompatibilität auf 9 beschränkt |
 | 1.1.0 | `ExamSymbols_v1.1.0.zip` | 9–12 | Migration aus Built-in zu externem Modul, Config-Klasse ausgelagert |
 

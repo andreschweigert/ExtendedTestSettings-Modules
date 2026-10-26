@@ -197,7 +197,8 @@ Lizenztext mitgeliefert wird; er liegt deshalb in `fonts/` neben den Dateien:
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
-| 1.2.3 | `ExamDyslexia_v1.2.3.zip` | 9 | Leseschiene per Schalter im Panel ein-/ausschaltbar, Dozenten-Checkbox als Startwert (Default an = bisheriges Verhalten); Zuordnungsfragen: Klick auf einen Begriff hebt ihn und seine Zuordnungen hervor |
+| 1.2.4 | `ExamDyslexia_v1.2.4.zip` | 9 | AGPL-3.0-only: Lizenz- und Autorenhinweise im ZIP; Lizenzen mitgelieferter Fremdkomponenten ergänzt |
+| 1.2.3 | `archive/ExamDyslexia_v1.2.3.zip` | 9 | Leseschiene per Schalter im Panel ein-/ausschaltbar, Dozenten-Checkbox als Startwert (Default an = bisheriges Verhalten); Zuordnungsfragen: Klick auf einen Begriff hebt ihn und seine Zuordnungen hervor |
 | 1.2.2 | `ExamDyslexia_v1.2.2.zip` | 9 | Zweite Schrift Atkinson Hyperlegible, Schriftauswahl ersetzt die OpenDyslexic-Checkbox (Bestand wird übernommen); Wortabstand als weitere Stufe; Schriften kommen aus einer Registry, weitere lassen sich ohne CSS-/JS-Eingriff ergänzen |
 | 1.2.1 | `ExamDyslexia_v1.2.1.zip` | 9 | Video- und Audioplayer von der Hintergrund-Einfärbung ausgenommen — die Steuerelemente waren auf der Pastellfarbe kaum noch zu erkennen |
 | 1.2.0 | `ExamDyslexia_v1.2.0.zip` | 9 | Studierende passen Hintergrund, Zeilen- und Zeichenabstand im Testplayer selbst an (Panel am Zahnrad); neue Dozenten-Option `allow_customize`; JS-Texte über lang-Dateien; Leiste nach unten mittig verlegt (lag zuvor auf ILIAS' „Weiter"-Button); Styles wirken jetzt auch im TinyMCE-Editor der Freitextfragen |

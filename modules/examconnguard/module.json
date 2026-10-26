@@ -2,7 +2,7 @@
     "id": "examconnguard",
     "label": "Verbindungs-Schutz",
     "description": "Fängt WLAN-Aussetzer im Test-Player ab. Pre-Flight-Probe bei jedem Submit/Klick verhindert Browser-Fehlerseiten. Bei Outage: Wartebild, queued Action, Auto-Replay nach Reconnect. Wrappt fetch() für Autosave-Retry.",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "maturity": "experimentell",
     "ilias_min": "9",
     "ilias_max": "9",

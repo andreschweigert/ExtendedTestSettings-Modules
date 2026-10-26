@@ -54,6 +54,7 @@ aktivieren (siehe [docs/how-to.md](../../docs/how-to.md)).
 
 | Version | Datum | Änderungen |
 |---|---|---|
+| 1.2.3 | 2026-10-26 | AGPL-3.0-only: Lizenz- und Autorenhinweise im ZIP; Fremdkomponenten gesondert ausgewiesen |
 | 1.2.2 | 2026-07-02 | Härtung nach Code-Review: Weiter-Klick bestätigt nur noch echt sichtbare Modals und niemals einen Test-beenden-Button; robustere Frage-Erkennung (Kollisions- und Zyklus-Schutz); keine Fehlalarme mehr bei Lazy-Bildern, HTML-Code-Erkennung, Auswahlmenüs; CSRF-Token auf allen Endpunkten, Screenshot-Upload nur echte JPEGs, `nosniff`-Header, Cockpit-Seite nicht cachebar |
 | 1.2.1 | 2026-07-02 | Auto-Start stabilisiert (Launcher-Erkennung, Start-Modal wird direkt abgeschickt, Sperre gegen Fremd-Modals im Player, Fragenübersicht wird übersprungen, Zyklus-Erkennung am Testende); neue Checks: fehlender/zu kurzer Fragentext |
 | 1.2.0 | 2026-07-02 | Vollautomatischer Durchlauf: Test-Start/Fortsetzen wird selbst geklickt, Passwort und Prüfungsbedingungen im Start-Modal automatisch ausgefüllt; Option „Testlauf danach löschen" entfernt am Ende den eigenen (!) Testlauf über die offizielle ILIAS-API |

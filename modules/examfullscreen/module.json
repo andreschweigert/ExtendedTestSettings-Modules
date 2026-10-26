@@ -2,7 +2,7 @@
     "id": "examfullscreen",
     "label": "Vollbild-Modus",
     "description": "Fordert Browser-Vollbild (F11) beim Teststart an. Erkennt Vollbild-Verlassen und warnt oder sperrt den Test bis der Vollbild-Modus wiederhergestellt wird.",
-    "version": "2.1.0",
+    "version": "2.1.1",
     "maturity": "experimentell",
     "ilias_min": "9",
     "ilias_max": "9",

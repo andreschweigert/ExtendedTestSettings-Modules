@@ -2,7 +2,7 @@
 
 **Modul-ID:** `exammessage`  
 **Speicherort:** `modules/exammessage/` (externes Modul)  
-**Referenz-ZIP:** `modules-zip/modules/exammessage/ExamMessage_v1.5.0.zip`  
+**Referenz-ZIP:** `modules-zip/modules/exammessage/ExamMessage_v1.5.1.zip`
 **ILIAS-Kompatibilität:** 9  
 **Zuletzt aktualisiert:** 2026-06-02
 

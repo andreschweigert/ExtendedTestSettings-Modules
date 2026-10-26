@@ -2,7 +2,7 @@
 
 **Modul-ID:** `examcalc`  
 **Speicherort:** `modules/examcalc/` in diesem Distributions-Repository
-**Referenz-ZIP:** `modules/examcalc/ExamCalc_v1.2.1.zip`
+**Referenz-ZIP:** `modules-zip/modules/examcalc/ExamCalc_v1.2.2.zip`
 **Zuletzt aktualisiert:** 2026-10-14
 
 ---

@@ -54,7 +54,8 @@ Administration → Plugins → ExtendedTestSettings → Reiter **ExamChecker**.
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
-| 2.0.0 | `ExamChecker_v2.0.0.zip` | 9 | Konfigurierbare Soll-Werte je Check (eigene Tabelle `examchecker_rules`); Prüflauf über eigenen Proxy-Endpunkt statt `cmd=saveSettings`; dreiwertiges Ergebnis; Korrektur der Prüfungen gegen Online-Status, Prüfungsansicht, Verfügbarkeit, Fragenpools und Prüfungsbedingungen |
+| 2.0.1 | `ExamChecker_v2.0.1.zip` | 9 | AGPL-3.0-only: Lizenz- und Autorenhinweise im ZIP; Lizenzen mitgelieferter Fremdkomponenten ergänzt |
+| 2.0.0 | `archive/ExamChecker_v2.0.0.zip` | 9 | Konfigurierbare Soll-Werte je Check (eigene Tabelle `examchecker_rules`); Prüflauf über eigenen Proxy-Endpunkt statt `cmd=saveSettings`; dreiwertiges Ergebnis; Korrektur der Prüfungen gegen Online-Status, Prüfungsansicht, Verfügbarkeit, Fragenpools und Prüfungsbedingungen |
 | 1.2.0 | `archive/ExamChecker_v1.2.0.zip` | 9 | Modul-i18n DE/EN inkl. AJAX-Ergebnis-Panel |
 | 1.1.1 | `archive/ExamChecker_v1.1.1.zip` | 9 | ILIAS-Kompatibilität auf 9 beschränkt |
 | 1.1.0 | `archive/ExamChecker_v1.1.0.zip` | 9–12 | Migration aus Sonderfall zu externem Modul, `implements ilExamModuleInterface` |

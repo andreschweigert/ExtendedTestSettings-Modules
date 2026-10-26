@@ -1,0 +1,15 @@
+{
+    "id": "examdyslexia",
+    "label": "Legasthenie-Modus",
+    "description": "Ermöglicht Studierenden das Aktivieren eines Legasthenie-freundlichen Lesemodus während der Prüfung.",
+    "version": "1.2.4",
+    "maturity": "experimentell",
+    "ilias_min": "9",
+    "ilias_max": "9",
+    "handler_class": "ilExamDyslexiaHandler",
+    "handler_file": "class.ilExamDyslexiaHandler.php",
+    "require_files": [],
+    "tables": [
+        "examdyslexia_settings"
+    ]
+}
