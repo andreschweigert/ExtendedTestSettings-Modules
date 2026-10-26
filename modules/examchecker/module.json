@@ -1,15 +1,22 @@
 {
     "id": "examchecker",
     "label": "Prüfungs-Checker",
-    "description": "Überprüft Test-Einstellungen gegen definierte Standards für Präsenz- und Fernprüfungen.",
-    "version": "10.0.0",
+    "description": "Prüft Test-Einstellungen gegen konfigurierbare Soll-Werte für Präsenz- und Fernprüfungen.",
+    "version": "10.0.1",
     "maturity": "entwicklung",
     "ilias_min": "10",
     "ilias_max": "10",
     "handler_class": "ilExamCheckerHandler",
     "handler_file": "class.ilExamCheckerHandler.php",
+    "gui_file": "class.ilExamCheckerGUI.php",
+    "gui_class": "ilExamCheckerGUI",
     "require_files": [
-        "class.ilExamCheckerConfig.php"
+        "class.ilExamCheckerDefinitions.php",
+        "class.ilExamCheckerRules.php",
+        "class.ilExamCheckerEvaluator.php",
+        "class.ilExamCheckerToken.php"
     ],
-    "tables": []
+    "tables": [
+        "examchecker_rules"
+    ]
 }
