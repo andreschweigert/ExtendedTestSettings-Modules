@@ -1,0 +1,15 @@
+{
+    "id": "examalert",
+    "label": "Zeit-Warnung",
+    "description": "Zeigt eine Warnung an wenn die Prüfungszeit fast abgelaufen ist.",
+    "version": "10.0.1",
+    "maturity": "test",
+    "ilias_min": "10",
+    "ilias_max": "10",
+    "handler_class": "ilExamAlertHandler",
+    "handler_file": "class.ilExamAlertHandler.php",
+    "require_files": [],
+    "tables": [
+        "examalert_settings"
+    ]
+}

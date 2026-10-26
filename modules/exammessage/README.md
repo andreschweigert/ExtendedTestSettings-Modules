@@ -71,7 +71,8 @@ Response: `{"sent_at": <ts>, "expiry": <ts>, "message": "...", "type": 0}` oder 
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
-| 10.0.0 | `ExamMessage_v10.0.0.zip` | 10 | Port auf ILIAS 10: keine Code-Änderungen im Modul nötig — Web-Asset-Pfade laufen über den zentralen Registry-Compat des Plugins (ab 10.0.0). Start der ILIAS-10-Linie (Versionsschema: Major = ILIAS-Version, Sprünge +0.0.1); module.json: ilias_min/max = 10 |
+| 10.0.1 | `ExamMessage_v10.0.1.zip` | 10 | AGPL-3.0-only: Lizenz- und Autorenhinweise im ZIP; Lizenzen mitgelieferter Fremdkomponenten ergänzt |
+| 10.0.0 | `archive/ExamMessage_v10.0.0.zip` | 10 | Port auf ILIAS 10: keine Code-Änderungen im Modul nötig — Web-Asset-Pfade laufen über den zentralen Registry-Compat des Plugins (ab 10.0.0). Start der ILIAS-10-Linie (Versionsschema: Major = ILIAS-Version, Sprünge +0.0.1); module.json: ilias_min/max = 10 |
 | 1.5.0 | `archive/ExamMessage_v1.5.0.zip` | 9 | Wegklick-Persistenz (`localStorage`, pro Test+Konto, überlebt Reload); Zustellung nur an Teilnehmer mit offenem Testlauf (`tst_active.submitted=0`, nur bei aktiver Nachricht); GUI-Klasse `ilExamMessageProxyGUI` → `ilExamMessageGUI` umbenannt |
 | 1.4.0 | `archive/ExamMessage_v1.4.0.zip` | 9 | i18n (DE/EN) — Sprachstrings nach `lang/` ausgelagert, `ilModuleLanguage` |
 | 1.3.0 | `archive/ExamMessage_v1.3.0.zip` | 9 | „Nachricht jetzt senden"-Button; Poll-Auth auf RBAC-read umgestellt |

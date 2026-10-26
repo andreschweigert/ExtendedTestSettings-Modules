@@ -2,7 +2,7 @@
 
 **Modul-ID:** `examkeymap`  
 **Speicherort:** `modules/examkeymap/` (externes Modul, nicht im Git-Repo)  
-**Referenz-ZIP:** `modules-zip/modules/examkeymap/ExamKeymap_v10.0.1.zip`
+**Referenz-ZIP:** `modules-zip/modules/examkeymap/ExamKeymap_v10.0.2.zip`
 **Zuletzt aktualisiert:** 2026-07-07
 
 ---

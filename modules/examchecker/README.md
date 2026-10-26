@@ -54,7 +54,8 @@ Administration → Plugins → ExtendedTestSettings → Reiter **ExamChecker**.
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
-| 10.0.1 | `ExamChecker_v10.0.1.zip` | 10 | Port von 2.0.0: konfigurierbare Soll-Werte je Check (eigene Tabelle `examchecker_rules`); Prüflauf über eigenen Proxy-Endpunkt statt `cmd=saveSettings`; dreiwertiges Ergebnis; Korrektur von acht Prüfungen gegen Online-Status, Prüfungsansicht, Verfügbarkeit, Fragenpools und Prüfungsbedingungen. Keine Code-Änderungen gegenüber 2.0.0 nötig — die geprüften Kern-APIs sind in ILIAS 10 unverändert |
+| 10.0.2 | `ExamChecker_v10.0.2.zip` | 10 | AGPL-3.0-only: Lizenz- und Autorenhinweise im ZIP; Lizenzen mitgelieferter Fremdkomponenten ergänzt |
+| 10.0.1 | `archive/ExamChecker_v10.0.1.zip` | 10 | Port von 2.0.0: konfigurierbare Soll-Werte je Check (eigene Tabelle `examchecker_rules`); Prüflauf über eigenen Proxy-Endpunkt statt `cmd=saveSettings`; dreiwertiges Ergebnis; Korrektur von acht Prüfungen gegen Online-Status, Prüfungsansicht, Verfügbarkeit, Fragenpools und Prüfungsbedingungen. Keine Code-Änderungen gegenüber 2.0.0 nötig — die geprüften Kern-APIs sind in ILIAS 10 unverändert |
 | 10.0.0 | `archive/ExamChecker_v10.0.0.zip` | 10 | Port auf ILIAS 10: keine Code-Änderungen im Modul nötig — Web-Asset-Pfade laufen über den zentralen Registry-Compat des Plugins (ab 10.0.0). Start der ILIAS-10-Linie (Versionsschema: Major = ILIAS-Version, Sprünge +0.0.1); module.json: ilias_min/max = 10 |
 | 1.2.0 | `archive/ExamChecker_v1.2.0.zip` | 9 | Modul-i18n DE/EN inkl. AJAX-Ergebnis-Panel |
 | 1.1.1 | `archive/ExamChecker_v1.1.1.zip` | 9 | ILIAS-Kompatibilität auf 9 beschränkt |

@@ -1,0 +1,19 @@
+{
+    "id": "exambattery",
+    "label": "Akku-Monitor",
+    "description": "Stille Akku-Überwachung für Prüfungsgeräte (Battery Status API). Meldet Akkustände an eine Aufsichts-Ansicht — Studierende sehen niemals eine Meldung oder ein UI-Element.",
+    "version": "10.0.1",
+    "maturity": "test",
+    "ilias_min": "10",
+    "ilias_max": "10",
+    "handler_class": "ilExamBatteryHandler",
+    "handler_file": "class.ilExamBatteryHandler.php",
+    "gui_file": "class.ilExamBatteryViewGUI.php",
+    "gui_class": "ilExamBatteryViewGUI",
+    "allow_student_access": true,
+    "require_files": [],
+    "tables": [
+        "exambattery_settings",
+        "exambattery_status"
+    ]
+}

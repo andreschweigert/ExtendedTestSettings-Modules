@@ -2,7 +2,7 @@
 
 **Modul-ID:** `examnetqos`  
 **Speicherort:** `modules/examnetqos/` (externes Modul, nicht im Git-Repo)  
-**Referenz-ZIP:** `modules-zip/modules/examnetqos/ExamNetQos_v10.0.1.zip`
+**Referenz-ZIP:** `modules-zip/modules/examnetqos/ExamNetQos_v10.0.2.zip`
 **Zuletzt aktualisiert:** 2026-07-07
 
 ---

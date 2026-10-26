@@ -54,6 +54,7 @@ aktivieren (siehe [docs/how-to.md](../../docs/how-to.md)).
 
 | Version | Datum | Änderungen |
 |---|---|---|
+| 10.0.1 | 2026-10-26 | AGPL-3.0-only: Lizenz- und Autorenhinweise im ZIP; Fremdkomponenten gesondert ausgewiesen |
 | 10.0.0 | 2026-07-07 | Port auf ILIAS 10: keine Code-Änderungen nötig — alle Core-DOM-Anker des Automatisierungs-JS existieren im 10er-Core weiter (Laufzeit-Test ausstehend). Start der ILIAS-10-Linie (Major = ILIAS-Version, Sprünge +0.0.1); module.json: ilias_min/max = 10 |
 | 1.2.2 | 2026-07-02 | Härtung nach Code-Review: Weiter-Klick bestätigt nur noch echt sichtbare Modals und niemals einen Test-beenden-Button; robustere Frage-Erkennung (Kollisions- und Zyklus-Schutz); keine Fehlalarme mehr bei Lazy-Bildern, HTML-Code-Erkennung, Auswahlmenüs; CSRF-Token auf allen Endpunkten, Screenshot-Upload nur echte JPEGs, `nosniff`-Header, Cockpit-Seite nicht cachebar |
 | 1.2.1 | 2026-07-02 | Auto-Start stabilisiert (Launcher-Erkennung, Start-Modal wird direkt abgeschickt, Sperre gegen Fremd-Modals im Player, Fragenübersicht wird übersprungen, Zyklus-Erkennung am Testende); neue Checks: fehlender/zu kurzer Fragentext |

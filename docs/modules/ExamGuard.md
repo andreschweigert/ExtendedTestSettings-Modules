@@ -2,7 +2,7 @@
 
 **Modul-ID:** `examguard`  
 **Speicherort:** `modules/examguard/` (externes Modul, nicht im Git-Repo)  
-**Referenz-ZIP:** `modules-zip/modules/examguard/ExamGuard_v10.0.0.zip`  
+**Referenz-ZIP:** `modules-zip/modules/examguard/ExamGuard_v10.0.1.zip`
 **Zuletzt aktualisiert:** 2026-07-07
 
 ---

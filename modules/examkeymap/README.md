@@ -79,7 +79,8 @@ Tabelle `examkeymap_custom` (global, Übersetzungstabelle):
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
-| 10.0.1 | `ExamKeymap_v10.0.1.zip` | 10 | CSRF-geschützte Formular-Action für den Admin-Editor |
+| 10.0.2 | `ExamKeymap_v10.0.2.zip` | 10 | AGPL-3.0-only: Lizenz- und Autorenhinweise im ZIP; Lizenzen mitgelieferter Fremdkomponenten ergänzt |
+| 10.0.1 | `archive/ExamKeymap_v10.0.1.zip` | 10 | CSRF-geschützte Formular-Action für den Admin-Editor |
 | 10.0.0 | `archive/ExamKeymap_v10.0.0.zip` | 10 | Port auf ILIAS 10: `getModuleWebPath()` ohne falsches `public/`-Präfix (Marker-Ableitung statt ILIAS_ABSOLUTE_PATH-Strip). Start der ILIAS-10-Linie (Versionsschema: Major = ILIAS-Version, Sprünge +0.0.1); module.json: ilias_min/max = 10 |
 | 1.1.1 | `archive/ExamKeymap_v1.1.1.zip` | 9 | Virtueller ⇪-Feststelltasten-Button im Testplayer (ChromeOS-Kioskmodus schluckt den Lupe-Einzeldruck); Lupe-Toggle bleibt als Fallback |
 | 1.1.0 | `archive/ExamKeymap_v1.1.0.zip` | 9 | Lupe-/Suchtaste als Feststelltaste (pro Test), globale Übersetzungstabelle mit virtuellem Keyboard-Editor in der Administration (benötigt Plugin-Update mit Tab „Tastatur-Layout") |

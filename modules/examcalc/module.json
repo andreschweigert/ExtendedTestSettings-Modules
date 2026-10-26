@@ -2,7 +2,7 @@
     "id": "examcalc",
     "label": "Wissenschaftlicher Taschenrechner",
     "description": "Stellt einen Taschenrechner während der Prüfung zur Verfügung (einfach oder wissenschaftlich).",
-    "version": "10.0.1",
+    "version": "10.0.2",
     "maturity": "test",
     "ilias_min": "10",
     "ilias_max": "10",

@@ -2,7 +2,7 @@
 
 **Modul-ID:** `examresourcesheet`  
 **Speicherort:** `modules/examresourcesheet/` (externes Modul, nicht im Git-Repo)  
-**Referenz-ZIP:** `modules-zip/modules/examresourcesheet/ExamResourceSheet_v10.0.2.zip`
+**Referenz-ZIP:** `modules-zip/modules/examresourcesheet/ExamResourceSheet_v10.0.3.zip`
 **ILIAS-Kompatibilität:** 10 (10er-Linie; 9er-Stand: Branch `ilias9`)  
 **Zuletzt aktualisiert:** 2026-07-21
 

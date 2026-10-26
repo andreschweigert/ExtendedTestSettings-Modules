@@ -105,7 +105,8 @@ Assets werden nur injiziert wenn `isEnabled() && isTestPlayerContext()`.
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
-| 10.0.1 | `ExamNetQos_v10.0.1.zip` | 10 | Testbezogene Zugriffsprüfung, Report-Prüfung und Formel-Neutralisierung im CSV-Export |
+| 10.0.2 | `ExamNetQos_v10.0.2.zip` | 10 | AGPL-3.0-only: Lizenz- und Autorenhinweise im ZIP; Lizenzen mitgelieferter Fremdkomponenten ergänzt |
+| 10.0.1 | `archive/ExamNetQos_v10.0.1.zip` | 10 | Testbezogene Zugriffsprüfung, Report-Prüfung und Formel-Neutralisierung im CSV-Export |
 | 10.0.0 | `archive/ExamNetQos_v10.0.0.zip` | 10 | Port auf ILIAS 10: keine Code-Änderungen im Modul nötig — Web-Asset-Pfade laufen über den zentralen Registry-Compat des Plugins (ab 10.0.0). Start der ILIAS-10-Linie (Versionsschema: Major = ILIAS-Version, Sprünge +0.0.1); module.json: ilias_min/max = 10 |
 | 1.2.0 | `archive/ExamNetQos_v1.2.0.zip` | 9 | i18n DE/EN von Handler und ViewGUI (Chart, Sessions-Tabelle, CSV) |
 | 1.1.0 | `archive/ExamNetQos_v1.1.0.zip` | 9 | Modul-i18n DE/EN (Handler) |

@@ -2,7 +2,7 @@
 
 **Modul-ID:** `examchecker`
 **Speicherort:** `modules/examchecker/` (externes Modul, nicht im Haupt-Repo)
-**Referenz-ZIP:** `modules-zip/modules/examchecker/ExamChecker_v10.0.1.zip`
+**Referenz-ZIP:** `modules-zip/modules/examchecker/ExamChecker_v10.0.2.zip`
 **Zuletzt aktualisiert:** 2026-08-26
 
 ---

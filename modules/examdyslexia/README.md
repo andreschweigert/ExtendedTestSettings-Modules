@@ -90,7 +90,8 @@ OpenDyslexic ist unter der **SIL Open Font License 1.1** lizenziert — frei ver
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
-| 10.0.0 | `ExamDyslexia_v10.0.0.zip` | 10 | Port auf ILIAS 10: Cache-Busting (`filemtime`) nutzt den web-relativen Pfad — `ILIAS_ABSOLUTE_PATH` zeigt in 10 am Webroot (`public/`) vorbei. Start der ILIAS-10-Linie (Versionsschema: Major = ILIAS-Version, Sprünge +0.0.1); module.json: ilias_min/max = 10 |
+| 10.0.1 | `ExamDyslexia_v10.0.1.zip` | 10 | AGPL-3.0-only: Lizenz- und Autorenhinweise im ZIP; Lizenzen mitgelieferter Fremdkomponenten ergänzt |
+| 10.0.0 | `archive/ExamDyslexia_v10.0.0.zip` | 10 | Port auf ILIAS 10: Cache-Busting (`filemtime`) nutzt den web-relativen Pfad — `ILIAS_ABSOLUTE_PATH` zeigt in 10 am Webroot (`public/`) vorbei. Start der ILIAS-10-Linie (Versionsschema: Major = ILIAS-Version, Sprünge +0.0.1); module.json: ilias_min/max = 10 |
 | 1.1.0 | `archive/ExamDyslexia_v1.1.0.zip` | 9 | Modul-i18n DE/EN (ilModuleLanguage) |
 | 1.0.1 | `ExamDyslexia_v1.0.1.zip` | 9 | ILIAS-Kompatibilität auf 9 beschränkt |
 | 1.0.0 | `ExamDyslexia_v1.0.0.zip` | 9–12 | Erstveröffentlichung |

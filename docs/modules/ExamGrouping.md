@@ -2,7 +2,7 @@
 
 **Modul-ID:** `examgrouping`  
 **Speicherort:** `modules/examgrouping/` (externes Modul, nicht im Git-Repo)  
-**Referenz-ZIP:** `modules-zip/modules/examgrouping/ExamGrouping_v10.0.1.zip`
+**Referenz-ZIP:** `modules-zip/modules/examgrouping/ExamGrouping_v10.0.2.zip`
 **Zuletzt aktualisiert:** 2026-07-07
 
 ---

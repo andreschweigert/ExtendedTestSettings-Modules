@@ -2,7 +2,7 @@
 
 **Modul-ID:** `exampreflight`
 **Speicherort:** `modules/exampreflight/` (externes Modul)
-**Referenz-ZIP:** `modules-zip/modules/exampreflight/ExamPreflight_v10.0.0.zip`
+**Referenz-ZIP:** `modules-zip/modules/exampreflight/ExamPreflight_v10.0.1.zip`
 **Zuletzt aktualisiert:** 2026-07-07
 
 ---

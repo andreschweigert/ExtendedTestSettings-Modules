@@ -1,7 +1,7 @@
 # ExamDyslexia — Entwicklerdokumentation
 
 **Modul-ID:** `examdyslexia`
-**Referenz-ZIP:** `modules-zip/modules/examdyslexia/ExamDyslexia_v10.0.0.zip`
+**Referenz-ZIP:** `modules-zip/modules/examdyslexia/ExamDyslexia_v10.0.1.zip`
 **Zuletzt aktualisiert:** 2026-07-07
 
 ---

@@ -38,7 +38,8 @@ Eigene Tabelle: `examfullscr_settings`
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
-| 10.0.0 | `ExamFullscreen_v10.0.0.zip` | 10 | Port auf ILIAS 10: keine Code-Änderungen im Modul nötig — Web-Asset-Pfade laufen über den zentralen Registry-Compat des Plugins (ab 10.0.0). Start der ILIAS-10-Linie (Versionsschema: Major = ILIAS-Version, Sprünge +0.0.1); module.json: ilias_min/max = 10 |
+| 10.0.1 | `ExamFullscreen_v10.0.1.zip` | 10 | AGPL-3.0-only: Lizenz- und Autorenhinweise im ZIP; Lizenzen mitgelieferter Fremdkomponenten ergänzt |
+| 10.0.0 | `archive/ExamFullscreen_v10.0.0.zip` | 10 | Port auf ILIAS 10: keine Code-Änderungen im Modul nötig — Web-Asset-Pfade laufen über den zentralen Registry-Compat des Plugins (ab 10.0.0). Start der ILIAS-10-Linie (Versionsschema: Major = ILIAS-Version, Sprünge +0.0.1); module.json: ilias_min/max = 10 |
 | 2.1.0 | `archive/ExamFullscreen_v2.1.0.zip` | 9 | Modul-i18n DE/EN (ilModuleLanguage) |
 | 2.0.1 | `ExamFullscreen_v2.0.1.zip` | 9 | ILIAS-Kompatibilität auf 9 beschränkt |
 | 1.0.0 | `ExamFullscreen_v1.0.0.zip` | 9–12 | Initiale Version mit requestFullscreen() API |

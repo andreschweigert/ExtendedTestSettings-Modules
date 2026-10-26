@@ -55,7 +55,8 @@ Alle URL/Redirect-Generierungen laufen über `proxyLink()` / `proxyFormAction()`
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
-| 10.0.1 | `ExamGrouping_v10.0.1.zip` | 10 | CSRF-Schutz für Löschaktionen und Formel-Neutralisierung im CSV-Export |
+| 10.0.2 | `ExamGrouping_v10.0.2.zip` | 10 | AGPL-3.0-only: Lizenz- und Autorenhinweise im ZIP; Lizenzen mitgelieferter Fremdkomponenten ergänzt |
+| 10.0.1 | `archive/ExamGrouping_v10.0.1.zip` | 10 | CSRF-Schutz für Löschaktionen und Formel-Neutralisierung im CSV-Export |
 | 10.0.0 | `archive/ExamGrouping_v10.0.0.zip` | 10 | Port auf ILIAS 10: keine Code-Änderungen im Modul nötig — Web-Asset-Pfade laufen über den zentralen Registry-Compat des Plugins (ab 10.0.0). Start der ILIAS-10-Linie (Versionsschema: Major = ILIAS-Version, Sprünge +0.0.1); module.json: ilias_min/max = 10 |
 | 1.2.2 | `archive/ExamGrouping_v1.2.2.zip` | 9 | CSV-Export: Name-Spalte enthält zusätzlich den Anmeldenamen, z.B. „Max Mustermann (mmustermann)" |
 | 1.2.1 | `archive/ExamGrouping_v1.2.1.zip` | 9 | CSV-Export kompakt: eine Zeile pro Kandidat (letzter Durchlauf), Spalten Name/Matrikelnummer/Kennung, Punkte + % je Gruppe, Gesamtpunktzahl |
