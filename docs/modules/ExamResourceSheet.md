@@ -2,9 +2,9 @@
 
 **Modul-ID:** `examresourcesheet`  
 **Speicherort:** `modules/examresourcesheet/` (externes Modul, nicht im Git-Repo)  
-**Referenz-ZIP:** `modules-zip/modules/examresourcesheet/ExamResourceSheet_v1.3.0.zip`  
+**Referenz-ZIP:** `modules-zip/modules/examresourcesheet/ExamResourceSheet_v1.3.1.zip`
 **ILIAS-Kompatibilität:** 9  
-**Zuletzt aktualisiert:** 2026-07-21
+**Zuletzt aktualisiert:** 2026-10-26
 
 ---
 
@@ -75,7 +75,7 @@ classes/class.ilExtendedTestSettingsModuleProxyGUI.php
     "id": "examresourcesheet",
     "label": "Hilfsmittelblatt",
     "description": "Stellt Studierenden ein vom Dozenten hochgeladenes Hilfsmittelblatt (PDF/HTML) als Overlay im Test-Player bereit.",
-    "version": "1.3.0",
+    "version": "1.3.1",
     "ilias_min": "9",
     "ilias_max": "9",
     "handler_class": "ilExamResourceSheetHandler",
@@ -316,6 +316,7 @@ Gleiche Dateien ersetzen. Die DB-Tabelle `examressheet_settings` bleibt unverän
 
 | Datum | Version | Was |
 |---|---|---|
+| 2026-10-26 | 1.3.1 | **Sicherheitsfix:** PDF.js lädt PDFs mit `isEvalSupported: false` und verhindert damit den Angriffspfad von CVE-2024-4367. |
 | 2026-07-21 | 1.3.0 | Quelle wählbar (Radio): Datei-Upload **oder** eigener Text (`source_mode`, `content_text`; Whitelist `strong`/`b`/`i`/`u`/`br`, serverseitig via `formatTextContent()`); aktuelle Datei im Formular als Link (nur bei `enabled=1`, da `serveResourceFile` sonst 404) + Entfernen-Checkbox; `ensureTableExists()` mit Spalten-Upgrade-Guard |
 | 2026-06-02 | 1.2.1 | **Sicherheitsfix:** HTML-Hilfsmittelblätter werden in einem `sandbox`-iframe (kein `allow-scripts`) geladen — verhindert Same-Origin-JS-Ausführung aus hochgeladenem HTML in der Nutzer-Session |
 | 2026-06-01 | 1.2.0 | Sprachdateien DE/EN (i18n) über `ilModuleLanguage`; Texte in getFormItems/getInfo übersetzt |

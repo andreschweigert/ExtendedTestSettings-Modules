@@ -438,7 +438,7 @@ class ilExamResourceSheetHandler implements ilExamModuleInterface
             'title'       => $this->lng->txt('title'),
             'icon'        => '',
             'description' => $this->lng->txt('description'),
-            'version'     => '1.3.0',
+            'version'     => '1.3.1',
             'ilias_min'   => '9',
             'ilias_max'   => '9',
             'features'    => [

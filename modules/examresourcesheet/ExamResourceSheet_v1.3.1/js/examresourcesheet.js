@@ -320,7 +320,9 @@
 
                     if (isPdf) {
                         pdfjsLib.GlobalWorkerOptions.workerSrc = cfg.pdfWorkerSrc;
-                        pdfjsLib.getDocument(blobUrl).promise
+                        // PDF.js 3.11.174: eval bei PDF-Schriftarten deaktivieren
+                        // (CVE-2024-4367, sonst JS-Ausführung aus präparierten PDFs).
+                        pdfjsLib.getDocument({ url: blobUrl, isEvalSupported: false }).promise
                             .then(function (pdf) { pdfDoc = pdf; return pdf.getPage(1); })
                             .then(function (p)   { pdfBaseWidth = p.getViewport({ scale: 1 }).width; rerenderPdf(); })
                             .catch(function (err) {

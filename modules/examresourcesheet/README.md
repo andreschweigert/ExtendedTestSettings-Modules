@@ -61,6 +61,7 @@ Eigene Tabelle: `examressheet_settings`
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
+| 1.3.1 | `ExamResourceSheet_v1.3.1.zip` | 9 | PDF.js lädt PDFs mit `isEvalSupported: false` (Schutz vor CVE-2024-4367). |
 | 1.3.0 | `ExamResourceSheet_v1.3.0.zip` | 9 | Quelle wählbar: Datei-Upload **oder** eigener Text (Whitelist `strong`/`b`/`i`/`u`/`br`, serverseitig sanitisiert); hochgeladene Datei im Formular als Link einsehbar und per Checkbox entfernbar. Neue Spalten `source_mode`, `content_text` |
 | 1.2.1 | `ExamResourceSheet_v1.2.1.zip` | 9 | Sicherheitsfix: HTML-Hilfsmittelblätter werden in einem `sandbox`-iframe geladen (keine JS-Ausführung in der Nutzer-Session) |
 | 1.2.0 | `ExamResourceSheet_v1.2.0.zip` | 9 | Sprachdateien DE/EN (i18n), Texte über `ilModuleLanguage` |
