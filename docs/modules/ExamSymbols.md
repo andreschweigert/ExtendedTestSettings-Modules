@@ -2,7 +2,7 @@
 
 **Modul-ID:** `examsymbols`  
 **Speicherort:** (noch nicht installiert) — Quelle: `modules-zip/modules/examsymbols/ExamSymbols_v1.1.1.zip`  
-**Referenz-ZIP:** `modules-zip/modules/examsymbols/ExamSymbols_v10.0.0.zip`  
+**Referenz-ZIP:** `modules-zip/modules/examsymbols/ExamSymbols_v10.0.1.zip`
 **Zuletzt aktualisiert:** 2026-07-07
 
 ---

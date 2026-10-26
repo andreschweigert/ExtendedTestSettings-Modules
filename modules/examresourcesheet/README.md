@@ -61,7 +61,8 @@ Eigene Tabelle: `examressheet_settings`
 
 | Version | Datei | ILIAS | Änderungen |
 |---|---|---|---|
-| 10.0.1 | `ExamResourceSheet_v10.0.1.zip` | 10 | Port von 1.3.0: Quelle wählbar (Datei-Upload **oder** eigener Text, Whitelist `strong`/`b`/`i`/`u`/`br`); Datei im Formular als Link einsehbar und per Checkbox entfernbar. Neue Spalten `source_mode`, `content_text` |
+| 10.0.2 | `ExamResourceSheet_v10.0.2.zip` | 10 | PDF.js-Auswertung dynamischen Codes deaktiviert |
+| 10.0.1 | `archive/ExamResourceSheet_v10.0.1.zip` | 10 | Port von 1.3.0: Quelle wählbar (Datei-Upload **oder** eigener Text, Whitelist `strong`/`b`/`i`/`u`/`br`); Datei im Formular als Link einsehbar und per Checkbox entfernbar. Neue Spalten `source_mode`, `content_text` |
 | 10.0.0 | `archive/ExamResourceSheet_v10.0.0.zip` | 10 | Port auf ILIAS 10: keine Code-Änderungen im Modul nötig — Web-Asset-Pfade laufen über den zentralen Registry-Compat des Plugins (ab 10.0.0). Start der ILIAS-10-Linie (Versionsschema: Major = ILIAS-Version, Sprünge +0.0.1); module.json: ilias_min/max = 10 |
 | 1.2.1 | `archive/ExamResourceSheet_v1.2.1.zip` | 9 | Sicherheitsfix: HTML-Hilfsmittelblätter werden in einem `sandbox`-iframe geladen (keine JS-Ausführung in der Nutzer-Session) |
 | 1.2.0 | `ExamResourceSheet_v1.2.0.zip` | 9 | Sprachdateien DE/EN (i18n), Texte über `ilModuleLanguage` |

@@ -2,7 +2,7 @@
 
 **Modul-ID:** `examcalc`  
 **Speicherort:** `modules/examcalc/` (externes Modul, nicht im Git-Repo)  
-**Referenz-ZIP:** `.dev/` → `modules-zip/modules/examcalc/ExamCalc_v1.1.1.zip`  
+**Referenz-ZIP:** `modules-zip/modules/examcalc/ExamCalc_v10.0.1.zip`
 **Zuletzt aktualisiert:** 2026-07-07
 
 ---

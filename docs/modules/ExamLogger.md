@@ -2,7 +2,7 @@
 
 **Modul-ID:** `examlogger`  
 **Speicherort:** `modules/examlogger/` (direkt im Plugin-Repo)  
-**Referenz-ZIP:** `modules-zip/modules/examlogger/ExamLogger_v10.0.0.zip`  
+**Referenz-ZIP:** `modules-zip/modules/examlogger/ExamLogger_v10.0.1.zip`
 **Zuletzt aktualisiert:** 2026-07-07
 
 ---

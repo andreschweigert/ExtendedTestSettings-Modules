@@ -2,7 +2,7 @@
     "id": "examgrouping",
     "label": "Fragengruppierung",
     "description": "Fragen eines Tests zu benannten Gruppen zusammenfassen und die Gesamtpunktzahl je Gruppe aus den Testergebnissen auswerten.",
-    "version": "10.0.0",
+    "version": "10.0.1",
     "maturity": "test",
     "ilias_min": "10",
     "ilias_max": "10",
